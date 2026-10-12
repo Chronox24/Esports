@@ -463,24 +463,40 @@ const MainUIScreen = ({ onLogout }) => {
             </button>
             <button
               onClick={async () => {
-                if (!newFolderName.trim()) return;
+                const trimmedName = newFolderName.trim();
+                if (!trimmedName) {
+                  alert("Folder name is required.");
+                  return;
+                }
+                const duplicate = tournaments.some(
+                  (t) => t.name.toLowerCase() === trimmedName.toLowerCase()
+                );
+                if (duplicate) {
+                  alert(`A folder named "${trimmedName}" already exists. Please choose a different name.`);
+                  return;
+                }
                 try {
                   const res = await apiFetch('/api/tournaments', {
                     method: 'POST',
-                    body: JSON.stringify({ name: newFolderName.trim(), game: newFolderGame })
+                    body: JSON.stringify({ name: trimmedName, game: newFolderGame })
                   });
                   if (res.ok) {
-                    const data = await res.json();
+                    const result = await res.json();
                     await loadTournaments();
-                    if (data && data.length > 0) {
-                      setGlobalTournament(data[0].id);
+                    if (result?.data?.id) {
+                      setGlobalTournament(result.data.id);
+                    } else if (Array.isArray(result) && result[0]?.id) {
+                      setGlobalTournament(result[0].id);
                     }
+                    setNewFolderName('');
                     setShowCreateFolderModal(false);
                   } else {
-                    alert("Failed to create folder. You might not have admin permissions.");
+                    const errData = await res.json().catch(() => ({}));
+                    alert(errData.error || "Failed to create folder. Please check your permissions or try another name.");
                   }
                 } catch (err) {
-                  alert("Error creating folder.");
+                  console.error(err);
+                  alert("Error connecting to server while creating folder.");
                 }
               }}
               className="px-6 py-2.5 rounded-xl bg-cyan-400 text-slate-950 font-bold text-sm hover:bg-white transition-colors"

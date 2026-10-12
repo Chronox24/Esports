@@ -134,8 +134,8 @@ const isAdmin = async (req, res, next) => {
         user_id: req.user.id,
         username: req.user.email ? req.user.email.split('@')[0] : 'admin',
         password: 'auto_recovery_placeholder',
-        role: 'Central Super Admin',
-        permissions: { full: true, edit: true },
+        role: 'Super Admin',
+        permissions: { full: true, edit: true, view: true, manage_folders: true },
         is_super_admin: true
       }]).select('is_super_admin, permissions, role').single();
       if (insertError || !newData) {
@@ -144,7 +144,12 @@ const isAdmin = async (req, res, next) => {
       }
       data = newData;
     }
-    if (data.is_super_admin || data.permissions?.full || data.permissions?.edit) {
+    if (data.is_super_admin || data.role === 'Super Admin' || req.user.user_metadata?.role === 'Super Admin') {
+      data.is_super_admin = true;
+      data.role = 'Super Admin';
+      data.permissions = { view: true, edit: true, full: true, manage_folders: true };
+    }
+    if (data.is_super_admin || data.role === 'Super Admin' || data.permissions?.full || data.permissions?.edit || data.permissions?.manage_folders) {
       req.adminUser = data;
       next();
     } else {
@@ -260,7 +265,16 @@ app.post('/api/admin/create-user', authenticateToken, isAdmin, async (req, res) 
     const { error: dbError } = await supabase
       .from('users')
       .insert([
-        { user_id: userId, username: username, password: password, role: role, is_super_admin: role === 'Super Admin', permissions: { view: true, edit: false, full: false, manage_folders: false } }
+        { 
+          user_id: userId, 
+          username: username, 
+          password: password, 
+          role: role, 
+          is_super_admin: role === 'Super Admin', 
+          permissions: role === 'Super Admin' 
+            ? { view: true, edit: true, full: true, manage_folders: true } 
+            : { view: true, edit: false, full: false, manage_folders: false } 
+        }
       ]);
     if (dbError) {
       console.error("Error inserting into public.users:", dbError.message);
@@ -353,18 +367,35 @@ app.get('/api/tournaments', async (req, res) => {
   res.json(data);
 });
 app.post('/api/tournaments', authenticateToken, isAdmin, async (req, res) => {
-  if (!req.adminUser.is_super_admin && !req.adminUser.permissions?.manage_folders) {
+  if (!req.adminUser.is_super_admin && !req.adminUser.permissions?.manage_folders && !req.adminUser.permissions?.full && req.adminUser.role !== 'Super Admin') {
     return res.status(403).json({ error: 'Access denied. You do not have permission to create folders.' });
   }
   const { name, game } = req.body;
-  if (!name) return res.status(400).json({ error: 'Tournament name required' });
-  const { data, error } = await supabase.from('tournaments').insert([{ name, game: game || 'VALORANT' }]).select();
-  if (error) return res.status(500).json({ error: error.message });
-  await logAudit('SYSTEM', `Created new tournament: ${name} (${game || 'VALORANT'})`, { name, game }, 'System');
-  res.json({ message: 'Tournament created successfully', data: data[0] });
+  if (!name || !name.trim()) return res.status(400).json({ error: 'Folder / tournament name is required.' });
+  const trimmedName = name.trim();
+
+  try {
+    const { data: existing } = await supabase.from('tournaments').select('id, name').ilike('name', trimmedName);
+    if (existing && existing.length > 0) {
+      return res.status(400).json({ error: `A folder named "${trimmedName}" already exists. Please choose a different name.` });
+    }
+
+    const { data, error } = await supabase.from('tournaments').insert([{ name: trimmedName, game: game || 'VALORANT' }]).select();
+    if (error) {
+      if (error.code === '23505') {
+        return res.status(400).json({ error: `A folder named "${trimmedName}" already exists. Please choose a different name.` });
+      }
+      return res.status(500).json({ error: error.message });
+    }
+    await logAudit('FOLDER_CREATED', `Created new folder/tournament: ${trimmedName} (${game || 'VALORANT'})`, { name: trimmedName, game: game || 'VALORANT' }, 'System');
+    res.json({ message: 'Tournament created successfully', data: data[0] });
+  } catch (err) {
+    console.error('Error creating tournament folder:', err);
+    res.status(500).json({ error: 'Internal server error while creating tournament folder.' });
+  }
 });
 app.put('/api/tournaments', authenticateToken, isAdmin, async (req, res) => {
-  if (!req.adminUser.is_super_admin && !req.adminUser.permissions?.manage_folders) {
+  if (!req.adminUser.is_super_admin && !req.adminUser.permissions?.manage_folders && !req.adminUser.permissions?.full && req.adminUser.role !== 'Super Admin') {
     return res.status(403).json({ error: 'Access denied. You do not have permission to edit folders.' });
   }
   const { name, game } = req.body;

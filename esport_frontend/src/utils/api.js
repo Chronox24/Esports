@@ -4,11 +4,24 @@ const getAuthToken = () => {
     const sessionStr = localStorage.getItem('supabase.auth.token');
     if (sessionStr) {
       const session = JSON.parse(sessionStr);
-      return session?.access_token || null;
+      if (session?.access_token) return session.access_token;
     }
   } catch (e) {
-    console.warn("Failed to parse token from localStorage", e);
+    console.warn("Failed to parse supabase.auth.token from localStorage", e);
   }
+  try {
+    const directToken = localStorage.getItem('token');
+    if (directToken) return directToken;
+  } catch (e) {}
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+        const val = JSON.parse(localStorage.getItem(key));
+        if (val?.access_token) return val.access_token;
+      }
+    }
+  } catch (e) {}
   return null;
 };
 let isRefreshing = false;

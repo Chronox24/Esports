@@ -335,7 +335,7 @@ const Admin = ({ globalGame, globalTournament }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [newRole, setNewRole] = useState('Tournament Mod');
+  const [newRole, setNewRole] = useState('Super Admin');
   const [isCreating, setIsCreating] = useState(false);
   const handleCreateUser = async () => {
     if (!newEmail || !newPassword) return alert('Email and password required');
@@ -766,8 +766,8 @@ const Admin = ({ globalGame, globalTournament }) => {
                   onChange={(e) => setNewRole(e.target.value)}
                   className="w-full bg-bg-300 border border-[#2a3648] text-theme-text-base text-sm rounded-lg py-2 px-3 focus:outline-none focus:border-cyan-500 transition-colors"
                 >
-                  <option value="Tournament Mod">Tournament Mod</option>
                   <option value="Super Admin">Super Admin</option>
+                  <option value="Tournament Mod">Tournament Mod</option>
                   <option value="Observer">Observer</option>
                 </select>
               </div>

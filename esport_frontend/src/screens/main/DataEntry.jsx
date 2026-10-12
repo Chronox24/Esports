@@ -100,18 +100,17 @@ const IconSave = () => (
   </svg>
 );
 const SectionHeader = ({ icon, label, sub, accent = "#06b6d4" }) => (
-  <div className="border-b border-slate-800/60 light:border-slate-200 flex items-center gap-8 bg-slate-900/30 light:bg-slate-50" style={{ padding: '32px 48px' }}>
+  <div className="border-b border-slate-800/60 light:border-slate-200 flex items-center gap-4 sm:gap-6 bg-slate-900/30 light:bg-slate-50 px-5 py-4 sm:px-6 sm:py-5">
     <div
-      className="rounded-xl flex-shrink-0"
+      className="rounded-xl flex-shrink-0 p-3 sm:p-3.5"
       style={{
         backgroundColor: accent + "18",
         border: `1px solid ${accent}30`,
-        padding: '16px'
       }}
     >
       <span style={{ color: accent }}>{icon}</span>
     </div>
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-1">
       {sub && (
         <div className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500 light:text-slate-400">
           {sub}
@@ -136,7 +135,7 @@ const inputBase =
 const selectBase =
   "bg-slate-800/50 light:bg-slate-50 border border-slate-700/70 light:border-slate-300 text-white light:text-slate-900 text-xs font-bold px-3 py-1.5 rounded-sm outline-none focus:border-cyan-500/70 light:focus:border-blue-500/70 focus:ring-2 focus:ring-cyan-500/10 light:focus:ring-blue-500/10 transition-all w-full cursor-pointer appearance-none";
 const tableInput =
-  "bg-transparent w-full text-center outline-none focus:bg-slate-800/70 light:focus:bg-slate-200 focus:ring-1 focus:ring-cyan-500/50 light:focus:ring-blue-500/50 rounded-md py-1.5 transition-all text-xs font-bold text-white light:text-slate-900";
+  "bg-transparent w-full text-center outline-none focus:bg-slate-800/70 light:focus:bg-slate-200 focus:ring-1 focus:ring-cyan-500/50 light:focus:ring-blue-500/50 rounded-md py-0.5 px-0.5 transition-all text-xs font-bold text-white light:text-slate-900";
 function useStickyState(defaultValue, key) {
   const [value, setValue] = useState(() => {
     try {
@@ -446,6 +445,24 @@ const DataEntry = ({ globalGame, globalTournament }) => {
       setPlayersB(p);
     }
   };
+  const handleStatChange = (team, idx, field, rawValue) => {
+    if (rawValue === "" || rawValue === null || rawValue === undefined) {
+      updatePlayer(team, idx, field, "");
+      return;
+    }
+    let str = String(rawValue);
+    if (str.length > 1 && str.startsWith("0")) {
+      str = str.replace(/^0+/, "");
+      if (str === "") str = "0";
+    }
+    const num = Number(str);
+    updatePlayer(team, idx, field, isNaN(num) ? "" : num);
+  };
+  const handleStatBlur = (team, idx, field, e) => {
+    if (e.target.value === "") {
+      updatePlayer(team, idx, field, 0);
+    }
+  };
   const [lifetimeStats, setLifetimeStats] = useState({});
   const [dbTeams, setDbTeams] = useState([]);
   const [dbPlayers, setDbPlayers] = useState([]);
@@ -511,6 +528,10 @@ const DataEntry = ({ globalGame, globalTournament }) => {
             a: 0,
             acs: 0,
             econ: 0,
+            first_kills: 0,
+            plants: 0,
+            defuse: 0,
+            ace: 0,
           };
         });
       if (side === "A") {
@@ -1013,19 +1034,22 @@ const DataEntry = ({ globalGame, globalTournament }) => {
       onKeyDown={handleGridNavigation}
     >
       <style>{`
-        /* Hide number input spinners */
+        /* Hide number input spinners completely so no width is lost */
         input[type="number"]::-webkit-inner-spin-button,
         input[type="number"]::-webkit-outer-spin-button {
-          -webkit-appearance: none;
-          margin: 0;
+          -webkit-appearance: none !important;
+          margin: 0 !important;
+          display: none !important;
         }
         input[type="number"] {
-          -moz-appearance: textfield;
+          -moz-appearance: textfield !important;
+          appearance: textfield !important;
         }
-        .de-scroll::-webkit-scrollbar { width: 5px; }
+        .de-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
         .de-scroll::-webkit-scrollbar-track { background: transparent; }
         .de-scroll::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 9999px; }
         .de-scroll::-webkit-scrollbar-thumb:hover { background: #334155; }
+        .de-scroll { scrollbar-width: thin; scrollbar-color: #1e293b transparent; }
         @keyframes submitPulse {
           0%, 100% { box-shadow: 0 0 15px rgba(6,182,212,0.2); }
           50% { box-shadow: 0 0 30px rgba(6,182,212,0.5); }
@@ -1042,7 +1066,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
       `}</style>
       {/* ── Content ── */}
       <div className="w-full flex flex-col items-center">
-        <div className="w-full max-w-[1400px] flex flex-col" style={{ padding: '32px', gap: '24px' }}>
+        <div className="w-full max-w-[1720px] flex flex-col p-4 sm:p-6 lg:p-8 gap-6">
           {/* ── Top Bar: Broadcast Toggle ── */}
           <div className="flex items-center justify-end gap-3">
             <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 rounded-lg shadow-sm" title="Your edits are instantly saved and synced with other admins">
@@ -1528,618 +1552,819 @@ const DataEntry = ({ globalGame, globalTournament }) => {
               </div>
             </div>
           </div>
-        </div>
-        {/* ── Player Stats ── */}
-        <div className="bg-[#0d131c] light:bg-white rounded-2xl border border-slate-800/50 light:border-slate-200 overflow-hidden shadow-xl light:shadow-sm mb-5">
-          <SectionHeader
-            icon={<IconStats />}
-            label="Player Stats"
-            sub="Per-Player Input Cards"
-            accent="#8b5cf6"
-          />
-          <div style={{ padding: '24px 32px' }}>
-            {/* ── Team A Players ── */}
-            <div className="flex flex-col" style={{ gap: '10px' }}>
-              {playersA.map((p, idx) => (
-                <div
-                  key={`a-${idx}`}
-                  className="rounded-xl border border-slate-700/40 light:border-slate-200 bg-slate-900/40 light:bg-slate-50 hover:border-slate-600 light:hover:border-slate-300 transition-all group"
-                  style={{ padding: '16px 20px' }}
-                >
-                  {game === "Valorant" ? (
-                    <div className="flex flex-wrap items-center" style={{ gap: '12px' }}>
-                      {/* Player IGN */}
-                      <div className="flex items-center" style={{ gap: '8px', minWidth: '160px', flex: '1 1 160px' }}>
-                        <div className="w-7 h-7 rounded-lg bg-[#38bdf8]/10 border border-[#38bdf8]/30 flex items-center justify-center text-[10px] font-black text-[#38bdf8] shrink-0">
-                          {idx + 1}
-                        </div>
-                        <select
-                          className="bg-transparent text-[#38bdf8] light:text-blue-600 text-xs font-black outline-none cursor-pointer appearance-none flex-1 min-w-0 truncate"
-                          value={p.ign}
-                          onChange={(e) => updatePlayer("A", idx, "ign", e.target.value)}
-                        >
-                          <option value="" className="text-black">Select Player</option>
-                          {dbPlayers
-                            .filter((dbP) => {
-                              const team = dbTeams.find((t) => t.team_name === teamA.name);
-                              return team ? dbP.team_id === team.team_id : true;
-                            })
-                            .map((dbP) => (
-                              <option key={dbP.player_id} value={dbP.player_name} className="text-black">{dbP.player_name}</option>
-                            ))}
-                          <option value={p.ign} className="hidden">{p.ign}</option>
-                        </select>
-                      </div>
-                      {/* Agent */}
-                      <div className="flex items-center" style={{ gap: '6px', minWidth: '110px' }}>
-                        <div className="w-6 h-6 rounded-md bg-slate-700/50 border border-slate-600/40 flex items-center justify-center text-[8px] font-bold text-slate-400 shrink-0">
-                          {p.agent ? p.agent[0] : ""}
-                        </div>
-                        <select
-                          className="bg-transparent text-white light:text-slate-900 text-xs font-bold outline-none cursor-pointer appearance-none"
-                          value={p.agent}
-                          onChange={(e) => updatePlayer("A", idx, "agent", e.target.value)}
-                        >
-                          {agents.map((a) => (<option key={a} value={a}>{a}</option>))}
-                        </select>
-                      </div>
-                      {/* Divider */}
-                      <div className="w-px h-6 bg-slate-700/50 light:bg-slate-300 hidden sm:block"></div>
-                      {/* Performance score */}
-                      <div className="flex flex-col items-center" style={{ minWidth: '80px' }}>
-                        <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wider text-center truncate w-full" title="Performance Score">Perf Score</span>
-                        <input type="number" className={`${tableInput} text-emerald-400 light:text-emerald-600 !w-14`} value={p.acs} onChange={(e) => updatePlayer("A", idx, "acs", Number(e.target.value) || 0)} />
-                      </div>
-                      {/* K / D / A */}
-                      <div className="flex items-end rounded-lg bg-slate-800/40 light:bg-slate-100 border border-slate-700/30 light:border-slate-200" style={{ padding: '4px 8px', gap: '2px' }}>
-                        <div className="flex flex-col items-center" style={{ minWidth: '36px' }}>
-                          <span className="text-[8px] font-bold text-slate-500 uppercase">K</span>
-                          <input type="number" className={`${tableInput} !w-10`} value={p.k} onChange={(e) => updatePlayer("A", idx, "k", Number(e.target.value) || 0)} />
-                        </div>
-                        <span className="text-slate-600 text-xs font-bold pb-1">/</span>
-                        <div className="flex flex-col items-center" style={{ minWidth: '36px' }}>
-                          <span className="text-[8px] font-bold text-slate-500 uppercase">D</span>
-                          <input type="number" className={`${tableInput} !w-10`} value={p.d} onChange={(e) => updatePlayer("A", idx, "d", Number(e.target.value) || 0)} />
-                        </div>
-                        <span className="text-slate-600 text-xs font-bold pb-1">/</span>
-                        <div className="flex flex-col items-center" style={{ minWidth: '36px' }}>
-                          <span className="text-[8px] font-bold text-slate-500 uppercase">A</span>
-                          <input type="number" className={`${tableInput} !w-10`} value={p.a} onChange={(e) => updatePlayer("A", idx, "a", Number(e.target.value) || 0)} />
-                        </div>
-                      </div>
-                      {/* Divider */}
-                      <div className="w-px h-6 bg-slate-700/50 light:bg-slate-300 hidden sm:block"></div>
-                      {/* Trades */}
-                      <div className="flex flex-col items-center" style={{ minWidth: '52px' }}>
-                        <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wider">Trades</span>
-                        <input type="number" className={`${tableInput} text-emerald-400 light:text-emerald-600 !w-14`} value={p.econ} onChange={(e) => updatePlayer("A", idx, "econ", Number(e.target.value) || 0)} />
-                      </div>
-                      {/* FB / Plants / Defuse */}
-                      <div className="flex flex-col items-center" style={{ minWidth: '36px' }}>
-                        <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wider">FB</span>
-                        <input type="number" className={`${tableInput} !w-10`} value={p.first_kills} onChange={(e) => updatePlayer("A", idx, "first_kills", Number(e.target.value) || 0)} />
-                      </div>
-                      <div className="flex flex-col items-center" style={{ minWidth: '36px' }}>
-                        <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wider">Plant</span>
-                        <input type="number" className={`${tableInput} !w-10`} value={p.plants} onChange={(e) => updatePlayer("A", idx, "plants", Number(e.target.value) || 0)} />
-                      </div>
-                      <div className="flex flex-col items-center" style={{ minWidth: '36px' }}>
-                        <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wider">Defuse</span>
-                        <input type="number" className={`${tableInput} !w-10`} value={p.defuse} onChange={(e) => updatePlayer("A", idx, "defuse", Number(e.target.value) || 0)} />
-                      </div>
-                    </div>
-                  ) : (
-                    /* Crossfire card layout */
-                    <div className="flex flex-wrap items-center" style={{ gap: '12px' }}>
-                      {/* Player IGN */}
-                      <div className="flex items-center" style={{ gap: '8px', minWidth: '160px', flex: '1 1 160px' }}>
-                        <div className="w-7 h-7 rounded-lg bg-[#38bdf8]/10 border border-[#38bdf8]/30 flex items-center justify-center text-[10px] font-black text-[#38bdf8] shrink-0">
-                          {idx + 1}
-                        </div>
-                        <select
-                          className="bg-transparent text-[#38bdf8] light:text-blue-600 text-xs font-black outline-none cursor-pointer appearance-none flex-1 min-w-0 truncate"
-                          value={p.ign}
-                          onChange={(e) => updatePlayer("A", idx, "ign", e.target.value)}
-                        >
-                          <option value="" className="text-black">Select Player</option>
-                          {dbPlayers
-                            .filter((dbP) => {
-                              const team = dbTeams.find((t) => t.team_name === teamA.name);
-                              return team ? dbP.team_id === team.team_id : true;
-                            })
-                            .map((dbP) => (
-                              <option key={dbP.player_id} value={dbP.player_name} className="text-black">{dbP.player_name}</option>
-                            ))}
-                          <option value={p.ign} className="hidden">{p.ign}</option>
-                        </select>
-                      </div>
-                      <div className="w-px h-6 bg-slate-700/50 light:bg-slate-300 hidden sm:block"></div>
-                      {cfGroups.map((g) => {
-                        if (g.isTotal) {
-                          return (
-                            <div key={g.id} className="flex items-end rounded-lg bg-emerald-500/10 border border-emerald-500/20" style={{ padding: '4px 8px', gap: '6px' }}>
-                              <div className="flex flex-col items-center" style={{ minWidth: '36px' }}>
-                                <span className="text-[8px] font-bold text-emerald-500/70 uppercase">K</span>
-                                <span className="text-xs font-black text-white text-center">{getCfTotal(p, "k")}</span>
-                              </div>
-                              <div className="flex flex-col items-center" style={{ minWidth: '36px' }}>
-                                <span className="text-[8px] font-bold text-emerald-500/70 uppercase">D</span>
-                                <span className="text-xs font-black text-white text-center">{getCfTotal(p, "d")}</span>
-                              </div>
-                              <div className="flex flex-col items-center" style={{ minWidth: '36px' }}>
-                                <span className="text-[8px] font-bold text-emerald-500/70 uppercase">A</span>
-                                <span className="text-xs font-black text-white text-center">{getCfTotal(p, "a")}</span>
-                              </div>
-                              <div className="flex flex-col items-center" style={{ minWidth: '36px' }}>
-                                <span className="text-[8px] font-bold text-[#00ffcc]/70 uppercase">H</span>
-                                <span className="text-xs font-black text-[#00ffcc] text-center">{getCfTotal(p, "h")}</span>
-                              </div>
-                            </div>
-                          );
-                        }
-                        return (
-                          <div key={g.id} className="flex items-end rounded-lg bg-slate-800/40 light:bg-slate-100 border border-slate-700/30 light:border-slate-200" style={{ padding: '4px 8px', gap: '2px' }}>
-                            <div className="text-[7px] font-bold text-slate-500 uppercase tracking-wider self-center mr-1 max-w-[60px] truncate" title={g.label}>{g.label}</div>
-                            <div className="flex flex-col items-center" style={{ minWidth: '36px' }}>
-                              <span className="text-[8px] font-bold text-slate-500 uppercase">K</span>
-                              <input type="number" className={`${tableInput} !w-10`} value={p[`${g.id}_k`] !== undefined ? p[`${g.id}_k`] : 0} onChange={(e) => updatePlayer("A", idx, `${g.id}_k`, e.target.value)} />
-                            </div>
-                            <div className="flex flex-col items-center" style={{ minWidth: '36px' }}>
-                              <span className="text-[8px] font-bold text-slate-500 uppercase">D</span>
-                              <input type="number" className={`${tableInput} !w-10`} value={p[`${g.id}_d`] !== undefined ? p[`${g.id}_d`] : 0} onChange={(e) => updatePlayer("A", idx, `${g.id}_d`, e.target.value)} />
-                            </div>
-                            <div className="flex flex-col items-center" style={{ minWidth: '36px' }}>
-                              <span className="text-[8px] font-bold text-slate-500 uppercase">A</span>
-                              <input type="number" className={`${tableInput} !w-10`} value={p[`${g.id}_a`] !== undefined ? p[`${g.id}_a`] : 0} onChange={(e) => updatePlayer("A", idx, `${g.id}_a`, e.target.value)} />
-                            </div>
-                            <div className="flex flex-col items-center" style={{ minWidth: '36px' }}>
-                              <span className="text-[8px] font-bold text-[#00ffcc]/70 uppercase">H</span>
-                              <input type="number" className={`${tableInput} text-[#00ffcc] !w-10`} value={p[`${g.id}_h`] !== undefined ? p[`${g.id}_h`] : 0} onChange={(e) => updatePlayer("A", idx, `${g.id}_h`, e.target.value)} />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
 
-            {/* ── Separator ── */}
-            <div className="flex items-center my-4" style={{ gap: '12px' }}>
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-600/50 to-transparent"></div>
-              <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">vs</span>
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-600/50 to-transparent"></div>
-            </div>
-
-            {/* ── Team B Players ── */}
-            <div className="flex flex-col" style={{ gap: '10px' }}>
-              {playersB.map((p, idx) => (
-                <div
-                  key={`b-${idx}`}
-                  className="rounded-xl border border-slate-700/40 light:border-slate-200 bg-slate-900/40 light:bg-slate-50 hover:border-slate-600 light:hover:border-slate-300 transition-all group"
-                  style={{ padding: '16px 20px' }}
-                >
-                  {game === "Valorant" ? (
-                    <div className="flex flex-wrap items-center" style={{ gap: '12px' }}>
-                      {/* Player IGN */}
-                      <div className="flex items-center" style={{ gap: '8px', minWidth: '160px', flex: '1 1 160px' }}>
-                        <div className="w-7 h-7 rounded-lg bg-[#f87171]/10 border border-[#f87171]/30 flex items-center justify-center text-[10px] font-black text-[#f87171] shrink-0">
-                          {idx + 1}
-                        </div>
-                        <select
-                          className="bg-transparent text-[#f87171] light:text-red-600 text-xs font-black outline-none cursor-pointer appearance-none flex-1 min-w-0 truncate"
-                          value={p.ign}
-                          onChange={(e) => updatePlayer("B", idx, "ign", e.target.value)}
-                        >
-                          <option value="" className="text-black">Select Player</option>
-                          {dbPlayers
-                            .filter((dbP) => {
-                              const team = dbTeams.find((t) => t.team_name === teamB.name);
-                              return team ? dbP.team_id === team.team_id : true;
-                            })
-                            .map((dbP) => (
-                              <option key={dbP.player_id} value={dbP.player_name} className="text-black">{dbP.player_name}</option>
-                            ))}
-                          <option value={p.ign} className="hidden">{p.ign}</option>
-                        </select>
-                      </div>
-                      {/* Agent */}
-                      <div className="flex items-center" style={{ gap: '6px', minWidth: '110px' }}>
-                        <div className="w-6 h-6 rounded-md bg-slate-700/50 border border-slate-600/40 flex items-center justify-center text-[8px] font-bold text-slate-400 shrink-0">
-                          {p.agent ? p.agent[0] : ""}
-                        </div>
-                        <select
-                          className="bg-transparent text-white light:text-slate-900 text-xs font-bold outline-none cursor-pointer appearance-none"
-                          value={p.agent}
-                          onChange={(e) => updatePlayer("B", idx, "agent", e.target.value)}
-                        >
-                          {agents.map((a) => (<option key={a} value={a}>{a}</option>))}
-                        </select>
-                      </div>
-                      {/* Divider */}
-                      <div className="w-px h-6 bg-slate-700/50 light:bg-slate-300 hidden sm:block"></div>
-                      {/* Performance score */}
-                      <div className="flex flex-col items-center" style={{ minWidth: '80px' }}>
-                        <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wider text-center truncate w-full" title="Performance Score">Perf Score</span>
-                        <input type="number" className={`${tableInput} text-[#f87171] light:text-red-600 !w-14`} value={p.acs} onChange={(e) => updatePlayer("B", idx, "acs", Number(e.target.value) || 0)} />
-                      </div>
-                      {/* K / D / A */}
-                      <div className="flex items-end rounded-lg bg-slate-800/40 light:bg-slate-100 border border-slate-700/30 light:border-slate-200" style={{ padding: '4px 8px', gap: '2px' }}>
-                        <div className="flex flex-col items-center" style={{ minWidth: '36px' }}>
-                          <span className="text-[8px] font-bold text-slate-500 uppercase">K</span>
-                          <input type="number" className={`${tableInput} !w-10`} value={p.k} onChange={(e) => updatePlayer("B", idx, "k", Number(e.target.value) || 0)} />
-                        </div>
-                        <span className="text-slate-600 text-xs font-bold pb-1">/</span>
-                        <div className="flex flex-col items-center" style={{ minWidth: '36px' }}>
-                          <span className="text-[8px] font-bold text-slate-500 uppercase">D</span>
-                          <input type="number" className={`${tableInput} !w-10`} value={p.d} onChange={(e) => updatePlayer("B", idx, "d", Number(e.target.value) || 0)} />
-                        </div>
-                        <span className="text-slate-600 text-xs font-bold pb-1">/</span>
-                        <div className="flex flex-col items-center" style={{ minWidth: '36px' }}>
-                          <span className="text-[8px] font-bold text-slate-500 uppercase">A</span>
-                          <input type="number" className={`${tableInput} !w-10`} value={p.a} onChange={(e) => updatePlayer("B", idx, "a", Number(e.target.value) || 0)} />
-                        </div>
-                      </div>
-                      {/* Divider */}
-                      <div className="w-px h-6 bg-slate-700/50 light:bg-slate-300 hidden sm:block"></div>
-                      {/* Trades */}
-                      <div className="flex flex-col items-center" style={{ minWidth: '52px' }}>
-                        <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wider">Trades</span>
-                        <input type="number" className={`${tableInput} text-[#f87171] light:text-red-600 !w-14`} value={p.econ} onChange={(e) => updatePlayer("B", idx, "econ", Number(e.target.value) || 0)} />
-                      </div>
-                      {/* FB / Plants / Defuse */}
-                      <div className="flex flex-col items-center" style={{ minWidth: '36px' }}>
-                        <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wider">FB</span>
-                        <input type="number" className={`${tableInput} !w-10`} value={p.first_kills} onChange={(e) => updatePlayer("B", idx, "first_kills", Number(e.target.value) || 0)} />
-                      </div>
-                      <div className="flex flex-col items-center" style={{ minWidth: '36px' }}>
-                        <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wider">Plant</span>
-                        <input type="number" className={`${tableInput} !w-10`} value={p.plants} onChange={(e) => updatePlayer("B", idx, "plants", Number(e.target.value) || 0)} />
-                      </div>
-                      <div className="flex flex-col items-center" style={{ minWidth: '36px' }}>
-                        <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wider">Defuse</span>
-                        <input type="number" className={`${tableInput} !w-10`} value={p.defuse} onChange={(e) => updatePlayer("B", idx, "defuse", Number(e.target.value) || 0)} />
-                      </div>
-                    </div>
-                  ) : (
-                    /* Crossfire card layout */
-                    <div className="flex flex-wrap items-center" style={{ gap: '12px' }}>
-                      {/* Player IGN */}
-                      <div className="flex items-center" style={{ gap: '8px', minWidth: '160px', flex: '1 1 160px' }}>
-                        <div className="w-7 h-7 rounded-lg bg-[#f87171]/10 border border-[#f87171]/30 flex items-center justify-center text-[10px] font-black text-[#f87171] shrink-0">
-                          {idx + 1}
-                        </div>
-                        <select
-                          className="bg-transparent text-[#f87171] light:text-red-600 text-xs font-black outline-none cursor-pointer appearance-none flex-1 min-w-0 truncate"
-                          value={p.ign}
-                          onChange={(e) => updatePlayer("B", idx, "ign", e.target.value)}
-                        >
-                          <option value="" className="text-black">Select Player</option>
-                          {dbPlayers
-                            .filter((dbP) => {
-                              const team = dbTeams.find((t) => t.team_name === teamB.name);
-                              return team ? dbP.team_id === team.team_id : true;
-                            })
-                            .map((dbP) => (
-                              <option key={dbP.player_id} value={dbP.player_name} className="text-black">{dbP.player_name}</option>
-                            ))}
-                          <option value={p.ign} className="hidden">{p.ign}</option>
-                        </select>
-                      </div>
-                      <div className="w-px h-6 bg-slate-700/50 light:bg-slate-300 hidden sm:block"></div>
-                      {cfGroups.map((g) => {
-                        if (g.isTotal) {
-                          return (
-                            <div key={g.id} className="flex items-end rounded-lg bg-emerald-500/10 border border-emerald-500/20" style={{ padding: '4px 8px', gap: '6px' }}>
-                              <div className="flex flex-col items-center" style={{ minWidth: '36px' }}>
-                                <span className="text-[8px] font-bold text-emerald-500/70 uppercase">K</span>
-                                <span className="text-xs font-black text-white text-center">{getCfTotal(p, "k")}</span>
-                              </div>
-                              <div className="flex flex-col items-center" style={{ minWidth: '36px' }}>
-                                <span className="text-[8px] font-bold text-emerald-500/70 uppercase">D</span>
-                                <span className="text-xs font-black text-white text-center">{getCfTotal(p, "d")}</span>
-                              </div>
-                              <div className="flex flex-col items-center" style={{ minWidth: '36px' }}>
-                                <span className="text-[8px] font-bold text-emerald-500/70 uppercase">A</span>
-                                <span className="text-xs font-black text-white text-center">{getCfTotal(p, "a")}</span>
-                              </div>
-                              <div className="flex flex-col items-center" style={{ minWidth: '36px' }}>
-                                <span className="text-[8px] font-bold text-[#00ffcc]/70 uppercase">H</span>
-                                <span className="text-xs font-black text-[#00ffcc] text-center">{getCfTotal(p, "h")}</span>
-                              </div>
-                            </div>
-                          );
-                        }
-                        return (
-                          <div key={g.id} className="flex items-end rounded-lg bg-slate-800/40 light:bg-slate-100 border border-slate-700/30 light:border-slate-200" style={{ padding: '4px 8px', gap: '2px' }}>
-                            <div className="text-[7px] font-bold text-slate-500 uppercase tracking-wider self-center mr-1 max-w-[60px] truncate" title={g.label}>{g.label}</div>
-                            <div className="flex flex-col items-center" style={{ minWidth: '36px' }}>
-                              <span className="text-[8px] font-bold text-slate-500 uppercase">K</span>
-                              <input type="number" className={`${tableInput} !w-10`} value={p[`${g.id}_k`] !== undefined ? p[`${g.id}_k`] : 0} onChange={(e) => updatePlayer("B", idx, `${g.id}_k`, e.target.value)} />
-                            </div>
-                            <div className="flex flex-col items-center" style={{ minWidth: '36px' }}>
-                              <span className="text-[8px] font-bold text-slate-500 uppercase">D</span>
-                              <input type="number" className={`${tableInput} !w-10`} value={p[`${g.id}_d`] !== undefined ? p[`${g.id}_d`] : 0} onChange={(e) => updatePlayer("B", idx, `${g.id}_d`, e.target.value)} />
-                            </div>
-                            <div className="flex flex-col items-center" style={{ minWidth: '36px' }}>
-                              <span className="text-[8px] font-bold text-slate-500 uppercase">A</span>
-                              <input type="number" className={`${tableInput} !w-10`} value={p[`${g.id}_a`] !== undefined ? p[`${g.id}_a`] : 0} onChange={(e) => updatePlayer("B", idx, `${g.id}_a`, e.target.value)} />
-                            </div>
-                            <div className="flex flex-col items-center" style={{ minWidth: '36px' }}>
-                              <span className="text-[8px] font-bold text-[#00ffcc]/70 uppercase">H</span>
-                              <input type="number" className={`${tableInput} text-[#00ffcc] !w-10`} value={p[`${g.id}_h`] !== undefined ? p[`${g.id}_h`] : 0} onChange={(e) => updatePlayer("B", idx, `${g.id}_h`, e.target.value)} />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Crossfire: Add Stats Group button */}
-            {game === "Crossfire" && (
-              <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-800/40 light:border-slate-200">
-                <div className="flex items-center" style={{ gap: '8px' }}>
-                  {cfGroups.filter(g => !g.isTotal).map(g => (
-                    <div key={g.id} className="flex items-center bg-slate-800/50 rounded-lg border border-slate-700/40" style={{ padding: '6px 10px', gap: '6px' }}>
-                      <input
-                        type="text"
-                        className="bg-transparent text-[10px] font-bold text-slate-300 uppercase tracking-wider outline-none w-20"
-                        value={g.label}
-                        onChange={(e) => handleUpdateCfGroupLabel(g.id, e.target.value)}
-                      />
-                      <button onClick={() => handleRemoveCfGroup(g.id)} className="text-red-500/60 hover:text-red-400 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <button
-                  onClick={handleAddCfGroup}
-                  className="text-[9px] bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white px-4 py-2 rounded-lg border border-slate-700 transition-colors whitespace-nowrap font-bold"
-                >
-                  + ADD STATS GROUP
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-        { }
-        <div className="bg-[#0d131c] light:bg-white rounded-2xl border border-slate-800/50 light:border-slate-200 overflow-hidden shadow-xl light:shadow-sm mb-5">
-          <SectionHeader
-            icon={<IconMap />}
-            label="Heatmap Entry"
-            sub="Event Coordinate Plotting"
-            accent="#06b6d4"
-          />
-          <div className="flex flex-col" style={{ padding: '24px 32px 32px' }}>
-            {/* ── Compact Toolbar ── */}
-            <div className="flex flex-wrap items-center justify-between mb-4 rounded-xl bg-slate-900/60 light:bg-slate-100 border border-slate-700/40 light:border-slate-200 backdrop-blur-sm" style={{ padding: '10px 16px', gap: '12px' }}>
-              {/* Round Selector */}
-              <div className="flex items-center" style={{ gap: '8px' }}>
-                <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Round</span>
-                <div className="relative">
-                  <select
-                    className="appearance-none bg-slate-800/70 light:bg-white border border-slate-600/50 light:border-slate-300 text-cyan-400 light:text-cyan-600 text-xs font-black rounded-lg outline-none focus:border-cyan-500 transition-colors cursor-pointer"
-                    style={{ padding: '6px 28px 6px 12px' }}
-                    value={selectedRound}
-                    onChange={(e) => setSelectedRound(Number(e.target.value))}
-                  >
-                    {Array.from({ length: scoreA + scoreB || 1 }, (_, i) => i + 1).map((r) => (
-                      <option key={r} value={r}>R{r}</option>
-                    ))}
-                  </select>
-                  <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 text-[10px]">▾</div>
-                </div>
-              </div>
-
-              {/* Divider */}
-              <div className="w-px h-5 bg-slate-700/50 light:bg-slate-300 hidden sm:block"></div>
-
-              {/* Action Toggle */}
-              <div className="flex items-center rounded-lg overflow-hidden border border-slate-700/50 light:border-slate-300">
-                <button
-                  onClick={() => setSelectedAction("Plant")}
-                  className={`text-[9px] font-black uppercase tracking-widest transition-all ${selectedAction === "Plant"
-                    ? "bg-red-500/20 text-red-400 light:text-red-600 shadow-[inset_0_0_12px_rgba(239,68,68,0.15)]"
-                    : "bg-transparent text-slate-500 hover:text-slate-300"}`}
-                  style={{ padding: '6px 16px' }}
-                >
-                  ● Plant
-                </button>
-                <button
-                  onClick={() => setSelectedAction("Defuse")}
-                  className={`text-[9px] font-black uppercase tracking-widest transition-all ${selectedAction === "Defuse"
-                    ? "bg-blue-500/20 text-blue-400 light:text-blue-600 shadow-[inset_0_0_12px_rgba(59,130,246,0.15)]"
-                    : "bg-transparent text-slate-500 hover:text-slate-300"}`}
-                  style={{ padding: '6px 16px' }}
-                >
-                  ● Defuse
-                </button>
-              </div>
-
-              {/* Divider */}
-              <div className="w-px h-5 bg-slate-700/50 light:bg-slate-300 hidden sm:block"></div>
-
-              {/* Manual Coords */}
-              <div className="flex items-center" style={{ gap: '6px' }}>
-                <input
-                  type="number"
-                  className="bg-slate-800/60 light:bg-white border border-slate-700/50 light:border-slate-300 text-white light:text-slate-900 text-[10px] font-bold text-center rounded-md outline-none focus:border-cyan-500 transition-colors w-14"
-                  style={{ padding: '5px 4px' }}
-                  placeholder="X%"
-                  value={manualX}
-                  onChange={(e) => setManualX(e.target.value)}
+          {/* ── Side-by-Side: Player Stats (Left) & Heatmap Entry + Submit (Right) ── */}
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start w-full">
+            {/* ── Left Column: Player Stats ── */}
+            <div className="xl:col-span-7 flex flex-col gap-6 w-full min-w-0">
+              <div className="bg-[#0d131c] light:bg-white rounded-2xl border border-slate-800/50 light:border-slate-200 overflow-hidden shadow-xl light:shadow-sm w-full">
+                <SectionHeader
+                  icon={<IconStats />}
+                  label="Player Stats"
+                  sub="Per-Player Input Cards"
+                  accent="#8b5cf6"
                 />
-                <input
-                  type="number"
-                  className="bg-slate-800/60 light:bg-white border border-slate-700/50 light:border-slate-300 text-white light:text-slate-900 text-[10px] font-bold text-center rounded-md outline-none focus:border-cyan-500 transition-colors w-14"
-                  style={{ padding: '5px 4px' }}
-                  placeholder="Y%"
-                  value={manualY}
-                  onChange={(e) => setManualY(e.target.value)}
-                />
-                <button
-                  onClick={handleManualAdd}
-                  className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 font-black text-[9px] uppercase tracking-wider rounded-md border border-cyan-500/30 transition-all"
-                  style={{ padding: '5px 14px' }}
-                >
-                  +Add
-                </button>
-              </div>
-
-              {/* Spacer */}
-              <div className="flex-1"></div>
-
-              {/* Events Counter Badge */}
-              <div className="flex items-center" style={{ gap: '8px' }}>
-                {heatmapData.filter((h) => h.round === selectedRound).length > 0 && (
-                  <div className="flex items-center" style={{ gap: '6px' }}>
-                    {heatmapData.filter((h) => h.round === selectedRound).map((h) => (
-                      <button
-                        key={h.id}
-                        onClick={() => removeHeatmapEvent(h.id)}
-                        className={`group/ev flex items-center rounded-full text-[8px] font-bold transition-all hover:pr-1 ${h.type === "Plant"
-                          ? "bg-red-500/15 text-red-400 border border-red-500/30"
-                          : "bg-blue-500/15 text-blue-400 border border-blue-500/30"}`}
-                        style={{ padding: '3px 8px', gap: '4px' }}
-                        title={`${h.type} at (${Math.round(h.x)}%, ${Math.round(h.y)}%) — click to remove`}
+                <div className="p-3 sm:p-4 md:p-5">
+                  {/* ── Team A Players ── */}
+                  <div className="flex flex-col gap-2">
+                    {playersA.map((p, idx) => (
+                      <div
+                        key={`a-${idx}`}
+                        className="rounded-xl border border-slate-700/40 light:border-slate-200 bg-slate-900/40 light:bg-slate-50 hover:border-slate-600 light:hover:border-slate-300 transition-all group px-3 py-2 sm:px-3.5 sm:py-2.5"
                       >
-                        <span className={`w-1.5 h-1.5 rounded-full ${h.type === "Plant" ? "bg-red-400" : "bg-blue-400"}`}></span>
-                        {h.type[0]}
-                        <span className="hidden group-hover/ev:inline text-red-400 ml-0.5">✕</span>
-                      </button>
+                        {game === "Valorant" ? (
+                          <div className="w-full flex items-center justify-between gap-1.5 sm:gap-2">
+                            {/* Player IGN */}
+                            <div className="flex items-center gap-1.5 min-w-0 flex-shrink">
+                              <div className="w-6 h-6 rounded-md bg-[#38bdf8]/10 border border-[#38bdf8]/30 flex items-center justify-center text-[10px] font-black text-[#38bdf8] shrink-0">
+                                {idx + 1}
+                              </div>
+                              <select
+                                className="bg-transparent text-[#38bdf8] light:text-blue-600 text-xs font-black outline-none cursor-pointer appearance-none w-20 sm:w-24 md:w-28 truncate"
+                                value={p.ign}
+                                onChange={(e) => updatePlayer("A", idx, "ign", e.target.value)}
+                              >
+                                <option value="" className="text-black">Select Player</option>
+                                {dbPlayers
+                                  .filter((dbP) => {
+                                    const team = dbTeams.find((t) => t.team_name === teamA.name);
+                                    return team ? dbP.team_id === team.team_id : true;
+                                  })
+                                  .map((dbP) => (
+                                    <option key={dbP.player_id} value={dbP.player_name} className="text-black">{dbP.player_name}</option>
+                                  ))}
+                                <option value={p.ign} className="hidden">{p.ign}</option>
+                              </select>
+                            </div>
+                            {/* Agent */}
+                            <div className="flex items-center gap-1 min-w-0 flex-shrink-0">
+                              <div className="w-5 h-5 rounded bg-slate-700/50 border border-slate-600/40 flex items-center justify-center text-[8px] font-bold text-slate-400 shrink-0">
+                                {p.agent ? p.agent[0] : ""}
+                              </div>
+                              <select
+                                className="bg-transparent text-white light:text-slate-900 text-xs font-bold outline-none cursor-pointer appearance-none w-16 sm:w-20"
+                                value={p.agent}
+                                onChange={(e) => updatePlayer("A", idx, "agent", e.target.value)}
+                              >
+                                {agents.map((a) => (<option key={a} value={a}>{a}</option>))}
+                              </select>
+                            </div>
+                            {/* Divider */}
+                            <div className="w-px h-5 bg-slate-700/50 light:bg-slate-300 flex-shrink-0 hidden md:block"></div>
+                            {/* Performance score */}
+                            <div className="flex flex-col items-center w-9 sm:w-10 flex-shrink-0">
+                              <span className="text-[7px] sm:text-[8px] font-bold text-slate-500 uppercase tracking-wider text-center truncate w-full" title="Performance Score">Perf</span>
+                              <input
+                                type="number"
+                                className={`${tableInput} text-emerald-400 light:text-emerald-600 !w-full text-center text-xs font-bold`}
+                                value={p.acs !== undefined ? p.acs : ""}
+                                placeholder="0"
+                                onFocus={(e) => e.target.select()}
+                                onClick={(e) => e.target.select()}
+                                onChange={(e) => handleStatChange("A", idx, "acs", e.target.value)}
+                                onBlur={(e) => handleStatBlur("A", idx, "acs", e)}
+                              />
+                            </div>
+                            {/* K / D / A */}
+                            <div className="flex items-end rounded-lg bg-slate-800/40 light:bg-slate-100 border border-slate-700/30 light:border-slate-200 px-2 sm:px-2.5 py-1 gap-1 sm:gap-1.5 flex-shrink-0">
+                              <div className="flex flex-col items-center w-10 sm:w-11">
+                                <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 light:text-slate-500 uppercase text-center tracking-wider">K</span>
+                                <input
+                                  type="number"
+                                  className={`${tableInput} !w-full text-center text-xs sm:text-sm font-bold`}
+                                  value={p.k !== undefined ? p.k : ""}
+                                  placeholder="0"
+                                  onFocus={(e) => e.target.select()}
+                                  onClick={(e) => e.target.select()}
+                                  onChange={(e) => handleStatChange("A", idx, "k", e.target.value)}
+                                  onBlur={(e) => handleStatBlur("A", idx, "k", e)}
+                                />
+                              </div>
+                              <span className="text-slate-500 light:text-slate-400 text-xs sm:text-sm font-bold self-end mb-1">/</span>
+                              <div className="flex flex-col items-center w-10 sm:w-11">
+                                <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 light:text-slate-500 uppercase text-center tracking-wider">D</span>
+                                <input
+                                  type="number"
+                                  className={`${tableInput} !w-full text-center text-xs sm:text-sm font-bold`}
+                                  value={p.d !== undefined ? p.d : ""}
+                                  placeholder="0"
+                                  onFocus={(e) => e.target.select()}
+                                  onClick={(e) => e.target.select()}
+                                  onChange={(e) => handleStatChange("A", idx, "d", e.target.value)}
+                                  onBlur={(e) => handleStatBlur("A", idx, "d", e)}
+                                />
+                              </div>
+                              <span className="text-slate-500 light:text-slate-400 text-xs sm:text-sm font-bold self-end mb-1">/</span>
+                              <div className="flex flex-col items-center w-10 sm:w-11">
+                                <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 light:text-slate-500 uppercase text-center tracking-wider">A</span>
+                                <input
+                                  type="number"
+                                  className={`${tableInput} !w-full text-center text-xs sm:text-sm font-bold`}
+                                  value={p.a !== undefined ? p.a : ""}
+                                  placeholder="0"
+                                  onFocus={(e) => e.target.select()}
+                                  onClick={(e) => e.target.select()}
+                                  onChange={(e) => handleStatChange("A", idx, "a", e.target.value)}
+                                  onBlur={(e) => handleStatBlur("A", idx, "a", e)}
+                                />
+                              </div>
+                            </div>
+                            {/* Divider */}
+                            <div className="w-px h-5 bg-slate-700/50 light:bg-slate-300 flex-shrink-0 hidden md:block"></div>
+                            {/* Trades / FB / Plant / Defuse (Equal 4-Column Sizing) */}
+                            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                              <div className="flex flex-col items-center w-9 sm:w-10">
+                                <span className="text-[7px] sm:text-[8px] font-bold text-slate-500 uppercase tracking-wider text-center">Trades</span>
+                                <input
+                                  type="number"
+                                  className={`${tableInput} text-emerald-400 light:text-emerald-600 !w-full text-center text-xs font-bold`}
+                                  value={p.econ !== undefined ? p.econ : ""}
+                                  placeholder="0"
+                                  onFocus={(e) => e.target.select()}
+                                  onClick={(e) => e.target.select()}
+                                  onChange={(e) => handleStatChange("A", idx, "econ", e.target.value)}
+                                  onBlur={(e) => handleStatBlur("A", idx, "econ", e)}
+                                />
+                              </div>
+                              <div className="flex flex-col items-center w-9 sm:w-10">
+                                <span className="text-[7px] sm:text-[8px] font-bold text-slate-500 uppercase tracking-wider text-center">FB</span>
+                                <input
+                                  type="number"
+                                  className={`${tableInput} !w-full text-center text-xs font-bold`}
+                                  value={p.first_kills !== undefined ? p.first_kills : ""}
+                                  placeholder="0"
+                                  onFocus={(e) => e.target.select()}
+                                  onClick={(e) => e.target.select()}
+                                  onChange={(e) => handleStatChange("A", idx, "first_kills", e.target.value)}
+                                  onBlur={(e) => handleStatBlur("A", idx, "first_kills", e)}
+                                />
+                              </div>
+                              <div className="flex flex-col items-center w-9 sm:w-10">
+                                <span className="text-[7px] sm:text-[8px] font-bold text-slate-500 uppercase tracking-wider text-center">Plant</span>
+                                <input
+                                  type="number"
+                                  className={`${tableInput} !w-full text-center text-xs font-bold`}
+                                  value={p.plants !== undefined ? p.plants : ""}
+                                  placeholder="0"
+                                  onFocus={(e) => e.target.select()}
+                                  onClick={(e) => e.target.select()}
+                                  onChange={(e) => handleStatChange("A", idx, "plants", e.target.value)}
+                                  onBlur={(e) => handleStatBlur("A", idx, "plants", e)}
+                                />
+                              </div>
+                              <div className="flex flex-col items-center w-9 sm:w-10">
+                                <span className="text-[7px] sm:text-[8px] font-bold text-slate-500 uppercase tracking-wider text-center">Defuse</span>
+                                <input
+                                  type="number"
+                                  className={`${tableInput} !w-full text-center text-xs font-bold`}
+                                  value={p.defuse !== undefined ? p.defuse : ""}
+                                  placeholder="0"
+                                  onFocus={(e) => e.target.select()}
+                                  onClick={(e) => e.target.select()}
+                                  onChange={(e) => handleStatChange("A", idx, "defuse", e.target.value)}
+                                  onBlur={(e) => handleStatBlur("A", idx, "defuse", e)}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          /* Crossfire card layout */
+                          <div className="min-w-fit flex items-center gap-3">
+                            {/* Player IGN */}
+                            <div className="flex items-center gap-2 min-w-[130px] flex-shrink-0">
+                              <div className="w-7 h-7 rounded-lg bg-[#38bdf8]/10 border border-[#38bdf8]/30 flex items-center justify-center text-[10px] font-black text-[#38bdf8] shrink-0">
+                                {idx + 1}
+                              </div>
+                              <select
+                                className="bg-transparent text-[#38bdf8] light:text-blue-600 text-xs font-black outline-none cursor-pointer appearance-none w-28 sm:w-32 truncate"
+                                value={p.ign}
+                                onChange={(e) => updatePlayer("A", idx, "ign", e.target.value)}
+                              >
+                                <option value="" className="text-black">Select Player</option>
+                                {dbPlayers
+                                  .filter((dbP) => {
+                                    const team = dbTeams.find((t) => t.team_name === teamA.name);
+                                    return team ? dbP.team_id === team.team_id : true;
+                                  })
+                                  .map((dbP) => (
+                                    <option key={dbP.player_id} value={dbP.player_name} className="text-black">{dbP.player_name}</option>
+                                  ))}
+                                <option value={p.ign} className="hidden">{p.ign}</option>
+                              </select>
+                            </div>
+                            <div className="w-px h-6 bg-slate-700/50 light:bg-slate-300 hidden md:block"></div>
+                            {cfGroups.map((g) => {
+                              if (g.isTotal) {
+                                return (
+                                  <div key={g.id} className="flex items-end rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 gap-1.5 flex-shrink-0">
+                                    <div className="flex flex-col items-center min-w-[34px]">
+                                      <span className="text-[8px] font-bold text-emerald-500/70 uppercase">K</span>
+                                      <span className="text-xs font-black text-white text-center">{getCfTotal(p, "k")}</span>
+                                    </div>
+                                    <div className="flex flex-col items-center min-w-[34px]">
+                                      <span className="text-[8px] font-bold text-emerald-500/70 uppercase">D</span>
+                                      <span className="text-xs font-black text-white text-center">{getCfTotal(p, "d")}</span>
+                                    </div>
+                                    <div className="flex flex-col items-center min-w-[34px]">
+                                      <span className="text-[8px] font-bold text-emerald-500/70 uppercase">A</span>
+                                      <span className="text-xs font-black text-white text-center">{getCfTotal(p, "a")}</span>
+                                    </div>
+                                    <div className="flex flex-col items-center min-w-[34px]">
+                                      <span className="text-[8px] font-bold text-[#00ffcc]/70 uppercase">H</span>
+                                      <span className="text-xs font-black text-[#00ffcc] text-center">{getCfTotal(p, "h")}</span>
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              return (
+                                <div key={g.id} className="flex items-end rounded-lg bg-slate-800/40 light:bg-slate-100 border border-slate-700/30 light:border-slate-200 px-2 py-1 gap-1 flex-shrink-0">
+                                  <div className="text-[7px] font-bold text-slate-500 uppercase tracking-wider self-center mr-1 max-w-[60px] truncate" title={g.label}>{g.label}</div>
+                                  <div className="flex flex-col items-center">
+                                    <span className="text-[8px] font-bold text-slate-500 uppercase">K</span>
+                                    <input
+                                      type="number"
+                                      className={`${tableInput} !w-11 text-center`}
+                                      value={p[`${g.id}_k`] !== undefined ? p[`${g.id}_k`] : ""}
+                                      placeholder="0"
+                                      onFocus={(e) => e.target.select()}
+                                      onClick={(e) => e.target.select()}
+                                      onChange={(e) => handleStatChange("A", idx, `${g.id}_k`, e.target.value)}
+                                      onBlur={(e) => handleStatBlur("A", idx, `${g.id}_k`, e)}
+                                    />
+                                  </div>
+                                  <div className="flex flex-col items-center">
+                                    <span className="text-[8px] font-bold text-slate-500 uppercase">D</span>
+                                    <input
+                                      type="number"
+                                      className={`${tableInput} !w-11 text-center`}
+                                      value={p[`${g.id}_d`] !== undefined ? p[`${g.id}_d`] : ""}
+                                      placeholder="0"
+                                      onFocus={(e) => e.target.select()}
+                                      onClick={(e) => e.target.select()}
+                                      onChange={(e) => handleStatChange("A", idx, `${g.id}_d`, e.target.value)}
+                                      onBlur={(e) => handleStatBlur("A", idx, `${g.id}_d`, e)}
+                                    />
+                                  </div>
+                                  <div className="flex flex-col items-center">
+                                    <span className="text-[8px] font-bold text-slate-500 uppercase">A</span>
+                                    <input
+                                      type="number"
+                                      className={`${tableInput} !w-11 text-center`}
+                                      value={p[`${g.id}_a`] !== undefined ? p[`${g.id}_a`] : ""}
+                                      placeholder="0"
+                                      onFocus={(e) => e.target.select()}
+                                      onClick={(e) => e.target.select()}
+                                      onChange={(e) => handleStatChange("A", idx, `${g.id}_a`, e.target.value)}
+                                      onBlur={(e) => handleStatBlur("A", idx, `${g.id}_a`, e)}
+                                    />
+                                  </div>
+                                  <div className="flex flex-col items-center">
+                                    <span className="text-[8px] font-bold text-[#00ffcc]/70 uppercase">H</span>
+                                    <input
+                                      type="number"
+                                      className={`${tableInput} text-[#00ffcc] !w-11 text-center`}
+                                      value={p[`${g.id}_h`] !== undefined ? p[`${g.id}_h`] : ""}
+                                      placeholder="0"
+                                      onFocus={(e) => e.target.select()}
+                                      onClick={(e) => e.target.select()}
+                                      onChange={(e) => handleStatChange("A", idx, `${g.id}_h`, e.target.value)}
+                                      onBlur={(e) => handleStatBlur("A", idx, `${g.id}_h`, e)}
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </div>
-                )}
-              </div>
-            </div>
 
-            {/* ── Map Area ── */}
-            <div
-              className="relative rounded-xl overflow-hidden border border-slate-700/40 light:border-slate-300 bg-[#080c12] light:bg-slate-100 shadow-[0_0_40px_rgba(6,182,212,0.06)]"
-              style={{ minHeight: '500px' }}
-            >
-              {/* Subtle corner glow */}
-              <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-cyan-500/5 to-transparent pointer-events-none rounded-tl-xl"></div>
-              <div className="absolute bottom-0 right-0 w-32 h-32 bg-gradient-to-tl from-cyan-500/5 to-transparent pointer-events-none rounded-br-xl"></div>
+                  {/* ── Separator ── */}
+                  <div className="flex items-center my-4 gap-3">
+                    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-600/50 to-transparent"></div>
+                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">vs</span>
+                    <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-600/50 to-transparent"></div>
+                  </div>
 
-              <div className="flex items-center justify-center w-full h-full" style={{ padding: '16px' }}>
-                <div
-                  className="relative cursor-crosshair w-full max-w-[800px] aspect-[4/3] rounded-lg overflow-hidden"
-                  onClick={handleMapClick}
-                >
-                  {heatmapNotif && (
-                    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-500/90 text-white px-4 py-2 rounded-full text-sm font-bold shadow-[0_4px_12px_rgba(16,185,129,0.4)] pointer-events-none animate-[slideUpFade_0.3s_ease]">
-                      {heatmapNotif}
-                    </div>
-                  )}
-                  <img
-                    key={mapName}
-                    src={`/assets/${mapName.replace(/\s+/g, "_")}.png`}
-                    alt={`${mapName} Map`}
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = "/assets/map_placeholder.png";
-                    }}
-                    className="w-full h-full object-contain opacity-80 hover:opacity-100 transition-opacity"
-                  />
-                  {heatmapData
-                    .filter((h) => h.round === selectedRound)
-                    .map((h) => (
+                  {/* ── Team B Players ── */}
+                  <div className="flex flex-col gap-2">
+                    {playersB.map((p, idx) => (
                       <div
-                        key={h.id}
-                        className={`absolute w-4 h-4 -ml-2 -mt-2 rounded-full border-2 border-white animate-in zoom-in ${h.type === "Plant" ? "bg-red-500 shadow-[0_0_12px_#ef4444]" : "bg-blue-500 shadow-[0_0_12px_#3b82f6]"}`}
-                        style={{ left: `${h.x}%`, top: `${h.y}%` }}
-                      ></div>
+                        key={`b-${idx}`}
+                        className="rounded-xl border border-slate-700/40 light:border-slate-200 bg-slate-900/40 light:bg-slate-50 hover:border-slate-600 light:hover:border-slate-300 transition-all group px-3 py-2 sm:px-3.5 sm:py-2.5"
+                      >
+                        {game === "Valorant" ? (
+                          <div className="w-full flex items-center justify-between gap-1.5 sm:gap-2">
+                            {/* Player IGN */}
+                            <div className="flex items-center gap-1.5 min-w-0 flex-shrink">
+                              <div className="w-6 h-6 rounded-md bg-[#f87171]/10 border border-[#f87171]/30 flex items-center justify-center text-[10px] font-black text-[#f87171] shrink-0">
+                                {idx + 1}
+                              </div>
+                              <select
+                                className="bg-transparent text-[#f87171] light:text-red-600 text-xs font-black outline-none cursor-pointer appearance-none w-20 sm:w-24 md:w-28 truncate"
+                                value={p.ign}
+                                onChange={(e) => updatePlayer("B", idx, "ign", e.target.value)}
+                              >
+                                <option value="" className="text-black">Select Player</option>
+                                {dbPlayers
+                                  .filter((dbP) => {
+                                    const team = dbTeams.find((t) => t.team_name === teamB.name);
+                                    return team ? dbP.team_id === team.team_id : true;
+                                  })
+                                  .map((dbP) => (
+                                    <option key={dbP.player_id} value={dbP.player_name} className="text-black">{dbP.player_name}</option>
+                                  ))}
+                                <option value={p.ign} className="hidden">{p.ign}</option>
+                              </select>
+                            </div>
+                            {/* Agent */}
+                            <div className="flex items-center gap-1 min-w-0 flex-shrink-0">
+                              <div className="w-6 h-6 rounded-md bg-slate-700/50 border border-slate-600/40 flex items-center justify-center text-[8px] font-bold text-slate-400 shrink-0">
+                                {p.agent ? p.agent[0] : ""}
+                              </div>
+                              <select
+                                className="bg-transparent text-white light:text-slate-900 text-xs font-bold outline-none cursor-pointer appearance-none w-16 sm:w-20"
+                                value={p.agent}
+                                onChange={(e) => updatePlayer("B", idx, "agent", e.target.value)}
+                              >
+                                {agents.map((a) => (<option key={a} value={a}>{a}</option>))}
+                              </select>
+                            </div>
+                            {/* Divider */}
+                            <div className="w-px h-5 bg-slate-700/50 light:bg-slate-300 flex-shrink-0 hidden md:block"></div>
+                            {/* Performance score */}
+                            <div className="flex flex-col items-center w-9 sm:w-10 flex-shrink-0">
+                              <span className="text-[7px] sm:text-[8px] font-bold text-slate-500 uppercase tracking-wider text-center truncate w-full" title="Performance Score">Perf</span>
+                              <input
+                                type="number"
+                                className={`${tableInput} text-[#f87171] light:text-red-600 !w-full text-center text-xs font-bold`}
+                                value={p.acs !== undefined ? p.acs : ""}
+                                placeholder="0"
+                                onFocus={(e) => e.target.select()}
+                                onClick={(e) => e.target.select()}
+                                onChange={(e) => handleStatChange("B", idx, "acs", e.target.value)}
+                                onBlur={(e) => handleStatBlur("B", idx, "acs", e)}
+                              />
+                            </div>
+                            {/* K / D / A */}
+                            <div className="flex items-end rounded-lg bg-slate-800/40 light:bg-slate-100 border border-slate-700/30 light:border-slate-200 px-2 sm:px-2.5 py-1 gap-1 sm:gap-1.5 flex-shrink-0">
+                              <div className="flex flex-col items-center w-10 sm:w-11">
+                                <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 light:text-slate-500 uppercase text-center tracking-wider">K</span>
+                                <input
+                                  type="number"
+                                  className={`${tableInput} !w-full text-center text-xs sm:text-sm font-bold`}
+                                  value={p.k !== undefined ? p.k : ""}
+                                  placeholder="0"
+                                  onFocus={(e) => e.target.select()}
+                                  onClick={(e) => e.target.select()}
+                                  onChange={(e) => handleStatChange("B", idx, "k", e.target.value)}
+                                  onBlur={(e) => handleStatBlur("B", idx, "k", e)}
+                                />
+                              </div>
+                              <span className="text-slate-500 light:text-slate-400 text-xs sm:text-sm font-bold self-end mb-1">/</span>
+                              <div className="flex flex-col items-center w-10 sm:w-11">
+                                <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 light:text-slate-500 uppercase text-center tracking-wider">D</span>
+                                <input
+                                  type="number"
+                                  className={`${tableInput} !w-full text-center text-xs sm:text-sm font-bold`}
+                                  value={p.d !== undefined ? p.d : ""}
+                                  placeholder="0"
+                                  onFocus={(e) => e.target.select()}
+                                  onClick={(e) => e.target.select()}
+                                  onChange={(e) => handleStatChange("B", idx, "d", e.target.value)}
+                                  onBlur={(e) => handleStatBlur("B", idx, "d", e)}
+                                />
+                              </div>
+                              <span className="text-slate-500 light:text-slate-400 text-xs sm:text-sm font-bold self-end mb-1">/</span>
+                              <div className="flex flex-col items-center w-10 sm:w-11">
+                                <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 light:text-slate-500 uppercase text-center tracking-wider">A</span>
+                                <input
+                                  type="number"
+                                  className={`${tableInput} !w-full text-center text-xs sm:text-sm font-bold`}
+                                  value={p.a !== undefined ? p.a : ""}
+                                  placeholder="0"
+                                  onFocus={(e) => e.target.select()}
+                                  onClick={(e) => e.target.select()}
+                                  onChange={(e) => handleStatChange("B", idx, "a", e.target.value)}
+                                  onBlur={(e) => handleStatBlur("B", idx, "a", e)}
+                                />
+                              </div>
+                            </div>
+                            {/* Divider */}
+                            <div className="w-px h-5 bg-slate-700/50 light:bg-slate-300 flex-shrink-0 hidden md:block"></div>
+                            {/* Trades / FB / Plant / Defuse (Equal 4-Column Sizing) */}
+                            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                              <div className="flex flex-col items-center w-9 sm:w-10">
+                                <span className="text-[7px] sm:text-[8px] font-bold text-slate-500 uppercase tracking-wider text-center">Trades</span>
+                                <input
+                                  type="number"
+                                  className={`${tableInput} text-[#f87171] light:text-red-600 !w-full text-center text-xs font-bold`}
+                                  value={p.econ !== undefined ? p.econ : ""}
+                                  placeholder="0"
+                                  onFocus={(e) => e.target.select()}
+                                  onClick={(e) => e.target.select()}
+                                  onChange={(e) => handleStatChange("B", idx, "econ", e.target.value)}
+                                  onBlur={(e) => handleStatBlur("B", idx, "econ", e)}
+                                />
+                              </div>
+                              <div className="flex flex-col items-center w-9 sm:w-10">
+                                <span className="text-[7px] sm:text-[8px] font-bold text-slate-500 uppercase tracking-wider text-center">FB</span>
+                                <input
+                                  type="number"
+                                  className={`${tableInput} !w-full text-center text-xs font-bold`}
+                                  value={p.first_kills !== undefined ? p.first_kills : ""}
+                                  placeholder="0"
+                                  onFocus={(e) => e.target.select()}
+                                  onClick={(e) => e.target.select()}
+                                  onChange={(e) => handleStatChange("B", idx, "first_kills", e.target.value)}
+                                  onBlur={(e) => handleStatBlur("B", idx, "first_kills", e)}
+                                />
+                              </div>
+                              <div className="flex flex-col items-center w-9 sm:w-10">
+                                <span className="text-[7px] sm:text-[8px] font-bold text-slate-500 uppercase tracking-wider text-center">Plant</span>
+                                <input
+                                  type="number"
+                                  className={`${tableInput} !w-full text-center text-xs font-bold`}
+                                  value={p.plants !== undefined ? p.plants : ""}
+                                  placeholder="0"
+                                  onFocus={(e) => e.target.select()}
+                                  onClick={(e) => e.target.select()}
+                                  onChange={(e) => handleStatChange("B", idx, "plants", e.target.value)}
+                                  onBlur={(e) => handleStatBlur("B", idx, "plants", e)}
+                                />
+                              </div>
+                              <div className="flex flex-col items-center w-9 sm:w-10">
+                                <span className="text-[7px] sm:text-[8px] font-bold text-slate-500 uppercase tracking-wider text-center">Defuse</span>
+                                <input
+                                  type="number"
+                                  className={`${tableInput} !w-full text-center text-xs font-bold`}
+                                  value={p.defuse !== undefined ? p.defuse : ""}
+                                  placeholder="0"
+                                  onFocus={(e) => e.target.select()}
+                                  onClick={(e) => e.target.select()}
+                                  onChange={(e) => handleStatChange("B", idx, "defuse", e.target.value)}
+                                  onBlur={(e) => handleStatBlur("B", idx, "defuse", e)}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          /* Crossfire card layout */
+                          <div className="min-w-fit flex items-center gap-3">
+                            {/* Player IGN */}
+                            <div className="flex items-center gap-2 min-w-[130px] flex-shrink-0">
+                              <div className="w-7 h-7 rounded-lg bg-[#f87171]/10 border border-[#f87171]/30 flex items-center justify-center text-[10px] font-black text-[#f87171] shrink-0">
+                                {idx + 1}
+                              </div>
+                              <select
+                                className="bg-transparent text-[#f87171] light:text-red-600 text-xs font-black outline-none cursor-pointer appearance-none w-28 sm:w-32 truncate"
+                                value={p.ign}
+                                onChange={(e) => updatePlayer("B", idx, "ign", e.target.value)}
+                              >
+                                <option value="" className="text-black">Select Player</option>
+                                {dbPlayers
+                                  .filter((dbP) => {
+                                    const team = dbTeams.find((t) => t.team_name === teamB.name);
+                                    return team ? dbP.team_id === team.team_id : true;
+                                  })
+                                  .map((dbP) => (
+                                    <option key={dbP.player_id} value={dbP.player_name} className="text-black">{dbP.player_name}</option>
+                                  ))}
+                                <option value={p.ign} className="hidden">{p.ign}</option>
+                              </select>
+                            </div>
+                            <div className="w-px h-6 bg-slate-700/50 light:bg-slate-300 hidden md:block"></div>
+                            {cfGroups.map((g) => {
+                              if (g.isTotal) {
+                                return (
+                                  <div key={g.id} className="flex items-end rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 gap-1.5 flex-shrink-0">
+                                    <div className="flex flex-col items-center min-w-[34px]">
+                                      <span className="text-[8px] font-bold text-emerald-500/70 uppercase">K</span>
+                                      <span className="text-xs font-black text-white text-center">{getCfTotal(p, "k")}</span>
+                                    </div>
+                                    <div className="flex flex-col items-center min-w-[34px]">
+                                      <span className="text-[8px] font-bold text-emerald-500/70 uppercase">D</span>
+                                      <span className="text-xs font-black text-white text-center">{getCfTotal(p, "d")}</span>
+                                    </div>
+                                    <div className="flex flex-col items-center min-w-[34px]">
+                                      <span className="text-[8px] font-bold text-emerald-500/70 uppercase">A</span>
+                                      <span className="text-xs font-black text-white text-center">{getCfTotal(p, "a")}</span>
+                                    </div>
+                                    <div className="flex flex-col items-center min-w-[34px]">
+                                      <span className="text-[8px] font-bold text-[#00ffcc]/70 uppercase">H</span>
+                                      <span className="text-xs font-black text-[#00ffcc] text-center">{getCfTotal(p, "h")}</span>
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              return (
+                                <div key={g.id} className="flex items-end rounded-lg bg-slate-800/40 light:bg-slate-100 border border-slate-700/30 light:border-slate-200 px-2 py-1 gap-1 flex-shrink-0">
+                                  <div className="text-[7px] font-bold text-slate-500 uppercase tracking-wider self-center mr-1 max-w-[60px] truncate" title={g.label}>{g.label}</div>
+                                  <div className="flex flex-col items-center">
+                                    <span className="text-[8px] font-bold text-slate-500 uppercase">K</span>
+                                    <input
+                                      type="number"
+                                      className={`${tableInput} !w-11 text-center`}
+                                      value={p[`${g.id}_k`] !== undefined ? p[`${g.id}_k`] : ""}
+                                      placeholder="0"
+                                      onFocus={(e) => e.target.select()}
+                                      onClick={(e) => e.target.select()}
+                                      onChange={(e) => handleStatChange("B", idx, `${g.id}_k`, e.target.value)}
+                                      onBlur={(e) => handleStatBlur("B", idx, `${g.id}_k`, e)}
+                                    />
+                                  </div>
+                                  <div className="flex flex-col items-center">
+                                    <span className="text-[8px] font-bold text-slate-500 uppercase">D</span>
+                                    <input
+                                      type="number"
+                                      className={`${tableInput} !w-11 text-center`}
+                                      value={p[`${g.id}_d`] !== undefined ? p[`${g.id}_d`] : ""}
+                                      placeholder="0"
+                                      onFocus={(e) => e.target.select()}
+                                      onClick={(e) => e.target.select()}
+                                      onChange={(e) => handleStatChange("B", idx, `${g.id}_d`, e.target.value)}
+                                      onBlur={(e) => handleStatBlur("B", idx, `${g.id}_d`, e)}
+                                    />
+                                  </div>
+                                  <div className="flex flex-col items-center">
+                                    <span className="text-[8px] font-bold text-slate-500 uppercase">A</span>
+                                    <input
+                                      type="number"
+                                      className={`${tableInput} !w-11 text-center`}
+                                      value={p[`${g.id}_a`] !== undefined ? p[`${g.id}_a`] : ""}
+                                      placeholder="0"
+                                      onFocus={(e) => e.target.select()}
+                                      onClick={(e) => e.target.select()}
+                                      onChange={(e) => handleStatChange("B", idx, `${g.id}_a`, e.target.value)}
+                                      onBlur={(e) => handleStatBlur("B", idx, `${g.id}_a`, e)}
+                                    />
+                                  </div>
+                                  <div className="flex flex-col items-center">
+                                    <span className="text-[8px] font-bold text-[#00ffcc]/70 uppercase">H</span>
+                                    <input
+                                      type="number"
+                                      className={`${tableInput} text-[#00ffcc] !w-11 text-center`}
+                                      value={p[`${g.id}_h`] !== undefined ? p[`${g.id}_h`] : ""}
+                                      placeholder="0"
+                                      onFocus={(e) => e.target.select()}
+                                      onClick={(e) => e.target.select()}
+                                      onChange={(e) => handleStatChange("B", idx, `${g.id}_h`, e.target.value)}
+                                      onBlur={(e) => handleStatBlur("B", idx, `${g.id}_h`, e)}
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     ))}
+                  </div>
 
-                  {/* Empty state overlay */}
-                  {heatmapData.filter((h) => h.round === selectedRound).length === 0 && (
-                    <div className="absolute inset-0 flex items-end justify-center pointer-events-none" style={{ paddingBottom: '24px' }}>
-                      <span className="text-[10px] text-slate-600 font-medium bg-slate-900/60 light:bg-white/80 backdrop-blur-sm rounded-full border border-slate-700/30 light:border-slate-300" style={{ padding: '6px 16px' }}>
-                        Click anywhere on the map to plot a {selectedAction.toLowerCase()} event
-                      </span>
+                  {/* Crossfire: Add Stats Group button */}
+                  {game === "Crossfire" && (
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-800/40 light:border-slate-200">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {cfGroups.filter(g => !g.isTotal).map(g => (
+                          <div key={g.id} className="flex items-center bg-slate-800/50 rounded-lg border border-slate-700/40 px-2.5 py-1.5 gap-1.5">
+                            <input
+                              type="text"
+                              className="bg-transparent text-[10px] font-bold text-slate-300 uppercase tracking-wider outline-none w-20"
+                              value={g.label}
+                              onChange={(e) => handleUpdateCfGroupLabel(g.id, e.target.value)}
+                            />
+                            <button onClick={() => handleRemoveCfGroup(g.id)} className="text-red-500/60 hover:text-red-400 transition-colors">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <button
+                        onClick={handleAddCfGroup}
+                        className="text-[9px] bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white px-4 py-2 rounded-lg border border-slate-700 transition-colors whitespace-nowrap font-bold"
+                      >
+                        + ADD STATS GROUP
+                      </button>
                     </div>
                   )}
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-        { }
-        <div className="bg-[#0d131c] light:bg-white rounded-2xl border border-slate-800/50 light:border-slate-200 overflow-hidden shadow-xl light:shadow-sm">
-          <SectionHeader
-            icon={<IconNotes />}
-            label="Submit"
-            sub="Match Data Submission"
-            accent="#10b981"
-          />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: "20px", padding: '56px 32px' }}>
-            <div style={{ display: 'flex', gap: '24px', width: '100%', justifyContent: 'flex-end' }}>
-              <button
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className={`flex-1 xl:flex-none flex items-center justify-center gap-2 px-8 py-3 rounded-xl text-sm font-black uppercase tracking-widest text-white transition-all active:scale-95 hover:-translate-y-0.5 ${submitSuccess
-                  ? "bg-emerald-500 shadow-[0_0_25px_rgba(16,185,129,0.4)] success-flash"
-                  : isSubmitting
-                    ? "opacity-70 cursor-wait"
-                    : "submit-pulse hover:shadow-[0_0_25px_rgba(6,182,212,0.4)]"
-                  }`}
-                style={{
-                  padding: '12px 32px',
-                  borderRadius: '9999px',
-                  ...(!submitSuccess ? { background: "linear-gradient(135deg, #0d9488, #2563eb)" } : {})
-                }}
-              >
-                {isSubmitting ? (
-                  <svg
-                    className="animate-spin w-4 h-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
+
+            {/* ── Right Column: Heatmap Entry & Submit ── */}
+            <div className="xl:col-span-5 flex flex-col gap-6 w-full min-w-0">
+              {/* Heatmap Entry Card */}
+              <div className="bg-[#0d131c] light:bg-white rounded-2xl border border-slate-800/50 light:border-slate-200 overflow-hidden shadow-xl light:shadow-sm w-full">
+                <SectionHeader
+                  icon={<IconMap />}
+                  label="Heatmap Entry"
+                  sub="Event Coordinate Plotting"
+                  accent="#06b6d4"
+                />
+                <div className="flex flex-col p-4 sm:p-6">
+                  {/* ── Compact Toolbar ── */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-4 rounded-xl bg-slate-900/60 light:bg-slate-100 border border-slate-700/40 light:border-slate-200 backdrop-blur-sm p-3 sm:px-4 sm:py-3">
+                    {/* Round Selector */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Round</span>
+                      <div className="relative">
+                        <select
+                          className="appearance-none bg-slate-800/70 light:bg-white border border-slate-600/50 light:border-slate-300 text-cyan-400 light:text-cyan-600 text-xs font-black rounded-lg outline-none focus:border-cyan-500 transition-colors cursor-pointer pl-3 pr-7 py-1.5"
+                          value={selectedRound}
+                          onChange={(e) => setSelectedRound(Number(e.target.value))}
+                        >
+                          {Array.from({ length: scoreA + scoreB || 1 }, (_, i) => i + 1).map((r) => (
+                            <option key={r} value={r}>R{r}</option>
+                          ))}
+                        </select>
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 text-[10px]">▾</div>
+                      </div>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="w-px h-5 bg-slate-700/50 light:bg-slate-300 hidden sm:block"></div>
+
+                    {/* Action Toggle */}
+                    <div className="flex items-center rounded-lg overflow-hidden border border-slate-700/50 light:border-slate-300">
+                      <button
+                        onClick={() => setSelectedAction("Plant")}
+                        className={`text-[9px] font-black uppercase tracking-widest transition-all px-3 py-1.5 sm:px-4 ${selectedAction === "Plant"
+                          ? "bg-red-500/20 text-red-400 light:text-red-600 shadow-[inset_0_0_12px_rgba(239,68,68,0.15)]"
+                          : "bg-transparent text-slate-500 hover:text-slate-300"}`}
+                      >
+                        ● Plant
+                      </button>
+                      <button
+                        onClick={() => setSelectedAction("Defuse")}
+                        className={`text-[9px] font-black uppercase tracking-widest transition-all px-3 py-1.5 sm:px-4 ${selectedAction === "Defuse"
+                          ? "bg-blue-500/20 text-blue-400 light:text-blue-600 shadow-[inset_0_0_12px_rgba(59,130,246,0.15)]"
+                          : "bg-transparent text-slate-500 hover:text-slate-300"}`}
+                      >
+                        ● Defuse
+                      </button>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="w-px h-5 bg-slate-700/50 light:bg-slate-300 hidden sm:block"></div>
+
+                    {/* Manual Coords */}
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        className="bg-slate-800/60 light:bg-white border border-slate-700/50 light:border-slate-300 text-white light:text-slate-900 text-[10px] font-bold text-center rounded-md outline-none focus:border-cyan-500 transition-colors w-12 py-1 px-1"
+                        placeholder="X%"
+                        value={manualX}
+                        onChange={(e) => setManualX(e.target.value)}
+                      />
+                      <input
+                        type="number"
+                        className="bg-slate-800/60 light:bg-white border border-slate-700/50 light:border-slate-300 text-white light:text-slate-900 text-[10px] font-bold text-center rounded-md outline-none focus:border-cyan-500 transition-colors w-12 py-1 px-1"
+                        placeholder="Y%"
+                        value={manualY}
+                        onChange={(e) => setManualY(e.target.value)}
+                      />
+                      <button
+                        onClick={handleManualAdd}
+                        className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 font-black text-[9px] uppercase tracking-wider rounded-md border border-cyan-500/30 transition-all px-3 py-1"
+                      >
+                        +Add
+                      </button>
+                    </div>
+
+                    {/* Events Counter Badge */}
+                    {heatmapData.filter((h) => h.round === selectedRound).length > 0 && (
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {heatmapData.filter((h) => h.round === selectedRound).map((h) => (
+                          <button
+                            key={h.id}
+                            onClick={() => removeHeatmapEvent(h.id)}
+                            className={`group/ev flex items-center rounded-full text-[8px] font-bold transition-all px-2 py-0.5 gap-1 ${h.type === "Plant"
+                              ? "bg-red-500/15 text-red-400 border border-red-500/30"
+                              : "bg-blue-500/15 text-blue-400 border border-blue-500/30"}`}
+                            title={`${h.type} at (${Math.round(h.x)}%, ${Math.round(h.y)}%) — click to remove`}
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full ${h.type === "Plant" ? "bg-red-400" : "bg-blue-400"}`}></span>
+                            {h.type[0]}
+                            <span className="hidden group-hover/ev:inline text-red-400 ml-0.5">✕</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ── Map Area ── */}
+                  <div className="relative rounded-xl overflow-hidden border border-slate-700/40 light:border-slate-300 bg-[#080c12] light:bg-slate-100 shadow-[0_0_40px_rgba(6,182,212,0.06)] flex items-center justify-center p-2 sm:p-4">
+                    {/* Subtle corner glow */}
+                    <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-cyan-500/5 to-transparent pointer-events-none rounded-tl-xl"></div>
+                    <div className="absolute bottom-0 right-0 w-32 h-32 bg-gradient-to-tl from-cyan-500/5 to-transparent pointer-events-none rounded-br-xl"></div>
+
+                    <div
+                      className="relative cursor-crosshair w-full max-w-[620px] aspect-[4/3] rounded-lg overflow-hidden flex items-center justify-center"
+                      onClick={handleMapClick}
+                    >
+                      {heatmapNotif && (
+                        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-500/90 text-white px-4 py-2 rounded-full text-sm font-bold shadow-[0_4px_12px_rgba(16,185,129,0.4)] pointer-events-none animate-[slideUpFade_0.3s_ease]">
+                          {heatmapNotif}
+                        </div>
+                      )}
+                      <img
+                        key={mapName}
+                        src={`/assets/${mapName.replace(/\s+/g, "_")}.png`}
+                        alt={`${mapName} Map`}
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "/assets/map_placeholder.png";
+                        }}
+                        className="w-full h-full object-contain opacity-80 hover:opacity-100 transition-opacity select-none"
+                      />
+                      {heatmapData
+                        .filter((h) => h.round === selectedRound)
+                        .map((h) => (
+                          <div
+                            key={h.id}
+                            className={`absolute w-4 h-4 -ml-2 -mt-2 rounded-full border-2 border-white animate-in zoom-in ${h.type === "Plant" ? "bg-red-500 shadow-[0_0_12px_#ef4444]" : "bg-blue-500 shadow-[0_0_12px_#3b82f6]"}`}
+                            style={{ left: `${h.x}%`, top: `${h.y}%` }}
+                          ></div>
+                        ))}
+
+                      {/* Empty state overlay */}
+                      {heatmapData.filter((h) => h.round === selectedRound).length === 0 && (
+                        <div className="absolute inset-0 flex items-end justify-center pointer-events-none pb-4">
+                          <span className="text-[10px] text-slate-400 font-medium bg-slate-900/80 light:bg-white/90 backdrop-blur-sm rounded-full border border-slate-700/50 light:border-slate-300 px-4 py-1.5 shadow-lg text-center">
+                            Click anywhere on the map to plot a {selectedAction.toLowerCase()} event
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Submit Card ── */}
+              <div className="bg-[#0d131c] light:bg-white rounded-2xl border border-slate-800/50 light:border-slate-200 overflow-hidden shadow-xl light:shadow-sm w-full">
+                <SectionHeader
+                  icon={<IconNotes />}
+                  label="Submit"
+                  sub="Match Data Submission"
+                  accent="#10b981"
+                />
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 p-6 sm:p-8">
+                  <button
+                    onClick={handleSubmit}
+                    disabled={isSubmitting}
+                    className={`w-full sm:w-auto flex-1 flex items-center justify-center gap-2 px-8 py-3.5 rounded-full text-sm font-black uppercase tracking-widest text-white transition-all active:scale-95 hover:-translate-y-0.5 ${submitSuccess
+                      ? "bg-emerald-500 shadow-[0_0_25px_rgba(16,185,129,0.4)] success-flash"
+                      : isSubmitting
+                        ? "opacity-70 cursor-wait"
+                        : "submit-pulse hover:shadow-[0_0_25px_rgba(6,182,212,0.4)]"
+                      }`}
+                    style={!submitSuccess ? { background: "linear-gradient(135deg, #0d9488, #2563eb)" } : {}}
                   >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                ) : (
-                  <IconSave />
-                )}
-                {submitSuccess
-                  ? "Submitted!"
-                  : isSubmitting
-                    ? "Submitting..."
-                    : "Submit Data"}
-              </button>
-              <button
-                onClick={handleCancel}
-                className="flex-1 xl:flex-none px-8 py-3 rounded-xl text-sm font-black uppercase tracking-widest text-white transition-all active:scale-95 hover:-translate-y-0.5 border border-red-500/40 hover:shadow-[0_0_20px_rgba(239,68,68,0.3)]"
-                style={{
-                  padding: '12px 32px',
-                  borderRadius: '9999px',
-                  background: "linear-gradient(135deg, #991b1b, #dc2626)",
-                }}
-              >
-                Clear All
-              </button>
+                    {isSubmitting ? (
+                      <svg
+                        className="animate-spin w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                      </svg>
+                    ) : (
+                      <IconSave />
+                    )}
+                    {submitSuccess
+                      ? "Submitted!"
+                      : isSubmitting
+                        ? "Submitting..."
+                        : "Submit Data"}
+                  </button>
+                  <button
+                    onClick={handleCancel}
+                    className="w-full sm:w-auto flex-1 px-8 py-3.5 rounded-full text-sm font-black uppercase tracking-widest text-white transition-all active:scale-95 hover:-translate-y-0.5 border border-red-500/40 hover:shadow-[0_0_20px_rgba(239,68,68,0.3)]"
+                    style={{
+                      background: "linear-gradient(135deg, #991b1b, #dc2626)",
+                    }}
+                  >
+                    Clear All
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
         { }
 
         {submittedRecords.length > 0 && (
@@ -2205,6 +2430,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
         )}
         <div className="h-4" />
       </div>
+    </div>
       
       {submitSuccess && (
         <div className="fixed bottom-6 right-6 z-50 bg-emerald-500/90 backdrop-blur-xl text-white px-6 py-3 rounded-xl shadow-[0_8px_30px_rgba(16,185,129,0.4)] flex items-center gap-3 animate-[fadeIn_0.3s_ease]">
