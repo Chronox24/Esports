@@ -215,6 +215,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
   const [sideB, setSideB] = useStickyState("BL", `${setScope}_sideB`);
   const [timeoutA, setTimeoutA] = useStickyState(
     "AVAILABLE",
+    
     `${setScope}_timeoutA`,
   );
   const [timeoutB, setTimeoutB] = useStickyState(

@@ -612,6 +612,17 @@ const BubbleChart = ({ data, theme, onSelect }) => {
     </div>
   );
 };
+// Official Map Pools by Game
+const VALORANT_MAPS = [
+  "Abyss", "Ascent", "Bind", "Breeze", "Corrode", "Fracture", 
+  "Haven", "Icebox", "Lotus", "Pearl", "Split", "Summit", "Sunset"
+];
+
+const CROSSFIRE_MAPS = [
+  "Ankara", "Black Widow", "Compound", "Eagle Eye", 
+  "Mexico", "Port", "Sub Base"
+];
+
 const StrategyMap = ({
   theme,
   onSelect,
@@ -620,44 +631,60 @@ const StrategyMap = ({
   heatmapEvents,
   activeGame,
 }) => {
-  const ALL_POSSIBLE_MAPS = [
-    "Abyss", "Ankara", "Ascent", "Bind", "Black Widow", "Breeze", 
-    "Compound", "Corrode", "Eagle Eye", "Fracture", "Haven", 
-    "Icebox", "Lotus", "Mexico", "Pearl", "Port", "Split", 
-    "Sub Base", "Summit", "Sunset"
-  ];
+  const isValorant = (activeGame || "VALORANT").toUpperCase() === "VALORANT";
+  const ALLOWED_MAPS = isValorant ? VALORANT_MAPS : CROSSFIRE_MAPS;
 
-  // Extract unique maps from heatmapEvents directly
+  // Extract unique maps from heatmapEvents directly, STRICTLY adhering to the active game's map pool
   const availableMapsFromEvents = useMemo(() => {
     const maps = new Set();
+    const activeGameUpper = (activeGame || "VALORANT").toUpperCase();
+
     if (heatmapEvents) {
       heatmapEvents.forEach(h => {
-        if (h.game && h.game.toUpperCase() === activeGame.toUpperCase() && h.match_id) {
+        const hGame = (h.game || "").toUpperCase();
+        // If event specifies a game, it must strictly match the active game
+        if (hGame && hGame !== activeGameUpper) return;
+
+        if (h.match_id) {
           const matchLower = h.match_id.toLowerCase();
-          const foundMap = ALL_POSSIBLE_MAPS.find(m => 
+          // STRICT: Only look for maps that belong to this game!
+          const foundMap = ALLOWED_MAPS.find(m => 
             matchLower.includes(m.toLowerCase().replace(/ /g, '_')) || 
             matchLower.includes(m.toLowerCase())
           );
           
           if (foundMap) {
             maps.add(foundMap);
-          } else {
-            // Fallback for completely unknown maps
-            const parts = h.match_id.split('_');
-            let mName = parts.length > 3 ? parts[3] : h.match_id;
-            mName = mName.charAt(0).toUpperCase() + mName.slice(1);
-            maps.add(mName);
           }
         }
       });
     }
-    return Array.from(maps).sort();
-  }, [heatmapEvents, activeGame]);
+
+    // Also include availableMaps from records if valid for this game
+    if (availableMaps && Array.isArray(availableMaps)) {
+      availableMaps.forEach(m => {
+        const found = ALLOWED_MAPS.find(gm => gm.toLowerCase() === m.toLowerCase());
+        if (found) maps.add(found);
+      });
+    }
+
+    // Filter strictly to ensure no map outside ALLOWED_MAPS can ever be present
+    const result = Array.from(maps).filter(m => 
+      ALLOWED_MAPS.some(am => am.toLowerCase() === m.toLowerCase())
+    ).sort();
+
+    // Default map pool if no events exist yet for this game
+    if (result.length === 0) {
+      return isValorant ? ["Ascent", "Bind", "Haven", "Split"] : ["Ankara", "Black Widow", "Compound"];
+    }
+
+    return result;
+  }, [heatmapEvents, activeGame, availableMaps, ALLOWED_MAPS, isValorant]);
 
   const [selectedMap, setSelectedMap] = useState("");
   const [selectedMatch, setSelectedMatch] = useState("All Matches");
 
-  // Auto-select first map if none selected
+  // Auto-select first map if none selected or if activeGame changed
   useEffect(() => {
     if (availableMapsFromEvents.length > 0) {
       if (!selectedMap || !availableMapsFromEvents.includes(selectedMap)) {
@@ -675,7 +702,7 @@ const StrategyMap = ({
     if (!selectedMap) return [];
     return availableMatches.filter(m => {
       const matchLower = m.toLowerCase();
-      const foundMap = ALL_POSSIBLE_MAPS.find(map => 
+      const foundMap = ALLOWED_MAPS.find(map => 
         matchLower.includes(map.toLowerCase().replace(/ /g, '_')) || 
         matchLower.includes(map.toLowerCase())
       );
@@ -685,7 +712,7 @@ const StrategyMap = ({
       }
       return m.toLowerCase() === selectedMap.toLowerCase();
     });
-  }, [availableMatches, selectedMap]);
+  }, [availableMatches, selectedMap, ALLOWED_MAPS]);
 
   // Auto-reset match selection if it doesn't belong to the current map
   useEffect(() => {
@@ -696,18 +723,19 @@ const StrategyMap = ({
 
   const mapEvents = heatmapEvents
     ? heatmapEvents.filter((h) => {
-        if (!h.game || h.game.toUpperCase() !== activeGame.toUpperCase()) return false;
+        const hGame = (h.game || "").toUpperCase();
+        const activeGameUpper = (activeGame || "VALORANT").toUpperCase();
+        if (hGame && hGame !== activeGameUpper) return false;
         if (!h.match_id) return false;
         
-        // Map filter
+        // Map filter: ONLY check against ALLOWED_MAPS for the active game
         const matchLower = h.match_id.toLowerCase();
-        const foundMap = ALL_POSSIBLE_MAPS.find(map => 
+        const foundMap = ALLOWED_MAPS.find(map => 
           matchLower.includes(map.toLowerCase().replace(/ /g, '_')) || 
           matchLower.includes(map.toLowerCase())
         );
-        let mName = foundMap || h.match_id;
-        
-        if (mName.toLowerCase() !== selectedMap?.toLowerCase()) return false;
+        if (!foundMap) return false;
+        if (foundMap.toLowerCase() !== selectedMap?.toLowerCase()) return false;
         
         // Match filter
         if (selectedMatch !== "All Matches" && h.match_id !== selectedMatch) return false;
@@ -720,7 +748,7 @@ const StrategyMap = ({
     return matchId.replace(/_/g, ' ').replace(/\d{13}$/, '').trim() || "Unknown Set";
   };
   
-  let mapNameForImage = selectedMap || "Bind";
+  let mapNameForImage = selectedMap || (isValorant ? "Ascent" : "Ankara");
   const [tooltip, setTooltip] = useState({
     visible: false,
     x: 0,
@@ -741,8 +769,8 @@ const StrategyMap = ({
       onClick={() =>
         onSelect({
           type: "Heatmap",
-          area: selectedMatch ? formatMatchName(selectedMatch) : "No Data",
-          details: "Strategy heatmap based on match submissions.",
+          area: selectedMap || (isValorant ? "Ascent" : "Ankara"),
+          details: `${isValorant ? "Valorant" : "Crossfire"} strategy heatmap for ${selectedMap || "Map"}.`,
         })
       }
     >
@@ -909,25 +937,41 @@ const Analytics = ({ globalGame, globalTournament }) => {
     }
   }, [globalTournament]);
   const uniqueMaps = useMemo(() => {
-    const gameUpper = activeGame.toUpperCase();
+    const gameUpper = (activeGame || "VALORANT").toUpperCase();
+    const isVal = gameUpper === "VALORANT";
+    const allowed = isVal ? VALORANT_MAPS : CROSSFIRE_MAPS;
     const gameRecords = matchRecords.filter(
-      (r) => r.game.toUpperCase() === gameUpper,
+      (r) => (r.game || "").toUpperCase() === gameUpper,
     );
     const maps = new Set();
     gameRecords.forEach((r) => {
-      if (r.map && r.map !== "TBD" && r.map !== "-") maps.add(r.map);
+      if (r.map && r.map !== "TBD" && r.map !== "-") {
+        const found = allowed.find(m => m.toLowerCase() === r.map.toLowerCase());
+        if (found) maps.add(found);
+      }
     });
     return Array.from(maps);
   }, [matchRecords, activeGame]);
 
   const uniqueMatches = useMemo(() => {
-    const gameUpper = activeGame.toUpperCase();
+    const gameUpper = (activeGame || "VALORANT").toUpperCase();
+    const isVal = gameUpper === "VALORANT";
+    const allowed = isVal ? VALORANT_MAPS : CROSSFIRE_MAPS;
     const gameEvents = heatmapEvents.filter(
-      (h) => h.game && h.game.toUpperCase() === gameUpper,
+      (h) => !h.game || h.game.toUpperCase() === gameUpper,
     );
     const matches = new Set();
     gameEvents.forEach((h) => {
-      if (h.match_id) matches.add(h.match_id);
+      if (h.match_id) {
+        const matchLower = h.match_id.toLowerCase();
+        const hasAllowedMap = allowed.some(map => 
+          matchLower.includes(map.toLowerCase().replace(/ /g, '_')) || 
+          matchLower.includes(map.toLowerCase())
+        );
+        if (hasAllowedMap) {
+          matches.add(h.match_id);
+        }
+      }
     });
     return Array.from(matches).sort((a, b) => b.localeCompare(a));
   }, [heatmapEvents, activeGame]);

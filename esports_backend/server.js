@@ -706,12 +706,13 @@ app.post('/api/stats/valorant/match', authenticateToken, isAdmin, async (req, re
 app.get('/api/match-records', async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   try {
-    const tournamentName = req.query.tournament || 'Default';
-    const { data, error } = await supabase
-      .from('match_records')
-      .select('*')
-      .eq('tournament_name', tournamentName)
-      .order('created_at', { ascending: false });
+    const tournamentName = req.query.tournament;
+    let query = supabase.from('match_records').select('*');
+    if (tournamentName && tournamentName.toLowerCase() !== 'all') {
+      query = query.eq('tournament_name', tournamentName);
+    }
+    query = query.order('created_at', { ascending: false });
+    const { data, error } = await query;
     if (error) throw error;
     res.json(data || []);
   } catch (err) {
