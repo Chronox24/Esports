@@ -43,15 +43,30 @@ const Tooltip = ({ x, y, content, visible }) => {
     </div>
   );
 };
-const Card = ({ title, children, className = "" }) => (
+const Card = ({ title, children, className = "", accent = "#06b6d4", icon = null, badge = null }) => (
   <div
-    className={`bg-bg-300 rounded-xl border border-[#232f40] shadow-xl flex flex-col overflow-hidden relative group ${className}`}
+    className={`rounded-2xl border border-slate-700/40 bg-bg-200 flex flex-col overflow-hidden relative group transition-all duration-300 hover:border-slate-600/60 hover:shadow-2xl ${className}`}
+    style={{ boxShadow: "0 10px 40px rgba(0,0,0,0.5)" }}
   >
-    <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none z-0"></div>
-    <div className="border-b border-[#232f40] bg-bg-300 relative z-10 flex justify-between items-center shrink-0" style={{ padding: "16px" }}>
-      <h3 className="text-sm font-bold tracking-wider text-gray-200">
-        {title}
-      </h3>
+    {/* Top accent line */}
+    <div className="h-[2px] shrink-0" style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }} />
+    {/* Subtle bg glow */}
+    <div className="absolute inset-0 pointer-events-none z-0" style={{ background: `radial-gradient(ellipse at top left, ${accent}08, transparent 60%)` }} />
+    {/* Header */}
+    <div className="border-b border-slate-800/60 bg-bg-300/60 relative z-10 flex items-center justify-between shrink-0" style={{ padding: "16px 20px" }}>
+      <div className="flex items-center gap-3">
+        {icon && (
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${accent}18`, border: `1px solid ${accent}28` }}>
+            <span style={{ color: accent }}>{icon}</span>
+          </div>
+        )}
+        <h3 className="text-[11px] font-black tracking-[0.2em] text-theme-text-base uppercase">{title}</h3>
+      </div>
+      {badge && (
+        <span className="text-[9px] font-black uppercase tracking-[0.15em] rounded-md px-2 py-1" style={{ background: `${accent}15`, color: accent, border: `1px solid ${accent}25` }}>
+          {badge}
+        </span>
+      )}
     </div>
     <div className="flex-1 relative z-10 min-h-[300px]" style={{ padding: "16px" }}>{children}</div>
   </div>
@@ -1154,6 +1169,9 @@ const Analytics = ({ globalGame, globalTournament }) => {
       data: heatmap,
     });
   };
+  const accent = activeGame.toUpperCase() === "VALORANT" ? "#ff4655" : "#4c7fd6";
+  const accentAlt = activeGame.toUpperCase() === "VALORANT" ? "#a855f7" : "#22d3ee";
+
   return (
     <div className="flex-1 bg-bg-100 text-theme-text-base overflow-y-auto flex flex-col h-full custom-scrollbar relative">
       <style>{`
@@ -1161,84 +1179,144 @@ const Analytics = ({ globalGame, globalTournament }) => {
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 9999px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #334155; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+        .a-fade { animation: fadeInUp 0.45s ease-out both; }
+        .a-d1 { animation-delay: 0.08s; }
+        .a-d2 { animation-delay: 0.16s; }
+        .a-d3 { animation-delay: 0.24s; }
       `}</style>
-      {}
-      <div className="bg-bg-300/80 backdrop-blur-xl border-b border-[#1c2532] shadow-xl relative z-30 flex flex-col items-center" style={{ padding: "16px 32px" }}>
-        <div className="w-full max-w-[1400px] flex items-center justify-between">
-          {}
-          <div className="flex" style={{ gap: "48px" }}>
-            <div className="flex flex-col">
-              <label className="text-[10px] font-black text-theme-text-faint uppercase tracking-widest mb-1">
-                Data Type:
-              </label>
-              <div className="relative group cursor-pointer">
-                <select
-                  className="appearance-none bg-bg-300 border border-[#2a3648] text-theme-text-base font-bold tracking-wider rounded-lg focus:outline-none focus:border-[#406899] hover:bg-bg-400 transition-colors shadow-inner"
-                  style={{ padding: "8px 40px 8px 16px" }}
-                  value={dataType}
-                  onChange={(e) => setDataType(e.target.value)}
-                >
-                  <option value="ALL PLAYERS">ALL PLAYERS</option>
-                  <option value="PRO PLAYERS">PRO PLAYERS</option>
-                  <option value="CASUAL">CASUAL</option>
-                </select>
-                <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
-                  <ChevronDown />
-                </div>
-              </div>
+
+      {/* ═══════ HERO HEADER ═══════ */}
+      <div className="relative overflow-hidden border-b border-slate-800/60 shrink-0" style={{ background: "linear-gradient(135deg, #0a0e1a 0%, #0d1420 100%)" }}>
+        {/* Gradient accent */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: `linear-gradient(135deg, ${accent}12, transparent 55%, ${accentAlt}08)` }} />
+        <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: `linear-gradient(90deg, transparent, ${accent}, ${accentAlt}, transparent)` }} />
+
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 w-full max-w-[1400px] mx-auto" style={{ padding: "24px 40px" }}>
+          {/* Title block */}
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${accent}18`, border: `1px solid ${accent}30` }}>
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: accent }}>
+                <polyline points="22,12 18,12 15,21 9,3 6,12 2,12" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-xl font-black uppercase tracking-[0.15em] text-theme-text-base">Analytics</h1>
+              <p className="text-[10px] text-theme-text-muted mt-0.5 font-medium tracking-wide">
+                {activeGame} &bull; {globalTournament || "Default Tournament"} &bull; Performance Intelligence
+              </p>
             </div>
           </div>
-          {/* Search - Connected to State */}
-          <div className="relative w-80">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <SearchIcon />
+
+          {/* Controls row */}
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Data Type selector */}
+            <div className="flex items-center gap-2 bg-bg-200 border border-slate-700/50 rounded-xl overflow-hidden">
+              <span className="text-[10px] text-theme-text-muted font-bold uppercase tracking-widest pl-3">Type</span>
+              <select
+                className="bg-transparent text-xs font-black text-theme-text-base focus:outline-none cursor-pointer pr-3"
+                style={{ padding: "10px 12px 10px 4px", color: accent }}
+                value={dataType}
+                onChange={(e) => setDataType(e.target.value)}
+              >
+                <option value="ALL PLAYERS" style={{ background: "#0f172a" }}>All Players</option>
+                <option value="PRO PLAYERS" style={{ background: "#0f172a" }}>Pro Players</option>
+                <option value="CASUAL" style={{ background: "#0f172a" }}>Casual</option>
+              </select>
             </div>
-            <input
-              type="text"
-              placeholder="Filter by Player, Agent, or Map..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-200 text-gray-900 font-medium rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-inner transition-all placeholder-gray-500"
-              style={{ padding: "10px 16px 10px 48px" }}
-            />
+
+            {/* Search */}
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 flex items-center pointer-events-none" style={{ paddingLeft: "12px" }}>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-theme-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                placeholder="Filter by Player, Agent, or Map..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-bg-200 border border-slate-700/50 text-sm text-theme-text-base rounded-xl focus:outline-none transition-all placeholder-slate-600 font-medium"
+                style={{ padding: "10px 16px 10px 38px", width: "280px", borderColor: searchQuery ? accent : undefined }}
+              />
+            </div>
           </div>
         </div>
       </div>
-      {/* Main Dashboard Grid */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar relative z-10 flex flex-col items-center" style={{ padding: "32px" }}>
-        <div className="w-full max-w-[1400px] grid grid-cols-1 xl:grid-cols-2 gap-8" style={{ paddingBottom: "64px" }}>
-          <Card title="Global Player Skill Matrix">
-            <RadarChart
-              data={filteredRadar}
-              axes={currentData.radarAxes}
-              theme={currentData.theme}
-              onSelect={openRadarOverview}
-            />
-          </Card>
+
+      {/* ═══════ MAIN DASHBOARD GRID ═══════ */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar relative z-10 flex flex-col items-center" style={{ padding: "32px 40px 64px" }}>
+        <div className="w-full max-w-[1400px] grid grid-cols-1 xl:grid-cols-2 gap-6">
+
+          {/* Radar — Player Skill Matrix */}
+          <div className="a-fade">
+            <Card
+              title="Global Player Skill Matrix"
+              accent={accent}
+              badge="Radar"
+              icon={
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <polygon points="12,2 22,8.5 22,15.5 12,22 2,15.5 2,8.5" />
+                </svg>
+              }
+            >
+              <RadarChart
+                data={filteredRadar}
+                axes={currentData.radarAxes}
+                theme={currentData.theme}
+                onSelect={openRadarOverview}
+              />
+            </Card>
+          </div>
+
+          {/* Agent/Map Synergies — Valorant only */}
           {activeGame.toUpperCase() !== "CROSSFIRE" && (
-            <>
-              <Card title="Agent/Map Synergies" className="min-h-[350px]">
+            <div className="a-fade a-d1">
+              <Card
+                title="Agent / Map Synergies"
+                accent="#a855f7"
+                badge="Live Data"
+                className="min-h-[350px]"
+                icon={
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <circle cx="12" cy="12" r="2" /><path d="M12 2a10 10 0 100 20A10 10 0 0012 2z" /><path d="M2 12h4m12 0h4M12 2v4m0 12v4" />
+                  </svg>
+                }
+              >
                 <BubbleChart
                   data={filteredSynergy}
                   theme={currentData.theme}
                   onSelect={openSynergyOverview}
                 />
               </Card>
-            </>
+            </div>
           )}
-          <Card
-            title={`${activeGame === "VALORANT" ? "Valorant" : "Crossfire"} Team Round-Start Strategy Heatmap`}
-            className="min-h-[350px]"
-          >
-            <StrategyMap
-              theme={currentData.theme}
-              onSelect={openHeatmapOverview}
-              availableMatches={uniqueMatches}
-              availableMaps={uniqueMaps}
-              heatmapEvents={heatmapEvents}
-              activeGame={activeGame}
-            />
-          </Card>
+
+          {/* Heatmap — spans full width when Crossfire (no synergy card) */}
+          <div className={`a-fade a-d2 ${activeGame.toUpperCase() === "CROSSFIRE" ? "xl:col-span-2" : ""}`}>
+            <Card
+              title={`${activeGame === "VALORANT" ? "Valorant" : "Crossfire"} — Round-Start Strategy Heatmap`}
+              accent="#10b981"
+              badge="Heatmap"
+              className="min-h-[420px]"
+              icon={
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                </svg>
+              }
+            >
+              <StrategyMap
+                theme={currentData.theme}
+                onSelect={openHeatmapOverview}
+                availableMatches={uniqueMatches}
+                availableMaps={uniqueMaps}
+                heatmapEvents={heatmapEvents}
+                activeGame={activeGame}
+              />
+            </Card>
+          </div>
+
         </div>
       </div>
       {}
