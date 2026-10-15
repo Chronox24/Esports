@@ -193,6 +193,7 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
   const [dbCrossfireStats, setDbCrossfireStats] = useState([]);
   const [matchRecords, setMatchRecords] = useState([]);
   const [expandedPlayer, setExpandedPlayer] = useState(null);
+  const [showAllRows, setShowAllRows] = useState(false);
 
   useEffect(() => {
     apiFetch(`/api/stats/valorant?tournament=${encodeURIComponent(globalTournament || 'Default')}`)
@@ -338,14 +339,23 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
   ];
 
   const sortedPlayers = useMemo(() => {
-    let filtered = currentPlayers.filter((p) =>
-      p.name.toLowerCase().includes(search.toLowerCase())
-    );
-    return [...filtered].sort((a, b) => {
+    // 1. Sort all players based on sortCol & sortDir and assign overall ranks
+    const allSorted = [...currentPlayers].sort((a, b) => {
       const aVal = parseFloat(a[sortCol]) || 0;
       const bVal = parseFloat(b[sortCol]) || 0;
       return sortDir === "desc" ? bVal - aVal : aVal - bVal;
     }).map((p, i) => ({ ...p, rank: i + 1 }));
+
+    // 2. Filter by search query (case-insensitive on name / IGN, team, or rank)
+    const q = search.trim().toLowerCase();
+    if (!q) return allSorted;
+
+    return allSorted.filter((p) => {
+      const matchName = (p.name || "").toLowerCase().includes(q);
+      const matchTeam = (p.team || "").toLowerCase().includes(q);
+      const matchRank = String(p.rank) === q;
+      return matchName || matchTeam || matchRank;
+    });
   }, [currentPlayers, search, sortCol, sortDir]);
 
   const maxKills = sortedPlayers.length > 0 ? Math.max(...sortedPlayers.map(p => p.kills)) : 1;
@@ -472,12 +482,22 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
             </div>
             <input
               type="text"
-              placeholder="Search player..."
+              placeholder="Search player or team..."
               className="w-full bg-bg-200 border border-slate-700/50 text-sm text-theme-text-base rounded-xl focus:outline-none transition-all placeholder-slate-600 font-medium"
-              style={{ padding: "12px 16px 12px 42px", borderColor: search ? accent : undefined }}
+              style={{ padding: "12px 38px 12px 42px", borderColor: search ? accent : undefined }}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-white text-xs font-bold transition-colors cursor-pointer"
+                title="Clear search"
+              >
+                ✕
+              </button>
+            )}
           </div>
 
           {/* Week Selector */}
@@ -552,23 +572,103 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
         <div className="rounded-2xl border border-slate-700/40 bg-bg-200 overflow-hidden anim-fade anim-delay-3" style={{ marginBottom: "32px" }}>
           {/* Table accent line */}
           <div className="h-[2px]" style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }} />
+
+          {/* Table Header Toolbar: Standings Title, Quick Search & View Toggle */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 bg-bg-300/40" style={{ padding: "14px 20px" }}>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full animate-pulse" style={{ backgroundColor: accent }} />
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-theme-text-base">
+                  Player Standings
+                </h3>
+              </div>
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-slate-700/60 bg-slate-800/60 text-theme-text-muted">
+                {search.trim() ? (
+                  <>Found <span style={{ color: accent }}>{sortedPlayers.length}</span> of {currentPlayers.length}</>
+                ) : (
+                  <>{sortedPlayers.length} Players</>
+                )}
+              </span>
+              {!showAllRows && sortedPlayers.length > 5 && (
+                <span className="hidden sm:inline-flex text-[9px] font-bold text-slate-400 bg-slate-800/60 px-2 py-0.5 rounded border border-slate-700/50 items-center gap-1">
+                  <span>↓</span> Showing 1–5 (Scrollable)
+                </span>
+              )}
+            </div>
+
+            {/* Right side: Table Search & 5 Rows / All Toggle */}
+            <div className="flex items-center gap-2">
+              <div className="relative min-w-[200px] sm:min-w-[240px]">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-theme-text-muted">
+                  <SearchIcon />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search player or team..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full bg-slate-900/90 border border-slate-700/60 rounded-xl text-xs text-theme-text-base pl-9 pr-8 py-2 focus:outline-none transition-colors placeholder:text-slate-500 font-medium"
+                  style={{ borderColor: search ? accent : undefined }}
+                />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-white text-xs font-bold transition-colors cursor-pointer"
+                    title="Clear search"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* Toggle: 5 Rows vs Show All */}
+              {sortedPlayers.length > 5 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllRows(!showAllRows)}
+                  className="text-[10px] font-bold uppercase tracking-wider px-3 py-2 rounded-xl border border-slate-700/60 bg-slate-800/60 hover:bg-slate-700/60 text-theme-text-muted hover:text-white transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer"
+                  title={showAllRows ? "Collapse to 5 rows scrollable" : "Expand to show all rows"}
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    {showAllRows ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    ) : (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    )}
+                  </svg>
+                  {showAllRows ? "Fit 5" : "All"}
+                </button>
+              )}
+            </div>
+          </div>
           
-          <div className="overflow-x-auto">
-            <table className="w-full text-[11px]">
-              <thead className="bg-bg-300/95 backdrop-blur-md sticky top-0 z-10 border-b border-slate-800">
+          {/* Scrollable table viewport: fixed to ~5 rows visible by default */}
+          <div
+            className={`overflow-x-auto custom-scrollbar relative ${
+              showAllRows ? "overflow-y-visible" : "overflow-y-auto"
+            }`}
+            style={{
+              maxHeight: showAllRows ? "none" : "355px",
+              scrollBehavior: "smooth",
+            }}
+          >
+            <table className="w-full text-[11px] relative">
+              <thead className="sticky top-0 z-20 border-b border-slate-800 shadow-sm" style={{ backgroundColor: "#0f172a" }}>
                 <tr>
-                  <th className="text-center text-theme-text-muted font-bold text-[9px] tracking-[0.2em] uppercase" style={{ padding: "16px 12px", width: "56px" }}>
+                  <th className="text-center text-theme-text-muted font-bold text-[9px] tracking-[0.2em] uppercase sticky top-0" style={{ padding: "16px 12px", width: "56px", backgroundColor: "#0f172a" }}>
                     #
                   </th>
-                  <th className="text-left text-theme-text-muted font-bold text-[9px] tracking-[0.2em] uppercase" style={{ padding: "16px 12px" }}>
+                  <th className="text-left text-theme-text-muted font-bold text-[9px] tracking-[0.2em] uppercase sticky top-0" style={{ padding: "16px 12px", backgroundColor: "#0f172a" }}>
                     Player
                   </th>
                   {columns.map((col) => (
                     <th
                       key={col.key}
-                      className="text-center sort-btn font-bold text-[9px] tracking-[0.2em] uppercase"
+                      className="text-center sort-btn font-bold text-[9px] tracking-[0.2em] uppercase sticky top-0"
                       style={{
                         padding: "16px 8px",
+                        backgroundColor: "#0f172a",
                         color: col.accent ? `${accent}99` : col.special ? "#10b981aa" : undefined,
                       }}
                       onClick={() => handleSort(col.key)}
@@ -587,7 +687,7 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
                 {sortedPlayers.length > 0 ? (
                   sortedPlayers.map((p, i) => (
                     <tr
-                      key={i}
+                      key={p.name || i}
                       className="hover:bg-slate-800/25 transition-all duration-200 row-hover-glow cursor-pointer group"
                       onClick={() => setExpandedPlayer(expandedPlayer === p.name ? null : p.name)}
                     >
@@ -658,8 +758,17 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
                     <td colSpan={columns.length + 2} className="text-center text-theme-text-muted" style={{ padding: "48px 0" }}>
                       <div className="flex flex-col items-center gap-2">
                         <SearchIcon />
-                        <span className="text-sm font-medium">No players found</span>
+                        <span className="text-sm font-medium">No players found{search ? ` matching "${search}"` : ""}</span>
                         <span className="text-[10px]">Try adjusting your search or filters</span>
+                        {search && (
+                          <button
+                            type="button"
+                            onClick={() => setSearch("")}
+                            className="mt-2 text-xs font-bold px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition-colors cursor-pointer"
+                          >
+                            Clear Search
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -669,10 +778,17 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
           </div>
 
           {/* Table footer */}
-          <div className="border-t border-slate-800/50 bg-bg-300/50 flex items-center justify-between" style={{ padding: "12px 20px" }}>
-            <span className="text-[10px] text-theme-text-muted font-bold uppercase tracking-widest">
-              {sortedPlayers.length} player{sortedPlayers.length !== 1 ? "s" : ""} • Sorted by {columns.find(c => c.key === sortCol)?.label || sortCol} {sortDir === "desc" ? "↓" : "↑"}
-            </span>
+          <div className="border-t border-slate-800/50 bg-bg-300/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2" style={{ padding: "12px 20px" }}>
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-[10px] text-theme-text-muted font-bold uppercase tracking-widest">
+                {search.trim() ? `Found ${sortedPlayers.length} of ${currentPlayers.length} players` : `${sortedPlayers.length} player${sortedPlayers.length !== 1 ? "s" : ""}`} • Sorted by {columns.find(c => c.key === sortCol)?.label || sortCol} {sortDir === "desc" ? "↓" : "↑"}
+              </span>
+              {!showAllRows && sortedPlayers.length > 5 && (
+                <span className="text-[10px] text-slate-500 font-medium">
+                  • Showing 1–5 (Scroll table for more)
+                </span>
+              )}
+            </div>
             <span className="text-[10px] text-theme-text-muted font-medium">
               {activeTab === "daily"
                 ? `Week ${effectiveWeek || "?"} • Day ${effectiveDay || "?"}`

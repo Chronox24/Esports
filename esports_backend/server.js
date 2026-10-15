@@ -267,6 +267,70 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+app.post('/api/reset-key', async (req, res) => {
+  if (!supabase) {
+    return res.status(500).json({ error: 'Supabase client not initialized.' });
+  }
+  const { email, newPassword } = req.body;
+  if (!email || !newPassword) {
+    return res.status(400).json({ error: 'Email and new security key are required.' });
+  }
+  if (typeof newPassword !== 'string' || newPassword.length < 6) {
+    return res.status(400).json({ error: 'Security key must be at least 6 characters long.' });
+  }
+  try {
+    const { data, error } = await supabase.auth.admin.listUsers();
+    if (error) throw error;
+    const targetUser = (data.users || []).find(
+      (u) => u.email && u.email.toLowerCase() === email.trim().toLowerCase()
+    );
+    if (!targetUser) {
+      return res.status(404).json({ error: 'No account registered with this email address.' });
+    }
+    const updateRes = await supabase.auth.admin.updateUserById(targetUser.id, {
+      password: newPassword,
+    });
+    if (updateRes.error) throw updateRes.error;
+    res.json({ message: 'Security key successfully updated! You can now log in.' });
+  } catch (err) {
+    console.error('Reset key error:', err);
+    res.status(500).json({ error: err.message || 'Failed to reset security key.' });
+  }
+});
+
+app.post('/api/forgot-key', async (req, res) => {
+  if (!supabase) {
+    return res.status(500).json({ error: 'Supabase client not initialized.' });
+  }
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ error: 'Email address is required.' });
+  }
+  try {
+    const { data, error } = await supabase.auth.admin.listUsers();
+    if (error) throw error;
+    const targetUser = (data.users || []).find(
+      (u) => u.email && u.email.toLowerCase() === email.trim().toLowerCase()
+    );
+    if (!targetUser) {
+      return res.status(404).json({ error: 'No account registered with this email address.' });
+    }
+    await supabase.auth.resetPasswordForEmail(email.trim());
+    const linkRes = await supabase.auth.admin.generateLink({
+      type: 'recovery',
+      email: email.trim(),
+    });
+    const recoveryUrl = linkRes.data?.properties?.action_link || null;
+    res.json({
+      message: 'Recovery instructions dispatched! Check your email or use the recovery link.',
+      recoveryUrl,
+    });
+  } catch (err) {
+    console.error('Forgot key error:', err);
+    res.status(500).json({ error: err.message || 'Failed to dispatch recovery link.' });
+  }
+});
+
 app.post('/api/refresh', async (req, res) => {
   if (!supabase) {
     return res.status(500).json({ error: 'Supabase client not initialized.' });
