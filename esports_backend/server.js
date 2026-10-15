@@ -67,6 +67,21 @@ if (supabaseUrl && supabaseKey && supabaseUrl !== 'your_supabase_project_url') {
 app.get('/', (req, res) => {
   res.json({ message: 'Esports Backend is running!' });
 });
+app.get('/api/health', (req, res) => {
+  let host = null;
+  try {
+    if (supabaseUrl) host = new URL(supabaseUrl).host;
+  } catch (e) {
+    host = 'invalid-url: ' + supabaseUrl;
+  }
+  res.json({
+    status: 'ok',
+    supabaseConnected: !!supabase,
+    supabaseHost: host,
+    hasKey: !!supabaseKey,
+    keyLength: supabaseKey ? supabaseKey.length : 0
+  });
+});
 const apiCache = new NodeCache({ stdTTL: 60, checkperiod: 120 });
 const cacheMiddleware = (req, res, next) => {
   if (req.method !== 'GET') {
@@ -222,7 +237,11 @@ app.post('/api/login', async (req, res) => {
     }
     res.json({ message: 'Login successful', user: data.user, session: data.session });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Login error:', err);
+    res.status(500).json({ 
+      error: err.message, 
+      cause: err.cause ? (err.cause.message || err.cause.code || String(err.cause)) : null 
+    });
   }
 });
 
