@@ -43,9 +43,18 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
         },
         body: JSON.stringify({ email, password }),
       });
-      const data = await response.json();
+      let data;
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        if (!response.ok) {
+          throw new Error(`Server error (${response.status}): Backend service unreachable or returned HTML instead of JSON.`);
+        }
+        data = await response.json();
+      }
       if (!response.ok) {
-        throw new Error(data.error || 'Login failed');
+        throw new Error(data?.error || 'Login failed');
       }
       if (data.session) {
         localStorage.setItem('supabase.auth.token', JSON.stringify(data.session));
