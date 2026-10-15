@@ -214,7 +214,9 @@ const RadarChart = ({ data, axes, onSelect }) => {
         {data.map((p, i) => (
           <div
             key={i}
-            className="flex items-center space-x-2 text-[10px] text-theme-text-base font-bold tracking-wider"
+            className="flex items-center space-x-2 text-[10px] text-theme-text-base font-bold tracking-wider cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => onSelect && onSelect(p)}
+            title="Click to view full metric breakdown"
           >
             <div
               className="w-4 h-[2px] rounded-full shadow-[0_0_5px_currentColor]"
@@ -927,15 +929,25 @@ const Analytics = ({ globalGame, globalTournament }) => {
   useEffect(() => {
     const fetchRecords = async () => {
       try {
+        const queryTournament = globalTournament || "all";
         const res = await apiFetch(
-          `/api/match-records?tournament=${encodeURIComponent(globalTournament || "Default")}`,
+          `/api/match-records?tournament=${encodeURIComponent(queryTournament)}`,
         );
         if (res.ok) {
           const data = await res.json();
-          setMatchRecords(data);
+          // Fallback to all tournament records if specific tournament has no records
+          if ((!data || data.length === 0) && queryTournament !== "all") {
+            const fallbackRes = await apiFetch(`/api/match-records?tournament=all`);
+            if (fallbackRes.ok) {
+              const fallbackData = await fallbackRes.json();
+              setMatchRecords(fallbackData || []);
+              return;
+            }
+          }
+          setMatchRecords(data || []);
         }
       } catch (e) {
-        console.error(e);
+        console.error("Error fetching match records:", e);
       }
     };
     const fetchHeatmap = async () => {
@@ -943,16 +955,15 @@ const Analytics = ({ globalGame, globalTournament }) => {
         const res = await apiFetch("/api/stats/heatmap");
         if (res.ok) {
           const eventsData = await res.json();
-          setHeatmapEvents(eventsData);
+          setHeatmapEvents(eventsData || []);
         }
       } catch (e) {
-        console.error(e);
+        console.error("Error fetching heatmap events:", e);
       }
     };
-    if (globalTournament) {
-      fetchRecords();
-      fetchHeatmap();
-    }
+
+    fetchRecords();
+    fetchHeatmap();
   }, [globalTournament]);
   const uniqueMaps = useMemo(() => {
     const gameUpper = (activeGame || "VALORANT").toUpperCase();
@@ -1029,7 +1040,224 @@ const Analytics = ({ globalGame, globalTournament }) => {
 
     return synergyArr;
   }, [matchRecords, activeGame]);
-  // --- MOCK DATA ---
+  // --- DATABASE-CONNECTED RADAR SKILL MATRIX ---
+  const safeDiv = (num, den, fallback = 0) => (!den || isNaN(den) || den === 0) ? fallback : num / den;
+
+  const computePlayerRadarStats = (pRecords, isVal) => {
+    let totK = 0, totD = 0, totA = 0, totHs = 0, totRnd = 0, totAcs = 0, totEcon = 0, totP = 0, totDef = 0, totAces = 0, totFk = 0, wins = 0;
+    pRecords.forEach((r) => {
+      const k = Math.min(100, Math.max(0, Number(r.kills) || 0));
+      const d = Math.min(100, Math.max(0, Number(r.deaths) || 0));
+      const a = Math.min(100, Math.max(0, Number(r.assists) || 0));
+      const hs = Math.min(100, Math.max(0, Number(r.headshots) || 0));
+      const rnd = Math.min(100, Math.max(1, Number(r.rounds) || 16));
+      const acs = Math.min(600, Math.max(0, Number(r.acs) || 0));
+      const econ = Math.min(200, Math.max(0, Number(r.econ) || 0));
+      const p = Math.min(20, Math.max(0, Number(r.plants) || 0));
+      const def = Math.min(20, Math.max(0, Number(r.defuse) || 0));
+      const aces = Math.min(10, Math.max(0, Number(r.aces) || 0));
+      const fk = Math.min(20, Math.max(0, Number(r.first_kills) || 0));
+      const isWin = String(r.win).toLowerCase() === 'true' || r.win === 1;
+
+      totK += k; totD += d; totA += a; totHs += hs; totRnd += rnd;
+      totAcs += acs; totEcon += econ; totP += p; totDef += def;
+      totAces += aces; totFk += fk; if (isWin) wins++;
+    });
+
+    const n = Math.max(1, pRecords.length);
+    const safeRnd = Math.max(1, totRnd);
+    const kd = totD > 0 ? totK / totD : totK;
+    const kpr = safeDiv(totK, safeRnd);
+    const apr = safeDiv(totA, safeRnd);
+    const avgAcs = safeDiv(totAcs, n);
+    const avgEcon = safeDiv(totEcon, n);
+    const winRate = safeDiv(wins, n);
+    const hsPct = totK > 0 ? (totHs / totK) * 100 : 0;
+
+    let s1, s2, s3, s4, s5, s6;
+    if (isVal) {
+      // 1. Agent Proficiency: Win Rate + ACS + K/D
+      s1 = Math.round(Math.min(98, Math.max(25, (winRate * 45) + (Math.min(350, avgAcs) / 350 * 35) + (Math.min(2, kd) / 2 * 18))));
+      // 2. Reaction Time: KPR + First Kills + K/D
+      s2 = Math.round(Math.min(98, Math.max(30, (Math.min(1.2, kpr) / 1.2 * 50) + (Math.min(0.2, safeDiv(totFk, safeRnd)) / 0.2 * 25) + (Math.min(2, kd) / 2 * 23))));
+      // 3. Econ Management: Econ spending efficiency + ACS per round
+      const econScore = avgEcon > 10 ? Math.min(95, (avgEcon / 100) * 75 + 20) : Math.min(95, (avgAcs / 250) * 50 + (kd > 1 ? 30 : 20));
+      s3 = Math.round(Math.min(98, Math.max(30, econScore)));
+      // 4. Headshot %
+      const hsScore = hsPct > 0 ? Math.min(98, Math.max(25, (hsPct / 40) * 70 + 25)) : Math.min(92, Math.max(35, (kpr / 1.2) * 50 + 35));
+      s4 = Math.round(hsScore);
+      // 5. Utility Usage: APR + plants + defuses
+      const utilRate = apr + safeDiv(totP + totDef, safeRnd);
+      s5 = Math.round(Math.min(98, Math.max(25, (Math.min(0.8, utilRate) / 0.8) * 70 + 25)));
+      // 6. Clutch %: Survival rate + win rate + aces
+      const survRate = Math.max(0, safeDiv(safeRnd - totD, safeRnd));
+      s6 = Math.round(Math.min(98, Math.max(25, (winRate * 40) + (survRate * 40) + (Math.min(2, totAces) * 9) + 10)));
+    } else {
+      // Crossfire
+      // 1. Weapon Mastery
+      s1 = Math.round(Math.min(98, Math.max(30, (Math.min(2.5, kd) / 2.5 * 55) + (Math.min(50, hsPct) / 50 * 43))));
+      // 2. Reaction Time
+      s2 = Math.round(Math.min(98, Math.max(30, (Math.min(1.2, kpr) / 1.2 * 70) + (Math.min(2, kd) / 2 * 28))));
+      // 3. Positioning
+      const surv = Math.max(0, safeDiv(safeRnd - totD, safeRnd));
+      s3 = Math.round(Math.min(98, Math.max(25, surv * 80 + 18)));
+      // 4. Headshot %
+      s4 = Math.round(Math.min(98, Math.max(25, (hsPct / 45) * 75 + 20)));
+      // 5. Utility Usage
+      s5 = Math.round(Math.min(98, Math.max(25, (Math.min(0.6, apr) / 0.6) * 70 + 25)));
+      // 6. Clutch %
+      s6 = Math.round(Math.min(98, Math.max(25, (winRate * 45) + (surv * 35) + 18)));
+    }
+
+    return {
+      stats: [s1, s2, s3, s4, s5, s6],
+      meta: {
+        matches: pRecords.length,
+        rounds: totRnd,
+        kd: kd.toFixed(2),
+        winRate: Math.round(winRate * 100),
+        acs: Math.round(avgAcs),
+        kpr: kpr.toFixed(2),
+        hsPct: Math.round(hsPct),
+        kills: totK,
+        deaths: totD,
+        assists: totA,
+        plants: totP,
+        defuses: totDef,
+        aces: totAces,
+      },
+    };
+  };
+
+  const dynamicRadar = useMemo(() => {
+    const isVal = activeGame.toUpperCase() === "VALORANT";
+    const gameUpper = isVal ? "VALORANT" : "CROSSFIRE";
+    let gameRecords = matchRecords.filter(
+      (r) => (r.game || "").toUpperCase() === gameUpper,
+    );
+
+    if (gameRecords.length === 0 && matchRecords.length > 0) {
+      gameRecords = matchRecords;
+    }
+
+    const fallbackVal = [
+      { name: "Elite Player", color: "#00d0eb", stats: [80, 64, 85, 83, 59, 63], tier: "Elite Benchmark" },
+      { name: "Pro Player", color: "#ff3366", stats: [67, 57, 76, 75, 44, 53], tier: "Pro Benchmark" },
+      { name: "Average Player", color: "#a78bfa", stats: [55, 49, 68, 66, 46, 50], tier: "Average Benchmark" },
+    ];
+    const fallbackCf = [
+      { name: "CF Elite", color: "#f59e0b", stats: [79, 77, 63, 79, 69, 68], tier: "Elite Benchmark" },
+      { name: "CF Pro", color: "#4c7fd6", stats: [60, 56, 61, 73, 56, 71], tier: "Pro Benchmark" },
+      { name: "Average Player", color: "#10b981", stats: [61, 65, 59, 67, 60, 58], tier: "Average Benchmark" },
+    ];
+
+    if (gameRecords.length === 0) {
+      return isVal ? fallbackVal : fallbackCf;
+    }
+
+    const playerMap = {};
+    gameRecords.forEach((r) => {
+      const ign = r.ign ? String(r.ign).trim() : null;
+      if (!ign) return;
+      if (!playerMap[ign]) playerMap[ign] = [];
+      playerMap[ign].push(r);
+    });
+
+    const playerList = Object.entries(playerMap).map(([ign, recs]) => {
+      const { stats, meta } = computePlayerRadarStats(recs, isVal);
+      const overall = Math.round(stats.reduce((a, b) => a + b, 0) / 6);
+      return { ign, stats, meta, overall };
+    });
+
+    if (playerList.length === 0) {
+      return isVal ? fallbackVal : fallbackCf;
+    }
+
+    playerList.sort((a, b) => b.overall - a.overall);
+
+    const calcBenchmark = (players) => {
+      if (!players || players.length === 0) return [50, 50, 50, 50, 50, 50];
+      const sum = [0, 0, 0, 0, 0, 0];
+      players.forEach((p) => {
+        p.stats.forEach((s, i) => {
+          sum[i] += s;
+        });
+      });
+      return sum.map((x) => Math.round(x / players.length));
+    };
+
+    const eliteCount = Math.max(1, Math.ceil(playerList.length * 0.15));
+    const elitePlayers = playerList.slice(0, eliteCount);
+    const proPlayers = playerList.slice(eliteCount, Math.max(eliteCount + 1, Math.ceil(playerList.length * 0.5)));
+    const avgPlayers = playerList;
+
+    const eliteStats = calcBenchmark(elitePlayers);
+    const proStats = calcBenchmark(proPlayers.length > 0 ? proPlayers : elitePlayers);
+    const avgStats = calcBenchmark(avgPlayers);
+
+    const eliteColor = isVal ? "#00d0eb" : "#f59e0b";
+    const proColor = isVal ? "#ff3366" : "#4c7fd6";
+    const avgColor = isVal ? "#a78bfa" : "#10b981";
+
+    const eliteTier = {
+      name: isVal ? "Elite Player" : "CF Elite",
+      color: eliteColor,
+      stats: eliteStats,
+      tier: "Elite Benchmark",
+      sampleCount: elitePlayers.length,
+      totalRecords: gameRecords.length,
+      topPlayers: elitePlayers.slice(0, 5).map(p => p.ign).join(", "),
+    };
+
+    const proTier = {
+      name: isVal ? "Pro Player" : "CF Pro",
+      color: proColor,
+      stats: proStats,
+      tier: "Pro Benchmark",
+      sampleCount: proPlayers.length,
+      totalRecords: gameRecords.length,
+    };
+
+    const avgTier = {
+      name: "Average Player",
+      color: avgColor,
+      stats: avgStats,
+      tier: "Average Benchmark",
+      sampleCount: avgPlayers.length,
+      totalRecords: gameRecords.length,
+    };
+
+    let result = [];
+    if (dataType === "PRO PLAYERS") {
+      result = [eliteTier, proTier];
+    } else if (dataType === "CASUAL") {
+      result = [avgTier];
+    } else {
+      result = [eliteTier, proTier, avgTier];
+    }
+
+    // Dynamic Player Search matching against database records:
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      const matchedPlayers = playerList.filter(p => p.ign.toLowerCase().includes(q)).slice(0, 3);
+      if (matchedPlayers.length > 0) {
+        const playerColors = ["#38bdf8", "#fbbf24", "#34d399"];
+        matchedPlayers.forEach((mp, idx) => {
+          result.push({
+            name: mp.ign,
+            color: playerColors[idx % playerColors.length],
+            stats: mp.stats,
+            meta: mp.meta,
+            isIndividualPlayer: true,
+            tier: "Individual Player Profile",
+          });
+        });
+      }
+    }
+
+    return result;
+  }, [matchRecords, activeGame, dataType, searchQuery]);
+
   const valorantTheme = {
     color1: "#ff3366", // Red
     color2: "#00d0eb", // Cyan
@@ -1050,19 +1278,7 @@ const Analytics = ({ globalGame, globalTournament }) => {
       "Utility Usage",
       "Clutch %",
     ],
-    radar: [
-      {
-        name: "Elite Player",
-        color: "#00d0eb",
-        stats: [90, 85, 75, 80, 85, 70],
-      },
-      { name: "Pro Player", color: "#ff3366", stats: [75, 95, 60, 90, 65, 85] },
-      {
-        name: "Average Player",
-        color: "#a78bfa",
-        stats: [50, 60, 45, 55, 40, 50],
-      },
-    ],
+    radar: dynamicRadar,
     econ: [
       { round: 1, spent: 800, remaining: 150, prob: 45 },
       { round: 2, spent: 1500, remaining: 1000, prob: 52 },
@@ -1096,15 +1312,7 @@ const Analytics = ({ globalGame, globalTournament }) => {
       "Utility Usage",
       "Clutch %",
     ],
-    radar: [
-      { name: "CF Elite", color: "#f59e0b", stats: [95, 90, 85, 88, 60, 80] },
-      { name: "CF Pro", color: "#4c7fd6", stats: [80, 95, 70, 92, 50, 85] },
-      {
-        name: "Average Player",
-        color: "#10b981",
-        stats: [60, 55, 50, 45, 30, 40],
-      },
-    ],
+    radar: dynamicRadar,
     econ: [
       { round: 1, spent: 500, remaining: 200, prob: 50 },
       { round: 2, spent: 1200, remaining: 800, prob: 55 },
@@ -1132,10 +1340,15 @@ const Analytics = ({ globalGame, globalTournament }) => {
   const activeSynergyData = dynamicSynergy;
   
   // Filter Data based on Search Query
-  const sq = searchQuery.toLowerCase();
-  const filteredRadar = currentData.radar.filter((p) =>
-    p.name.toLowerCase().includes(sq),
-  );
+  const sq = searchQuery.toLowerCase().trim();
+  const filteredRadar = useMemo(() => {
+    if (!sq) return dynamicRadar;
+    const hasPlayerMatch = dynamicRadar.some(p => p.isIndividualPlayer);
+    if (hasPlayerMatch) return dynamicRadar;
+    const filtered = dynamicRadar.filter(p => p.name.toLowerCase().includes(sq));
+    return filtered.length > 0 ? filtered : dynamicRadar;
+  }, [dynamicRadar, sq]);
+
   const filteredSynergy = activeSynergyData.filter(
     (s) =>
       s.agent.toLowerCase().includes(sq) || s.map.toLowerCase().includes(sq),
@@ -1144,9 +1357,11 @@ const Analytics = ({ globalGame, globalTournament }) => {
   const openRadarOverview = (player) => {
     setModalData({
       title: `${player.name} Skill Overview`,
-      description:
-        "Comprehensive breakdown of player statistics across all calculated metrics. Displays the raw dataset being visualized.",
+      description: player.isIndividualPlayer
+        ? `Detailed performance metrics for player ${player.name} calculated across all active database records.`
+        : `Aggregated benchmark tier computed across ${player.sampleCount || "all"} players and ${player.totalRecords || matchRecords.length} match records in the database.`,
       data: player,
+      isRadar: true,
     });
   };
   const openEconOverview = (round) => {
@@ -1206,7 +1421,7 @@ const Analytics = ({ globalGame, globalTournament }) => {
             <div>
               <h1 className="text-xl font-black uppercase tracking-[0.15em] text-theme-text-base">Analytics</h1>
               <p className="text-[10px] text-theme-text-muted mt-0.5 font-medium tracking-wide">
-                {activeGame} &bull; {globalTournament || "Default Tournament"} &bull; Performance Intelligence
+                {activeGame} &bull; {globalTournament || "All Tournaments"} &bull; {matchRecords.length} Database Records Connected
               </p>
             </div>
           </div>
@@ -1257,7 +1472,7 @@ const Analytics = ({ globalGame, globalTournament }) => {
             <Card
               title="Global Player Skill Matrix"
               accent={accent}
-              badge="Radar"
+              badge={`Radar • ${matchRecords.length} DB Records`}
               icon={
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <polygon points="12,2 22,8.5 22,15.5 12,22 2,15.5 2,8.5" />
@@ -1439,6 +1654,117 @@ const Analytics = ({ globalGame, globalTournament }) => {
                     </span>
                   </div>
                 </div>
+              </div>
+            ) : modalData.isRadar ? (
+              <div className="flex flex-col gap-4">
+                {/* Header card with rating */}
+                <div
+                  className="rounded-xl p-4 flex items-center justify-between border"
+                  style={{
+                    backgroundColor: `${modalData.data?.color || accent}12`,
+                    borderColor: `${modalData.data?.color || accent}40`,
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-4 h-4 rounded-full shadow-[0_0_10px_currentColor] shrink-0"
+                      style={{ backgroundColor: modalData.data?.color, color: modalData.data?.color }}
+                    />
+                    <div>
+                      <div className="text-base font-black text-theme-text-base">
+                        {modalData.data?.name}
+                      </div>
+                      <div className="text-[10px] text-theme-text-muted font-bold uppercase tracking-wider">
+                        {modalData.data?.tier || "Skill Tier"} &bull;{" "}
+                        {modalData.data?.sampleCount
+                          ? `${modalData.data.sampleCount} Players Aggregated`
+                          : modalData.data?.meta
+                          ? `${modalData.data.meta.matches} Records Analyzed`
+                          : "Database Benchmark"}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div
+                      className="text-2xl font-black"
+                      style={{ color: modalData.data?.color || accent }}
+                    >
+                      {modalData.data?.stats
+                        ? Math.round(
+                            modalData.data.stats.reduce((a, b) => a + b, 0) /
+                              modalData.data.stats.length,
+                          )
+                        : "--"}
+                      <span className="text-xs text-theme-text-muted font-normal">/100</span>
+                    </div>
+                    <div className="text-[9px] text-theme-text-faint font-bold uppercase tracking-widest">
+                      Overall Score
+                    </div>
+                  </div>
+                </div>
+
+                {/* 6 Skill Breakdown Bars */}
+                <div className="bg-bg-200 rounded-xl p-4 border border-slate-700/50 flex flex-col gap-3">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-theme-text-muted mb-1">
+                    Calculated Skill Matrix Metrics
+                  </div>
+                  {(currentData.radarAxes || []).map((axis, idx) => {
+                    const score = modalData.data?.stats?.[idx] || 0;
+                    return (
+                      <div key={axis} className="flex flex-col gap-1">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="font-semibold text-theme-text-base">{axis}</span>
+                          <span
+                            className="font-black font-mono text-sm"
+                            style={{ color: modalData.data?.color || accent }}
+                          >
+                            {score}
+                            <span className="text-[10px] text-theme-text-muted font-normal">/100</span>
+                          </span>
+                        </div>
+                        <div className="w-full h-2 bg-bg-300 rounded-full overflow-hidden border border-slate-700/40">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${Math.min(100, Math.max(0, score))}%`,
+                              backgroundColor: modalData.data?.color || accent,
+                              boxShadow: `0 0 8px ${modalData.data?.color || accent}80`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Player Meta stats if available */}
+                {modalData.data?.meta && (
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="bg-bg-200/80 p-2.5 rounded-lg border border-slate-700/40 text-center">
+                      <div className="text-[9px] text-theme-text-muted font-bold uppercase tracking-wider">K/D Ratio</div>
+                      <div className="text-sm font-black text-theme-text-base">{modalData.data.meta.kd}</div>
+                      <div className="text-[8px] text-theme-text-faint">{modalData.data.meta.kills}K / {modalData.data.meta.deaths}D</div>
+                    </div>
+                    <div className="bg-bg-200/80 p-2.5 rounded-lg border border-slate-700/40 text-center">
+                      <div className="text-[9px] text-theme-text-muted font-bold uppercase tracking-wider">Win Rate</div>
+                      <div className="text-sm font-black text-theme-text-base">{modalData.data.meta.winRate}%</div>
+                      <div className="text-[8px] text-theme-text-faint">{modalData.data.meta.rounds} Rounds</div>
+                    </div>
+                    <div className="bg-bg-200/80 p-2.5 rounded-lg border border-slate-700/40 text-center">
+                      <div className="text-[9px] text-theme-text-muted font-bold uppercase tracking-wider">Combat ACS</div>
+                      <div className="text-sm font-black text-theme-text-base">{modalData.data.meta.acs}</div>
+                      <div className="text-[8px] text-theme-text-faint">Headshot {modalData.data.meta.hsPct}%</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* If Top Players in benchmark */}
+                {modalData.data?.topPlayers && (
+                  <div className="text-[10px] text-theme-text-muted bg-bg-200/50 p-2.5 rounded-lg border border-slate-700/30">
+                    <span className="font-bold text-theme-text-base">Sample Top Performers: </span>
+                    {modalData.data.topPlayers}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="bg-bg-300 rounded-lg border border-[#1c2532] overflow-x-auto" style={{ padding: "16px" }}>
