@@ -1,7 +1,7 @@
 {
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://REPLACE_WITH_YOUR_BACKEND_URL/api/$1" },
-    { "source": "/uploads/(.*)", "destination": "https://REPLACE_WITH_YOUR_BACKEND_URL/uploads/$1" },
+    { "source": "/api/(.*)", "destination": "https://esports-htbz.onrender.com/api/$1" },
+    { "source": "/uploads/(.*)", "destination": "https://esports-htbz.onrender.com/uploads/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
