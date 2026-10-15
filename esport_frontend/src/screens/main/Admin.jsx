@@ -680,8 +680,6 @@ const Admin = ({ globalGame, globalTournament }) => {
                  </div>
                  <div className="flex items-center gap-4">
                     <button onClick={() => setShowCreateModal(true)} className="bg-cyan-600 hover:bg-cyan-500 text-theme-text-base text-xs font-bold transition-colors shadow-lg shadow-cyan-900/20" style={{ padding: "12px 32px", borderRadius: "9999px" }}>Create Admin</button>
-                    <button className="bg-transparent border border-cyan-700/50 text-cyan-500 text-xs font-bold hover:bg-cyan-900/30 transition-colors" style={{ padding: "12px 32px", borderRadius: "9999px" }}>Create New Player</button>
-                    <button className="bg-transparent border border-cyan-700/50 text-cyan-500 text-xs font-bold hover:bg-cyan-900/30 transition-colors" style={{ padding: "12px 32px", borderRadius: "9999px" }}>Import Teams via CSV</button>
                  </div>
               </div>
             </div>
