@@ -1,37 +1,37 @@
 import React, { useState } from 'react';
 import { apiFetch } from '../../utils/api';
 const UsersIcon = () => (
-  <svg xmlns="http://www.w3.org/w0000/svg" className="h-8 w-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
   </svg>
 );
 const TrophyIcon = () => (
-  <svg xmlns="http://www.w3.org/w0000/svg" className="h-8 w-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
   </svg>
 );
 const CalendarIcon = () => (
-  <svg xmlns="http://www.w3.org/w0000/svg" className="h-8 w-8 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
   </svg>
 );
 const ClipboardCheckIcon = () => (
-  <svg xmlns="http://www.w3.org/w0000/svg" className="h-8 w-8 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
   </svg>
 );
 const LockIcon = () => (
-  <svg xmlns="http://www.w3.org/w0000/svg" className="h-8 w-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
   </svg>
 );
 const SearchIcon = () => (
-  <svg xmlns="http://www.w3.org/w0000/svg" className="h-4 w-4 text-theme-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-theme-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
   </svg>
 );
 const ChevronDownIcon = () => (
-  <svg xmlns="http://www.w3.org/w0000/svg" className="h-4 w-4 text-theme-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-theme-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
   </svg>
 );
@@ -62,7 +62,7 @@ const Toggle = ({ enabled, onChange, label, sublabel }) => (
       )}
     </div>
     <button
-      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${enabled ? "bg-blue-600 shadow-[0_0_8px_color-mix(in_srgb,var(--color--)_%,transparent)]" : "bg-bg-400 light:bg-slate-300"}`}
+      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${enabled ? "bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.5)]" : "bg-bg-400 light:bg-slate-300"}`}
       onClick={() => onChange(!enabled)}
     >
       <span
@@ -117,7 +117,7 @@ const Input = ({ label, placeholder, type = "text", ...props }) => (
   </div>
 );
 const CloseIcon = () => (
-  <svg xmlns="http://www.w3.org/w0000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
   </svg>
 );
@@ -296,7 +296,7 @@ const Admin = ({ globalGame, globalTournament }) => {
 
   const fetchFormulas = async () => {
     try {
-      const res = await fetch('/api/settings/formula');
+      const res = await apiFetch('/api/settings/formula');
       const data = await res.json();
       if (Array.isArray(data)) setFormulas(data);
     } catch (e) { console.error(e); }
@@ -314,9 +314,8 @@ const Admin = ({ globalGame, globalTournament }) => {
   const saveFormula = async () => {
     if (!activeFormula.id) return alert('Cannot save default formula directly. Ensure database is seeded.');
     try {
-      const res = await fetch(`/api/settings/formula/${activeFormula.id}`, {
+      const res = await apiFetch(`/api/settings/formula/${activeFormula.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(activeFormula)
       });
       if (res.ok) alert('Formula successfully saved to the database!');
@@ -383,7 +382,7 @@ const Admin = ({ globalGame, globalTournament }) => {
   React.useEffect(() => {
     const fetchRulebook = async () => {
       try {
-        const res = await fetch('/api/admin/rulebook');
+        const res = await apiFetch('/api/admin/rulebook');
         if (res.ok) {
           const data = await res.json();
           if (data && data.file_url) setRulebookUrl(data.file_url);
@@ -399,7 +398,7 @@ const Admin = ({ globalGame, globalTournament }) => {
     const formData = new FormData();
     formData.append('rulebook', file);
     try {
-      const res = await fetch('/api/admin/rulebook', { method: 'POST', body: formData });
+      const res = await apiFetch('/api/admin/rulebook', { method: 'POST', body: formData });
       if (res.ok) {
         const data = await res.json();
         setRulebookUrl(data.file_url);
@@ -511,7 +510,7 @@ const Admin = ({ globalGame, globalTournament }) => {
                     <option value="CROSSFIRE" className="bg-bg-300">CROSSFIRE</option>
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center pr-5 pointer-events-none text-cyan-400">
-                    <svg xmlns="http://www.w3.org/w0000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
@@ -732,7 +731,7 @@ const Admin = ({ globalGame, globalTournament }) => {
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="bg-bg-300 p-8 rounded-xl border border-[#1c2532] shadow-2xl w-full max-w-md relative animate-in fade-in zoom-in duration-200">
             <button onClick={() => setShowCreateModal(false)} className="absolute top-4 right-4 text-theme-text-faint hover:text-theme-text-base transition-colors">
-              <svg xmlns="http://www.w3.org/w0000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
             <div className="flex items-center space-x-3 mb-6">
               <LockIcon />
@@ -787,7 +786,7 @@ const Admin = ({ globalGame, globalTournament }) => {
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="bg-bg-300 rounded-xl border border-[#1c2532] shadow-2xl w-full max-w-md relative animate-in fade-in zoom-in duration-200" style={{ padding: "32px" }}>
             <button onClick={() => setEditingUser(null)} className="absolute text-theme-text-faint hover:text-theme-text-base transition-colors" style={{ top: "16px", right: "16px" }}>
-              <svg xmlns="http://www.w3.org/w0000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
             <div className="flex items-center" style={{ gap: "12px", marginBottom: "24px" }}>
               <LockIcon />

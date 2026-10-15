@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { apiFetch } from "../../utils/api";
 const SearchIcon = () => (
   <svg
-    xmlns="http://www.w3.org/w0000/svg"
+    xmlns="http://www.w3.org/2000/svg"
     className="h-4 w-4 text-theme-text-faint"
     fill="none"
     viewBox="0 0 24 24"
@@ -18,7 +18,7 @@ const SearchIcon = () => (
 );
 const ChevronDown = () => (
   <svg
-    xmlns="http://www.w3.org/w0000/svg"
+    xmlns="http://www.w3.org/2000/svg"
     className="h-4 w-4 text-theme-text-muted"
     fill="none"
     viewBox="0 0 24 24"
@@ -534,11 +534,14 @@ const BubbleChart = ({ data, theme, onSelect }) => {
         {data.map((d, i) => {
           const aIdx = agents.indexOf(d.agent);
           const mIdx = maps.indexOf(d.map);
-          const y =
-            padY + (aIdx * (h - padY - padBottom)) / (agents.length - 1 || 1);
-          const x =
-            padX + (mIdx * (w - padX * 2 - 20)) / (maps.length - 1 || 1);
-          const r = Math.max(2, (d.pickRate / 300) * 12);
+          const y = (aIdx >= 0 && agents.length > 1)
+            ? padY + (aIdx * (h - padY - padBottom)) / (agents.length - 1)
+            : padY + (h - padY - padBottom) / 2;
+          const x = (mIdx >= 0 && maps.length > 1)
+            ? padX + (mIdx * (w - padX * 2 - 20)) / (maps.length - 1)
+            : padX + (w - padX * 2 - 20) / 2;
+          const pickNum = parseFloat(d.pickRate) || 0;
+          const r = Math.max(2, Math.min(24, (pickNum / 300) * 12));
           let color = theme.color1;
           if (d.winRate > 60) color = theme.color2;
           if (d.winRate > 70) color = theme.color3;

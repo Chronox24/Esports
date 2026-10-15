@@ -56,10 +56,15 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
       if (contentType.includes('application/json')) {
         data = await response.json();
       } else {
+        const text = await response.text();
         if (!response.ok) {
-          throw new Error(`Server error (${response.status}): Backend service unreachable or returned HTML instead of JSON.`);
+          throw new Error(`Server error (${response.status}): ${text.slice(0, 120) || 'Service unavailable'}`);
         }
-        data = await response.json();
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = { message: text };
+        }
       }
       if (!response.ok) {
         throw new Error(data?.error || 'Login failed');

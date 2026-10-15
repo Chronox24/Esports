@@ -7,7 +7,7 @@ const Card = ({ title, children, className = "" }) => {
   const [filterValue, setFilterValue] = useState("Last 7 Days");
 
   return (
-    <div className={`bg-bg-200/90 backdrop-blur-md rounded-2xl border border-white/5 shadow-[0_0_30px_color-mix(in_srgb,var(--color--)_%,transparent)] hover:shadow-[0_0_30px_color-mix(in_srgb,var(--color--)_%,transparent)] transition-all duration-500 flex flex-col overflow-hidden relative group ${className}`}>
+    <div className={`bg-bg-200/90 backdrop-blur-md rounded-2xl border border-white/5 shadow-[0_0_30px_rgba(6,182,212,0.15)] hover:shadow-[0_0_30px_rgba(6,182,212,0.25)] transition-all duration-500 flex flex-col overflow-hidden relative group ${className}`}>
       <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-[100px] -z-10 pointer-events-none"></div>
       <div className="border-b border-white/5 bg-bg-300/50 relative z-50 flex justify-end items-center shrink-0" style={{ padding: "24px 32px" }}>
         <div className="flex items-center relative">
@@ -102,8 +102,8 @@ const MapBpResults = ({ globalGame, globalTournament }) => {
           {dbVetoes.length === 0 && (
             <div className="absolute top-[80px] left-0 right-0 bottom-0 flex flex-col items-center justify-center pointer-events-none">
               <div className="flex flex-col items-center justify-center pointer-events-auto">
-                <div className="w-24 h-24 rounded-full bg-gradient-to-b from-cyan-500/20 to-transparent flex items-center justify-center border border-cyan-500/30 shadow-[0_0_30px_color-mix(in_srgb,var(--color--)_%,transparent)]" style={{ marginBottom: "32px" }}>
-                  <Map size={48} strokeWidth={1.5} className="text-cyan-400 drop-shadow-[0_0_8px_color-mix(in_srgb,var(--color--)_%,transparent)]" />
+                <div className="w-24 h-24 rounded-full bg-gradient-to-b from-cyan-500/20 to-transparent flex items-center justify-center border border-cyan-500/30 shadow-[0_0_30px_rgba(6,182,212,0.25)]" style={{ marginBottom: "32px" }}>
+                  <Map size={48} strokeWidth={1.5} className="text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]" />
                 </div>
                 <div className="text-theme-text-base text-xl font-black tracking-wider uppercase mb-2 text-center">No Map Veto Results Found</div>
                 <div className="text-theme-text-muted text-sm font-medium max-w-md mx-auto text-center">The veto data for this tournament is either unavailable or the matches have not yet concluded. Check back soon.</div>

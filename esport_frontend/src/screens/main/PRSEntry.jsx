@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 
-const socket = io("http://localhost:5000");
+const SOCKET_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:5000' : undefined);
+const socket = io(SOCKET_URL);
 
 function useStickyState(defaultValue, key) {
   const [value, setValue] = useState(() => {

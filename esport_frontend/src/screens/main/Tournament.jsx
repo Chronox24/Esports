@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import Bracket from "./Bracket.jsx";
+import { apiFetch } from "../../utils/api";
 
 function useStickyState(defaultValue, key) {
   const [value, setValue] = React.useState(() => {
@@ -742,7 +743,7 @@ const LiveUpcomingTab = ({ game, globalTournament, onOpenCreateModal }) => {
   const [showBracket, setShowBracket] = React.useState(false);
   
   React.useEffect(() => {
-    fetch('http://localhost:5000/api/tournaments')
+    apiFetch('/api/tournaments')
       .then(res => res.json())
       .then(data => {
         if (data && Array.isArray(data)) {
@@ -761,7 +762,7 @@ const LiveUpcomingTab = ({ game, globalTournament, onOpenCreateModal }) => {
     setShowBracket(false);
     if (!matchesByTournament[tName]) {
       try {
-        const res = await fetch(`http://localhost:5000/api/matches?tournament=${tName}`);
+        const res = await apiFetch(`/api/matches?tournament=${tName}`);
         if (res.ok) {
           const data = await res.json();
           const mapped = data.map(m => ({
@@ -883,8 +884,8 @@ const ResultTab = ({ game, globalTournament }) => {
   const [liveBrackets, setLiveBrackets] = useState([]);
   const [bracketResults, setBracketResults] = useState([]);
   useEffect(() => {
-    fetch(
-      `http://localhost:5000/api/brackets?tournament=${globalTournament?.name || "Default"}&game_title=${game}`,
+    apiFetch(
+      `/api/brackets?tournament=${globalTournament?.name || "Default"}&game_title=${game}`,
     )
       .then((res) => res.json())
       .then((data) =>
@@ -904,7 +905,7 @@ const ResultTab = ({ game, globalTournament }) => {
       )
       .catch(console.error);
 
-    fetch(`http://localhost:5000/api/bracket-results?tournament_name=${globalTournament?.name || "Default"}&game_title=${game}&format=Results`)
+    apiFetch(`/api/bracket-results?tournament_name=${globalTournament?.name || "Default"}&game_title=${game}&format=Results`)
       .then(res => res.json())
       .then(data => setBracketResults(data || []))
       .catch(console.error);
@@ -1150,8 +1151,8 @@ const ManageBracketTab = ({ globalGame, globalTournament }) => {
 
   const fetchBrackets = async () => {
     try {
-      const res = await fetch(
-        `http://localhost:5000/api/brackets?tournament=${globalTournament?.name || "Default"}&game_title=${activeGame}`,
+      const res = await apiFetch(
+        `/api/brackets?tournament=${globalTournament?.name || "Default"}&game_title=${activeGame}`,
       );
       if (res.ok) {
         const data = await res.json();
@@ -1179,9 +1180,8 @@ const ManageBracketTab = ({ globalGame, globalTournament }) => {
   }, [globalTournament?.name, activeGame]);
 
   const getOrCreateTeam = async (teamName, teamLogoUrl, teamFile) => {
-    const token = localStorage.getItem("token");
-    const res = await fetch(
-      `http://localhost:5000/api/teams?tournament=${globalTournament?.name || "Default"}`,
+    const res = await apiFetch(
+      `/api/teams?tournament=${globalTournament?.name || "Default"}`,
     );
     const teams = await res.json();
     const existing = teams.find(
@@ -1201,9 +1201,8 @@ const ManageBracketTab = ({ globalGame, globalTournament }) => {
       formData.append("logo", blob, "logo.png");
     }
 
-    const createRes = await fetch("http://localhost:5000/api/teams", {
+    const createRes = await apiFetch("/api/teams", {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
       body: formData,
     });
     if (createRes.ok) {
@@ -1220,18 +1219,13 @@ const ManageBracketTab = ({ globalGame, globalTournament }) => {
     }
 
     setIsSubmitting(true);
-    const token = localStorage.getItem("token");
 
     const teamAId = await getOrCreateTeam(teamA, teamALogo, teamAFile);
     const teamBId = await getOrCreateTeam(teamB, teamBLogo, teamBFile);
 
     if (teamAId && teamBId) {
-      await fetch("http://localhost:5000/api/brackets", {
+      await apiFetch("/api/brackets", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify({
           tournament_name: globalTournament?.name || "Default",
           game_title: activeGame,
@@ -1260,10 +1254,8 @@ const ManageBracketTab = ({ globalGame, globalTournament }) => {
   };
 
   const removeBracket = async (id) => {
-    const token = localStorage.getItem("token");
-    await fetch(`http://localhost:5000/api/brackets/${id}`, {
+    await apiFetch(`/api/brackets/${id}`, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
     });
     setBrackets(brackets.filter((b) => b.id !== id));
   };
@@ -1552,8 +1544,8 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
 
   const fetchMatches = async () => {
     try {
-      const res = await fetch(
-        `http://localhost:5000/api/matches?tournament=${globalTournament?.name || "Default"}`,
+      const res = await apiFetch(
+        `/api/matches?tournament=${globalTournament?.name || "Default"}`,
       );
       if (res.ok) {
         const data = await res.json();
@@ -1580,9 +1572,8 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
   }, [globalTournament?.name]);
 
   const getOrCreateTeam = async (teamName, teamLogoUrl, teamFile) => {
-    const token = localStorage.getItem("token");
-    const res = await fetch(
-      `http://localhost:5000/api/teams?tournament=${globalTournament?.name || "Default"}`,
+    const res = await apiFetch(
+      `/api/teams?tournament=${globalTournament?.name || "Default"}`,
     );
     const teams = await res.json();
     const existing = teams.find(
@@ -1602,9 +1593,8 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
       formData.append("logo", blob, "logo.png");
     }
 
-    const createRes = await fetch("http://localhost:5000/api/teams", {
+    const createRes = await apiFetch("/api/teams", {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
       body: formData,
     });
     if (createRes.ok) {
@@ -1625,7 +1615,6 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
     }
 
     setIsSubmitting(true);
-    const token = localStorage.getItem("token");
 
     const teamAId = await getOrCreateTeam(teamA, teamALogo, teamAFile);
     const teamBId = await getOrCreateTeam(teamB, teamBLogo, teamBFile);
@@ -1634,12 +1623,8 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
       const parsedDay = day.includes("-")
         ? parseInt(day.split("-")[2], 10)
         : parseInt(day, 10);
-      const matchRes = await fetch("http://localhost:5000/api/matches", {
+      const matchRes = await apiFetch("/api/matches", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify({
           tournament_name: globalTournament?.name || "Default",
           team_a_id: teamAId,
@@ -1671,10 +1656,8 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
   };
 
   const removeMatch = async (id) => {
-    const token = localStorage.getItem("token");
-    await fetch(`http://localhost:5000/api/matches/${id}`, {
+    await apiFetch(`/api/matches/${id}`, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
     });
     setSchedule(schedule.filter((m) => m.id !== id));
   };
@@ -1928,7 +1911,7 @@ const ScheduleTab = ({ game, globalTournament }) => {
   React.useEffect(() => {
     const fetchMatches = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/matches?tournament=${globalTournament?.name || "Default"}`);
+        const res = await apiFetch(`/api/matches?tournament=${globalTournament?.name || "Default"}`);
         if (res.ok) {
           const data = await res.json();
           const mapped = data.map((m) => {
@@ -2510,11 +2493,9 @@ const Tournament = ({ globalGame, globalTournament }) => {
                         alert("Tournament Name is required");
                         return;
                       }
-                      const token = localStorage.getItem("token");
                       try {
-                        await fetch("http://localhost:5000/api/tournaments", {
+                        await apiFetch("/api/tournaments", {
                            method: "POST",
-                           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
                            body: JSON.stringify({ name: tournData.name, game: tournData.game }),
                         });
                         setIsCreated(true);

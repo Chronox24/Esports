@@ -53,7 +53,7 @@ const SideNav = ({ activePage, setActivePage, onLogout }) => {
       
       {/* Brand Header */}
       <div className="h-20 flex items-center justify-center border-b border-slate-800/60">
-        <h1 className="text-2xl font-black tracking-[0.15em] text-cyan-400 drop-shadow-[0_0_8px_color-mix(in_srgb,var(--color--)_%,transparent)]">
+        <h1 className="text-2xl font-black tracking-[0.15em] text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]">
           ESPORT
         </h1>
       </div>

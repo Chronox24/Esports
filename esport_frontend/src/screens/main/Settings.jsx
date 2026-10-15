@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
+import { apiFetch } from "../../utils/api";
 const ShieldIcon = () => (
   <svg
-    xmlns="http://www.w3.org/w0000/svg"
+    xmlns="http://www.w3.org/2000/svg"
     className="h-10 w-10 text-red-500"
     fill="none"
     viewBox="0 0 24 24"
@@ -17,7 +18,7 @@ const ShieldIcon = () => (
 );
 const ScaleIcon = () => (
   <svg
-    xmlns="http://www.w3.org/w0000/svg"
+    xmlns="http://www.w3.org/2000/svg"
     className="h-12 w-12 text-cyan-400"
     fill="none"
     viewBox="0 0 24 24"
@@ -33,7 +34,7 @@ const ScaleIcon = () => (
 );
 const LadderIcon = () => (
   <svg
-    xmlns="http://www.w3.org/w0000/svg"
+    xmlns="http://www.w3.org/2000/svg"
     className="h-10 w-10 text-orange-400"
     fill="none"
     viewBox="0 0 24 24"
@@ -49,7 +50,7 @@ const LadderIcon = () => (
 );
 const RuleBookIcon = () => (
   <svg
-    xmlns="http://www.w3.org/w0000/svg"
+    xmlns="http://www.w3.org/2000/svg"
     className="h-10 w-10 text-blue-400"
     fill="none"
     viewBox="0 0 24 24"
@@ -90,7 +91,7 @@ const Toggle = ({ enabled, onChange, label, sublabel }) => (
       )}
     </div>
     <button
-      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${enabled ? "bg-blue-600 shadow-[0_0_8px_color-mix(in_srgb,var(--color--)_%,transparent)]" : "bg-bg-400 light:bg-slate-300"}`}
+      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${enabled ? "bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.5)]" : "bg-bg-400 light:bg-slate-300"}`}
       onClick={() => onChange(!enabled)}
     >
       <span
@@ -147,7 +148,7 @@ const Input = ({ label, placeholder, type = "text", ...props }) => (
 );
 
 const CloseIcon = () => (
-  <svg xmlns="http://www.w3.org/w0000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
   </svg>
 );
@@ -267,7 +268,7 @@ const Settings = ({ globalGame, themeBg, setThemeBg, themeAccent, setThemeAccent
 
   const fetchAdmins = async () => {
     try {
-      const res = await fetch('/api/settings/admins');
+      const res = await apiFetch('/api/settings/admins');
       const data = await res.json();
       if (Array.isArray(data)) setAdmins(data);
     } catch (e) { console.error(e); }
@@ -275,7 +276,7 @@ const Settings = ({ globalGame, themeBg, setThemeBg, themeAccent, setThemeAccent
   
   const fetchReports = async () => {
     try {
-      const res = await fetch('/api/settings/reports');
+      const res = await apiFetch('/api/settings/reports');
       const data = await res.json();
       if (Array.isArray(data)) setReports(data);
     } catch (e) { console.error(e); }
@@ -283,7 +284,7 @@ const Settings = ({ globalGame, themeBg, setThemeBg, themeAccent, setThemeAccent
 
   const fetchBans = async () => {
     try {
-      const res = await fetch('/api/settings/bans');
+      const res = await apiFetch('/api/settings/bans');
       const data = await res.json();
       if (Array.isArray(data)) setBans(data);
     } catch (e) { console.error(e); }
@@ -291,7 +292,7 @@ const Settings = ({ globalGame, themeBg, setThemeBg, themeAccent, setThemeAccent
 
   const fetchHealth = async () => {
     try {
-      const res = await fetch('/api/settings/health');
+      const res = await apiFetch('/api/settings/health');
       const data = await res.json();
       if (data) setHealth(data);
     } catch (e) { console.error(e); }
@@ -352,7 +353,7 @@ const Settings = ({ globalGame, themeBg, setThemeBg, themeAccent, setThemeAccent
                           >
                             {isActive && (
                               <div className="absolute top-1.5 right-1.5 bg-blue-500 text-white rounded-full p-0.5 shadow-sm">
-                                <svg xmlns="http://www.w3.org/w0000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
                                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                 </svg>
                               </div>
@@ -612,7 +613,7 @@ const Settings = ({ globalGame, themeBg, setThemeBg, themeAccent, setThemeAccent
                   <div className="flex items-center" style={{ gap: "12px" }}>
                     <button onClick={async () => {
                       try {
-                        await fetch(`/api/settings/reports/${selectedReport.id}`, { method: 'DELETE' });
+                        await apiFetch(`/api/settings/reports/${selectedReport.id}`, { method: 'DELETE' });
                         await fetchReports();
                         setSelectedReport(null);
                       } catch (e) { console.error(e); }
@@ -634,9 +635,8 @@ const Settings = ({ globalGame, themeBg, setThemeBg, themeAccent, setThemeAccent
                       <button onClick={() => setIsBanning(false)} className="text-xs font-bold text-theme-text-muted hover:text-theme-text-base transition-colors" style={{ padding: "10px 16px" }}>Cancel</button>
                       <button onClick={async () => {
                         try {
-                          await fetch('/api/settings/bans', {
+                          await apiFetch('/api/settings/bans', {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                               player_name: selectedReport.reported,
                               reason: selectedReport.reason,

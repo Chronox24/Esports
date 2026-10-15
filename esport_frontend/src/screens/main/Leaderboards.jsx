@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { apiFetch } from '../../utils/api';
 
 // Modal for team details
 const TeamModal = ({ team, onClose, activeGame }) => {
@@ -151,7 +152,7 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
   const [matchRecords, setMatchRecords] = useState([]);
 
   useEffect(() => {
-    fetch(`http://localhost:5000/api/match-records?tournament=${encodeURIComponent(globalTournament || 'Default')}`)
+    apiFetch(`/api/match-records?tournament=${encodeURIComponent(globalTournament || 'Default')}`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {

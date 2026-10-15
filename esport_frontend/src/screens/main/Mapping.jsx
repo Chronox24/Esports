@@ -3,7 +3,7 @@ import { apiFetch } from "../../utils/api";
 import MapBpResults from "./MapBpResults";
 const SearchIcon = () => (
   <svg
-    xmlns="http://www.w3.org/w0000/svg"
+    xmlns="http://www.w3.org/2000/svg"
     className="h-5 w-5 text-theme-text-muted"
     fill="none"
     viewBox="0 0 24 24"
@@ -19,7 +19,7 @@ const SearchIcon = () => (
 );
 const DownloadIcon = () => (
   <svg
-    xmlns="http://www.w3.org/w0000/svg"
+    xmlns="http://www.w3.org/2000/svg"
     className="h-5 w-5"
     fill="none"
     viewBox="0 0 24 24"
@@ -35,7 +35,7 @@ const DownloadIcon = () => (
 );
 const UploadIcon = () => (
   <svg
-    xmlns="http://www.w3.org/w0000/svg"
+    xmlns="http://www.w3.org/2000/svg"
     className="h-8 w-8 text-theme-text-muted mb-2"
     fill="none"
     viewBox="0 0 24 24"
@@ -51,7 +51,7 @@ const UploadIcon = () => (
 );
 const ExclamationIcon = () => (
   <svg
-    xmlns="http://www.w3.org/w0000/svg"
+    xmlns="http://www.w3.org/2000/svg"
     className="h-10 w-10 text-amber-500 mb-3"
     fill="none"
     viewBox="0 0 24 24"
@@ -680,7 +680,7 @@ const Mapping = ({ globalGame, globalTournament }) => {
               <button
                 onClick={toggleVeto}
                 disabled={!currentPhase}
-                className={`text-[13px] font-black uppercase tracking-[0.2em] transition-all transform hover:scale-105 active:scale-95 shadow-lg border ${!currentPhase ? "bg-slate-800 text-theme-text-muted border-slate-700 cursor-not-allowed" : vetoActive ? "bg-amber-500/10 text-amber-500 border-amber-500/30 hover:bg-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.2)]" : "bg-cyan-400/10 text-cyan-400 border-cyan-400/30 hover:bg-cyan-400/20 shadow-[0_0_20px_color-mix(in_srgb,var(--color--)_%,transparent)]"}`}
+                className={`text-[13px] font-black uppercase tracking-[0.2em] transition-all transform hover:scale-105 active:scale-95 shadow-lg border ${!currentPhase ? "bg-slate-800 text-theme-text-muted border-slate-700 cursor-not-allowed" : vetoActive ? "bg-amber-500/10 text-amber-500 border-amber-500/30 hover:bg-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.2)]" : "bg-cyan-400/10 text-cyan-400 border-cyan-400/30 hover:bg-cyan-400/20 shadow-[0_0_20px_rgba(6,182,212,0.3)]"}`}
                 style={{ padding: "14px 32px", borderRadius: "12px" }}
               >
                 {" "}
@@ -726,7 +726,7 @@ const Mapping = ({ globalGame, globalTournament }) => {
               </div>
             ))}{" "}
             <div
-              className={`flex items-center justify-center transition-colors border ${!currentPhase ? "bg-cyan-400/20 border-cyan-400/50 shadow-[0_0_15px_color-mix(in_srgb,var(--color--)_%,transparent)]" : "bg-transparent border-transparent opacity-40"}`}
+              className={`flex items-center justify-center transition-colors border ${!currentPhase ? "bg-cyan-400/20 border-cyan-400/50 shadow-[0_0_15px_rgba(6,182,212,0.3)]" : "bg-transparent border-transparent opacity-40"}`}
               style={{ padding: "8px 16px", borderRadius: "12px" }}
             >
               {" "}
@@ -1047,7 +1047,7 @@ const Mapping = ({ globalGame, globalTournament }) => {
             </button>
             <button
               style={{
-                boxShadow: "0 4px 0 #065f46, 0 6px 16px color-mix(in_srgb,var(--color--)_%,transparent)",
+                boxShadow: "0 4px 0 #065f46, 0 6px 16px rgba(16,185,129,0.3)",
                 transform: "translateY(0)",
                 padding: "12px 24px",
                 borderRadius: "12px",
@@ -1055,17 +1055,17 @@ const Mapping = ({ globalGame, globalTournament }) => {
               onMouseDown={(e) => {
                 e.currentTarget.style.transform = "translateY(3px)";
                 e.currentTarget.style.boxShadow =
-                  "0 1px 0 #065f46, 0 2px 4px color-mix(in_srgb,var(--color--)_%,transparent)";
+                  "0 1px 0 #065f46, 0 2px 4px rgba(16,185,129,0.2)";
               }}
               onMouseUp={(e) => {
                 e.currentTarget.style.transform = "translateY(0)";
                 e.currentTarget.style.boxShadow =
-                  "0 4px 0 #065f46, 0 6px 16px color-mix(in_srgb,var(--color--)_%,transparent)";
+                  "0 4px 0 #065f46, 0 6px 16px rgba(16,185,129,0.3)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = "translateY(0)";
                 e.currentTarget.style.boxShadow =
-                  "0 4px 0 #065f46, 0 6px 16px color-mix(in_srgb,var(--color--)_%,transparent)";
+                  "0 4px 0 #065f46, 0 6px 16px rgba(16,185,129,0.3)";
               }}
               className="bg-cyan-400/15 text-cyan-400 text-xs font-bold tracking-wide transition-all cursor-pointer border border-cyan-400/40 hover:bg-cyan-400/25"
             >
@@ -1218,7 +1218,7 @@ const Mapping = ({ globalGame, globalTournament }) => {
               onClick={() => setActiveTab(tab)}
               className={`relative flex-1 whitespace-nowrap transition-all duration-300 text-[11px] lg:text-[13px] font-black uppercase tracking-widest overflow-hidden ${
                 activeTab === tab
-                  ? "text-cyan-400 shadow-[0_8px_25px_color-mix(in_srgb,var(--color--)_%,transparent)] scale-[1.02] border border-cyan-400/30 bg-cyan-400/10 z-10"
+                  ? "text-cyan-400 shadow-[0_8px_25px_rgba(6,182,212,0.35)] scale-[1.02] border border-cyan-400/30 bg-cyan-400/10 z-10"
                   : "text-theme-text-muted hover:text-theme-text-base hover:bg-slate-800/80 border border-transparent hover:border-slate-600/50"
               }`}
               style={{ padding: "12px 24px", borderRadius: "12px" }}

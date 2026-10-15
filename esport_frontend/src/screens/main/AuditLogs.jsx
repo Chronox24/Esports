@@ -45,7 +45,7 @@ const AuditLogs = () => {
         <div className="flex items-center justify-end" style={{ marginBottom: '32px' }}>
           <button 
             onClick={fetchLogs}
-            className="flex items-center gap-2 px-6 py-3 bg-bg-300 light:bg-white hover:bg-bg-400 light:hover:bg-slate-50 border border-[#2a3648] light:border-slate-300 rounded-xl text-cyan-400 light:text-cyan-600 text-xs font-bold tracking-widest uppercase transition-all shadow-[0_0_15px_color-mix(in_srgb,var(--color--)_%,transparent)] hover:shadow-[0_0_20px_color-mix(in_srgb,var(--color--)_%,transparent)]" style={{ padding: "12px 24px", borderRadius: "9999px" }}
+            className="flex items-center gap-2 px-6 py-3 bg-bg-300 light:bg-white hover:bg-bg-400 light:hover:bg-slate-50 border border-[#2a3648] light:border-slate-300 rounded-xl text-cyan-400 light:text-cyan-600 text-xs font-bold tracking-widest uppercase transition-all shadow-[0_0_15px_rgba(6,182,212,0.2)] hover:shadow-[0_0_20px_rgba(6,182,212,0.35)]" style={{ padding: "12px 24px", borderRadius: "9999px" }}
           >
             <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -61,7 +61,7 @@ const AuditLogs = () => {
 
         <div className="bg-bg-300 light:bg-white rounded-xl border border-[#1c2532] light:border-slate-200 shadow-xl flex flex-col mb-8">
            <div className="border-b border-[#1c2532] light:border-slate-200 bg-bg-300 light:bg-slate-50 flex flex-col md:flex-row md:justify-between md:items-center relative overflow-hidden" style={{ padding: "24px 32px", gap: "16px" }}>
-               <div className="absolute top-0 left-0 w-1 h-full bg-cyan-500 shadow-[0_0_15px_color-mix(in_srgb,var(--color--)_%,transparent)]"></div>
+               <div className="absolute top-0 left-0 w-1 h-full bg-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.4)]"></div>
                <h2 className="text-sm font-black text-theme-text-base light:text-slate-700 tracking-widest uppercase ml-3">Admin and User Activity Audit Logs <span className="text-red-500 light:text-red-600">(PH Context)</span></h2>
                <div className="flex flex-wrap items-center gap-4 ml-3 md:ml-0">
                  <div className="flex items-center gap-2 px-3 py-1 bg-bg-400 light:bg-white rounded-lg border border-[#2a3648] light:border-slate-200 shadow-sm" style={{ padding: "8px 16px", borderRadius: "9999px" }}>
@@ -112,7 +112,7 @@ const AuditLogs = () => {
                                 </span>
                               </div>
                               {log.details && (
-                                <button className={`px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-widest transition-all ${isExpanded ? 'bg-cyan-500/20 light:bg-cyan-50 border-cyan-500/50 light:border-cyan-300 text-cyan-400 light:text-cyan-600 shadow-[0_0_10px_color-mix(in_srgb,var(--color--)_%,transparent)]' : 'bg-bg-300 light:bg-white border-[#2a3648] light:border-slate-300 text-theme-text-muted light:text-theme-text-muted hover:text-cyan-400 light:hover:text-cyan-600 hover:border-cyan-500/30'}`} style={{ padding: "8px 16px", borderRadius: "9999px" }} onClick={(e) => { e.stopPropagation(); setExpandedLogId(isExpanded ? null : log.id); }}>
+                                <button className={`px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-widest transition-all ${isExpanded ? 'bg-cyan-500/20 light:bg-cyan-50 border-cyan-500/50 light:border-cyan-300 text-cyan-400 light:text-cyan-600 shadow-[0_0_10px_rgba(6,182,212,0.3)]' : 'bg-bg-300 light:bg-white border-[#2a3648] light:border-slate-300 text-theme-text-muted light:text-theme-text-muted hover:text-cyan-400 light:hover:text-cyan-600 hover:border-cyan-500/30'}`} style={{ padding: "8px 16px", borderRadius: "9999px" }} onClick={(e) => { e.stopPropagation(); setExpandedLogId(isExpanded ? null : log.id); }}>
                                   {isExpanded ? 'Hide' : 'View'}
                                 </button>
                               )}

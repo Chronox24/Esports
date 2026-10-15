@@ -44,7 +44,7 @@ const AnimatedNum = ({ value, suffix = "" }) => {
   useEffect(() => {
     const num = typeof value === "string" ? parseFloat(value) : value;
     if (isNaN(num)) { setDisplay(value); return; }
-    let start = 0;
+    let startT = null;
     const dur = 600;
     const step = (ts) => {
       if (!startT) startT = ts;
@@ -52,7 +52,6 @@ const AnimatedNum = ({ value, suffix = "" }) => {
       setDisplay(Number.isInteger(num) ? Math.round(p * num) : (p * num).toFixed(2));
       if (p < 1) requestAnimationFrame(step);
     };
-    let startT = null;
     requestAnimationFrame(step);
   }, [value]);
   return <>{display}{suffix}</>;

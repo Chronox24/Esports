@@ -237,7 +237,7 @@ const MatchCard = ({ match, onChange, matchNumber }) => {
   const cardBorder = match.isFinals
     ? '1px solid rgba(234,179,8,0.4)'
     : hasWinner
-      ? '1px solid color-mix(in_srgb,var(--color--)_%,transparent)'
+      ? '1px solid rgba(6, 182, 212, 0.5)'
       : '1px solid rgba(51,65,85,0.4)';
 
   const rowStyle = (isWinner) => ({
@@ -463,7 +463,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
         lastFetchedTournament.current = tournamentKey;
 
         // 1. Fetch Teams
-        const resTeams = await fetch(`http://localhost:5000/api/teams?tournament=${tName}`);
+        const resTeams = await apiFetch(`/api/teams?tournament=${tName}`);
         let dbTeams = [];
         if (resTeams.ok) {
           const teamsData = await resTeams.json();
@@ -471,7 +471,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
         }
 
         // 2. Fetch Bracket State
-        const resAll = await fetch(`http://localhost:5000/api/bracket-states-all`);
+        const resAll = await apiFetch(`/api/bracket-states-all`);
         if (resAll.ok) {
           const allStates = await resAll.json();
           const tName = globalTournament?.name || 'Default';
@@ -716,9 +716,8 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
           const formData = new FormData();
           formData.append('team_name', tName);
           formData.append('tournament_name', globalTournament?.name || 'Default');
-          await fetch('http://localhost:5000/api/teams', {
+          await apiFetch('/api/teams', {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
             body: formData
           });
         }
@@ -1237,7 +1236,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
                     </td>
                     <td style={{ padding: "12px 16px" }}>
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-cyan-900/40 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-xs font-black shadow-[0_0_10px_color-mix(in_srgb,var(--color--)_%,transparent)]">
+                        <div className="w-8 h-8 rounded-full bg-cyan-900/40 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-xs font-black shadow-[0_0_10px_rgba(6,182,212,0.3)]">
                           {team.name.substring(0, 2).toUpperCase()}
                         </div>
                         <span className="text-theme-text-base font-bold">{team.name}</span>
@@ -1382,7 +1381,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
                 className="w-full bg-theme-input border border-theme-input px-5 py-4 text-[13px] text-theme-text-base placeholder-theme-text-muted focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all duration-200 pr-14"
                 style={{ borderRadius: "16px" }}
               />
-              <button type="submit" disabled={!newTeam.trim()} className="absolute right-2 top-2 bottom-2 px-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 flex items-center justify-center transition-colors shadow-[0_0_10px_color-mix(in_srgb,var(--color--)_%,transparent)] disabled:opacity-50 disabled:cursor-not-allowed" style={{ borderRadius: "12px" }}>
+              <button type="submit" disabled={!newTeam.trim()} className="absolute right-2 top-2 bottom-2 px-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 flex items-center justify-center transition-colors shadow-[0_0_10px_rgba(6,182,212,0.4)] disabled:opacity-50 disabled:cursor-not-allowed" style={{ borderRadius: "12px" }}>
                 <Plus size={18} strokeWidth={2.5} />
               </button>
             </form>
@@ -1528,7 +1527,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
         {!isReadOnly && (
           <button
             onClick={() => setIsRosterOpen(!isRosterOpen)}
-            className={`absolute left-3 top-1/2 -translate-y-1/2 z-30 w-12 h-12 flex items-center justify-center bg-bg-200/90 backdrop-blur-md border border-theme-input rounded-full text-theme-text-muted hover:text-cyan-400 hover:bg-theme-input hover:border-cyan-500/50 shadow-xl hover:shadow-[0_0_15px_color-mix(in_srgb,var(--color-cyan-500) 50%,transparent)] transition-all duration-700 group ${isIdle ? 'opacity-20' : 'opacity-100 hover:opacity-100'}`}
+            className={`absolute left-3 top-1/2 -translate-y-1/2 z-30 w-12 h-12 flex items-center justify-center bg-bg-200/90 backdrop-blur-md border border-theme-input rounded-full text-theme-text-muted hover:text-cyan-400 hover:bg-theme-input hover:border-cyan-500/50 shadow-xl hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] transition-all duration-700 group ${isIdle ? 'opacity-20' : 'opacity-100 hover:opacity-100'}`}
           >
             {isRosterOpen ? <PanelLeftClose size={24} className="group-hover:scale-110 transition-transform" /> : <PanelLeftOpen size={24} className="group-hover:scale-110 transition-transform" />}
           </button>
@@ -1593,7 +1592,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
                 onClick={() => setActiveFormat(format)}
                 className={`flex-1 text-sm font-bold transition-all duration-300 whitespace-nowrap shrink-0 cursor-pointer
                   ${activeFormat === format
-                    ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-theme-text-base shadow-[0_0_16px_color-mix(in_srgb,var(--color-cyan-500) 50%,transparent)]"
+                    ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-theme-text-base shadow-[0_0_16px_rgba(6,182,212,0.4)]"
                     : "bg-transparent text-theme-text-muted hover:text-theme-text-base hover:bg-theme-input"
                   } ${isReadOnly && activeFormat !== format ? 'hidden' : ''}`}
                 style={{ padding: "16px", borderRadius: "12px" }}
@@ -1646,7 +1645,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
             <button
               onClick={saveBracketState}
               disabled={isSaving}
-              className="flex items-center space-x-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-theme-text-base font-bold uppercase tracking-[0.12em] hover:shadow-[0_0_20px_color-mix(in_srgb,var(--color--)_%,transparent)] transition-all duration-300 disabled:opacity-50 cursor-pointer"
+              className="flex items-center space-x-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-theme-text-base font-bold uppercase tracking-[0.12em] hover:shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all duration-300 disabled:opacity-50 cursor-pointer"
               style={{ padding: "16px 48px", borderRadius: "16px", gap: "12px" }}
             >
               <SaveIcon size={18} />

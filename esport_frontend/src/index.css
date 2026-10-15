@@ -1044,3 +1044,16 @@ input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+/* Ensure select dropdown options always have high-contrast visible text */
+select option {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+.light select option,
+.light-mode select option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+

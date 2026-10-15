@@ -181,7 +181,7 @@ const PlayerStatsTab = ({ globalGame, globalTournament }) => {
             {mergedData.length > 0 ? mergedData.map((row, idx) => (
               <tr key={idx} className="group">
                 <td className="sticky left-0 z-10" style={{background: 'var(--color-bg-200)'}}>
-                  <div className="bg-theme-input light:bg-slate-100 text-theme-text-muted light:text-theme-text-muted text-[10px] w-6 h-6 rounded flex items-center justify-center mx-auto group-hover:bg-blue-500/20 light:group-hover:bg-blue-100 group-hover:text-blue-400 light:group-hover:text-blue-600 transition-colors">
+                  <div className="bg-theme-input light:bg-slate-100 text-theme-text-muted light:text-theme-text-muted text-[10px] font-bold min-w-[24px] h-6 px-1 rounded flex items-center justify-center mx-auto group-hover:bg-blue-500/20 light:group-hover:bg-blue-100 group-hover:text-blue-400 light:group-hover:text-blue-600 transition-colors">
                     {idx + 1}
                   </div>
                 </td>

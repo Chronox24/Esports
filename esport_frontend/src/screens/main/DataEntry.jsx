@@ -2,7 +2,8 @@ import React, { useState, useMemo, useEffect } from "react";
 import { apiFetch } from "../../utils/api";
 import { io } from "socket.io-client";
 
-const socket = io("http://localhost:5000");
+const SOCKET_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:5000' : undefined);
+const socket = io(SOCKET_URL);
 const IconBroadcast = () => (
   <svg
     className="w-4 h-4"
@@ -275,7 +276,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
         const queryParams = new URLSearchParams({
           game: game
         }).toString();
-        const res = await fetch(`http://localhost:5000/api/match_records?${queryParams}`);
+        const res = await apiFetch(`/api/match_records?${queryParams}`);
         if (res.ok) {
           const data = await res.json();
           // Sort chronologically (newest first) so recently submitted sets appear at the top
@@ -1627,7 +1628,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                             <div className="w-px h-5 bg-slate-700/50 light:bg-slate-300 flex-shrink-0 hidden md:block"></div>
                             {/* Performance score */}
                             <div className="flex flex-col items-center w-9 sm:w-10 flex-shrink-0">
-                              <span className="text-[7px] sm:text-[8px] font-bold text-slate-500 uppercase tracking-wider text-center truncate w-full" title="Performance Score">Perf</span>
+                              <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 light:text-slate-600 uppercase tracking-wider text-center truncate w-full" title="Performance Score">Perf</span>
                               <input
                                 type="number"
                                 className={`${tableInput} text-emerald-400 light:text-emerald-600 !w-full text-center text-xs font-bold`}
@@ -1688,7 +1689,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                             {/* Trades / FB / Plant / Defuse (Equal 4-Column Sizing) */}
                             <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
                               <div className="flex flex-col items-center w-9 sm:w-10">
-                                <span className="text-[7px] sm:text-[8px] font-bold text-slate-500 uppercase tracking-wider text-center">Trades</span>
+                                <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 light:text-slate-600 uppercase tracking-wider text-center">Trades</span>
                                 <input
                                   type="number"
                                   className={`${tableInput} text-emerald-400 light:text-emerald-600 !w-full text-center text-xs font-bold`}
@@ -1701,7 +1702,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                                 />
                               </div>
                               <div className="flex flex-col items-center w-9 sm:w-10">
-                                <span className="text-[7px] sm:text-[8px] font-bold text-slate-500 uppercase tracking-wider text-center">FB</span>
+                                <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 light:text-slate-600 uppercase tracking-wider text-center">FB</span>
                                 <input
                                   type="number"
                                   className={`${tableInput} !w-full text-center text-xs font-bold`}
@@ -1714,7 +1715,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                                 />
                               </div>
                               <div className="flex flex-col items-center w-9 sm:w-10">
-                                <span className="text-[7px] sm:text-[8px] font-bold text-slate-500 uppercase tracking-wider text-center">Plant</span>
+                                <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 light:text-slate-600 uppercase tracking-wider text-center">Plant</span>
                                 <input
                                   type="number"
                                   className={`${tableInput} !w-full text-center text-xs font-bold`}
@@ -1727,7 +1728,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                                 />
                               </div>
                               <div className="flex flex-col items-center w-9 sm:w-10">
-                                <span className="text-[7px] sm:text-[8px] font-bold text-slate-500 uppercase tracking-wider text-center">Defuse</span>
+                                <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 light:text-slate-600 uppercase tracking-wider text-center">Defuse</span>
                                 <input
                                   type="number"
                                   className={`${tableInput} !w-full text-center text-xs font-bold`}
@@ -1792,7 +1793,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                               }
                               return (
                                 <div key={g.id} className="flex items-end rounded-lg bg-slate-800/40 light:bg-slate-100 border border-slate-700/30 light:border-slate-200 px-2 py-1 gap-1 flex-shrink-0">
-                                  <div className="text-[7px] font-bold text-slate-500 uppercase tracking-wider self-center mr-1 max-w-[60px] truncate" title={g.label}>{g.label}</div>
+                                  <div className="text-[9px] font-bold text-slate-400 light:text-slate-600 uppercase tracking-wider self-center mr-1 max-w-[70px] truncate" title={g.label}>{g.label}</div>
                                   <div className="flex flex-col items-center">
                                     <span className="text-[8px] font-bold text-slate-500 uppercase">K</span>
                                     <input
@@ -1909,7 +1910,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                             <div className="w-px h-5 bg-slate-700/50 light:bg-slate-300 flex-shrink-0 hidden md:block"></div>
                             {/* Performance score */}
                             <div className="flex flex-col items-center w-9 sm:w-10 flex-shrink-0">
-                              <span className="text-[7px] sm:text-[8px] font-bold text-slate-500 uppercase tracking-wider text-center truncate w-full" title="Performance Score">Perf</span>
+                              <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 light:text-slate-600 uppercase tracking-wider text-center truncate w-full" title="Performance Score">Perf</span>
                               <input
                                 type="number"
                                 className={`${tableInput} text-[#f87171] light:text-red-600 !w-full text-center text-xs font-bold`}
@@ -1970,7 +1971,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                             {/* Trades / FB / Plant / Defuse (Equal 4-Column Sizing) */}
                             <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
                               <div className="flex flex-col items-center w-9 sm:w-10">
-                                <span className="text-[7px] sm:text-[8px] font-bold text-slate-500 uppercase tracking-wider text-center">Trades</span>
+                                <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 light:text-slate-600 uppercase tracking-wider text-center">Trades</span>
                                 <input
                                   type="number"
                                   className={`${tableInput} text-[#f87171] light:text-red-600 !w-full text-center text-xs font-bold`}
@@ -1983,7 +1984,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                                 />
                               </div>
                               <div className="flex flex-col items-center w-9 sm:w-10">
-                                <span className="text-[7px] sm:text-[8px] font-bold text-slate-500 uppercase tracking-wider text-center">FB</span>
+                                <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 light:text-slate-600 uppercase tracking-wider text-center">FB</span>
                                 <input
                                   type="number"
                                   className={`${tableInput} !w-full text-center text-xs font-bold`}
@@ -1996,7 +1997,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                                 />
                               </div>
                               <div className="flex flex-col items-center w-9 sm:w-10">
-                                <span className="text-[7px] sm:text-[8px] font-bold text-slate-500 uppercase tracking-wider text-center">Plant</span>
+                                <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 light:text-slate-600 uppercase tracking-wider text-center">Plant</span>
                                 <input
                                   type="number"
                                   className={`${tableInput} !w-full text-center text-xs font-bold`}
@@ -2009,7 +2010,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                                 />
                               </div>
                               <div className="flex flex-col items-center w-9 sm:w-10">
-                                <span className="text-[7px] sm:text-[8px] font-bold text-slate-500 uppercase tracking-wider text-center">Defuse</span>
+                                <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 light:text-slate-600 uppercase tracking-wider text-center">Defuse</span>
                                 <input
                                   type="number"
                                   className={`${tableInput} !w-full text-center text-xs font-bold`}
@@ -2074,7 +2075,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                               }
                               return (
                                 <div key={g.id} className="flex items-end rounded-lg bg-slate-800/40 light:bg-slate-100 border border-slate-700/30 light:border-slate-200 px-2 py-1 gap-1 flex-shrink-0">
-                                  <div className="text-[7px] font-bold text-slate-500 uppercase tracking-wider self-center mr-1 max-w-[60px] truncate" title={g.label}>{g.label}</div>
+                                  <div className="text-[9px] font-bold text-slate-400 light:text-slate-600 uppercase tracking-wider self-center mr-1 max-w-[70px] truncate" title={g.label}>{g.label}</div>
                                   <div className="flex flex-col items-center">
                                     <span className="text-[8px] font-bold text-slate-500 uppercase">K</span>
                                     <input

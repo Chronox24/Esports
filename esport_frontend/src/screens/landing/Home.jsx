@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LoginScreen from './LoginScreen'; 
+import { apiFetch } from '../../utils/api';
 import './Home.css';
 
 const navItems = [
@@ -107,7 +108,7 @@ const Home = ({ onLoginSuccess }) => {
     const fetchLatestHighlights = async () => {
       try {
         setIsLoadingHighlights(true);
-        const res = await fetch('/api/highlights');
+        const res = await apiFetch('/api/highlights');
         if (res.ok) {
           const data = await res.json();
           if (isMounted && data?.highlights && data.highlights.length > 0) {
@@ -234,7 +235,7 @@ const Home = ({ onLoginSuccess }) => {
     }
 
     try {
-      const res = await fetch('/api/settings/reports', {
+      const res = await apiFetch('/api/settings/reports', {
         method: 'POST',
         body: formData
       });
