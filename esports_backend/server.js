@@ -44,8 +44,11 @@ const upload = multer({
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
 });
 let rawSupabaseUrl = process.env.SUPABASE_URL ? process.env.SUPABASE_URL.trim().replace(/^['"]|['"]$/g, '') : '';
-if (rawSupabaseUrl && !rawSupabaseUrl.startsWith('http://') && !rawSupabaseUrl.startsWith('https://')) {
-  rawSupabaseUrl = `https://${rawSupabaseUrl}`;
+const supabaseMatch = rawSupabaseUrl.match(/([a-z0-9-]+\.supabase\.co)/i);
+if (supabaseMatch) {
+  rawSupabaseUrl = `https://${supabaseMatch[1]}`;
+} else if (rawSupabaseUrl && !rawSupabaseUrl.startsWith('http://') && !rawSupabaseUrl.startsWith('https://')) {
+  rawSupabaseUrl = `https://${rawSupabaseUrl.replace(/^[^a-zA-Z0-9]+/, '')}`;
 }
 const supabaseUrl = rawSupabaseUrl;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY ? process.env.SUPABASE_SERVICE_ROLE_KEY.trim().replace(/^['"]|['"]$/g, '') : '';
