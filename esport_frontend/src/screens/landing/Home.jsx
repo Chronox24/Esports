@@ -10,48 +10,72 @@ const navItems = [
   { key: 'AboutUs', label: 'ABOUT US', path: '/about' },
 ];
 
-const highlightsData = [
+const defaultHighlights = [
   {
-    id: 1,
+    id: 'ErGWTnWIHcI',
+    game: 'CROSSFIRE',
     title: 'CROSSFIRE',
-    subtitle: 'Grand Finals Highlights',
-    img: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070', 
-    videoUrl: 'https://www.youtube.com/embed/placeholder1' 
+    subtitle: 'They pushed together. They fell together. AT_DREE stood alone as he held the site against FV. 👑',
+    img: 'https://i.ytimg.com/vi/ErGWTnWIHcI/hqdefault.jpg',
+    videoUrl: 'https://www.youtube.com/embed/ErGWTnWIHcI',
+    author: 'Crossfire Philippines',
+    authorUrl: 'https://www.youtube.com/@CrossfirePhilippines',
+    watchUrl: 'https://www.youtube.com/watch?v=ErGWTnWIHcI'
   },
   {
-    id: 2,
+    id: '8Xerjgf8wLY',
+    game: 'VALORANT',
     title: 'VALORANT',
-    subtitle: 'Clutch Ace Highlights',
-    img: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=2071',
-    videoUrl: 'https://www.youtube.com/embed/e_E9W2vsRbQ' 
+    subtitle: 'Can VALORANT pros survive the spiciest hot pot?',
+    img: 'https://i.ytimg.com/vi/8Xerjgf8wLY/hqdefault.jpg',
+    videoUrl: 'https://www.youtube.com/embed/8Xerjgf8wLY',
+    author: 'VALORANT Champions Tour',
+    authorUrl: 'https://www.youtube.com/@ValorantEsports',
+    watchUrl: 'https://www.youtube.com/watch?v=8Xerjgf8wLY'
   },
   {
-    id: 3,
+    id: 'mqCnE46-WZo',
+    game: 'CROSSFIRE',
     title: 'CROSSFIRE',
-    subtitle: 'Semifinal Clutches',
-    img: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070',
-    videoUrl: 'https://www.youtube.com/embed/placeholder3' 
+    subtitle: 'Making lightwork of a 4v2 situation VP_XETRA and VP_ELV1N with the duo clutch! 😱',
+    img: 'https://i.ytimg.com/vi/mqCnE46-WZo/hqdefault.jpg',
+    videoUrl: 'https://www.youtube.com/embed/mqCnE46-WZo',
+    author: 'Crossfire Philippines',
+    authorUrl: 'https://www.youtube.com/@CrossfirePhilippines',
+    watchUrl: 'https://www.youtube.com/watch?v=mqCnE46-WZo'
   },
   {
-    id: 4,
+    id: '1L9InxtBiI0',
+    game: 'VALORANT',
     title: 'VALORANT',
-    subtitle: 'Playoffs Best Plays',
-    img: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=2071',
-    videoUrl: 'https://www.youtube.com/embed/placeholder4' 
+    subtitle: 'G2 vs. T1 | MATCH HIGHLIGHTS | VALORANT Champions Shanghai - Playoffs Stage',
+    img: 'https://i.ytimg.com/vi/1L9InxtBiI0/hqdefault.jpg',
+    videoUrl: 'https://www.youtube.com/embed/1L9InxtBiI0',
+    author: 'VALORANT Champions Tour',
+    authorUrl: 'https://www.youtube.com/@ValorantEsports',
+    watchUrl: 'https://www.youtube.com/watch?v=1L9InxtBiI0'
   },
   {
-    id: 5,
+    id: 'hgAD40XLhOs',
+    game: 'CROSSFIRE',
     title: 'CROSSFIRE',
-    subtitle: 'Group Stage Top Moments',
-    img: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070',
-    videoUrl: 'https://www.youtube.com/embed/placeholder5' 
+    subtitle: 'Crosshair on autopilot, TB_eLcom.pe deleted 4 players of XCTN! 🎬',
+    img: 'https://i.ytimg.com/vi/hgAD40XLhOs/hqdefault.jpg',
+    videoUrl: 'https://www.youtube.com/embed/hgAD40XLhOs',
+    author: 'Crossfire Philippines',
+    authorUrl: 'https://www.youtube.com/@CrossfirePhilippines',
+    watchUrl: 'https://www.youtube.com/watch?v=hgAD40XLhOs'
   },
   {
-    id: 6,
+    id: '2EzWX2VemjM',
+    game: 'VALORANT',
     title: 'VALORANT',
-    subtitle: 'Championship Decider',
-    img: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=2071',
-    videoUrl: 'https://www.youtube.com/embed/placeholder6' 
+    subtitle: 'G2 vs. T1 — FULL MATCH — VALORANT Champions Shanghai — Playoffs Stage',
+    img: 'https://i.ytimg.com/vi/2EzWX2VemjM/hqdefault.jpg',
+    videoUrl: 'https://www.youtube.com/embed/2EzWX2VemjM',
+    author: 'VALORANT Champions Tour',
+    authorUrl: 'https://www.youtube.com/@ValorantEsports',
+    watchUrl: 'https://www.youtube.com/watch?v=2EzWX2VemjM'
   }
 ];
 
@@ -68,12 +92,63 @@ const Home = ({ onLoginSuccess }) => {
   const [reportForm, setReportForm] = useState({ reporter: '', reported: '', reason: 'Aimbot', statement: '' });
   const [evidenceFile, setEvidenceFile] = useState(null);
 
+  // Live YouTube Highlights state
+  const [highlights, setHighlights] = useState(defaultHighlights);
+  const [activeGameFilter, setActiveGameFilter] = useState('ALL');
+  const [channelData, setChannelData] = useState({
+    crossfire: [],
+    valorant: []
+  });
+  const [isLoadingHighlights, setIsLoadingHighlights] = useState(false);
+
+  // Fetch newly updated uploads from connected YouTube channels
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLatestHighlights = async () => {
+      try {
+        setIsLoadingHighlights(true);
+        const res = await fetch('/api/highlights');
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted && data?.highlights && data.highlights.length > 0) {
+            setHighlights(data.highlights);
+            setChannelData({
+              crossfire: data.crossfire || [],
+              valorant: data.valorant || []
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('Highlights fallback to default YouTube videos:', err);
+      } finally {
+        if (isMounted) setIsLoadingHighlights(false);
+      }
+    };
+
+    fetchLatestHighlights();
+    return () => { isMounted = false; };
+  }, []);
+
+  // Filter highlights based on game tab
+  const displayedHighlights = activeGameFilter === 'CROSSFIRE'
+    ? (channelData.crossfire.length > 0 ? channelData.crossfire : highlights.filter(h => h.game === 'CROSSFIRE'))
+    : activeGameFilter === 'VALORANT'
+    ? (channelData.valorant.length > 0 ? channelData.valorant : highlights.filter(h => h.game === 'VALORANT'))
+    : highlights;
+
+  const handleFilterChange = (filter) => {
+    setActiveGameFilter(filter);
+    setCurrentSlide(0);
+  };
+
   // Touch swipe support for mobile
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
   const minSwipeDistance = 45;
 
-  const maxSlide = isMobile ? highlightsData.length - 1 : Math.max(0, highlightsData.length - 2);
+  const maxSlide = isMobile 
+    ? Math.max(0, displayedHighlights.length - 1) 
+    : Math.max(0, displayedHighlights.length - 2);
 
   useEffect(() => {
     setIsLoaded(true);
@@ -81,14 +156,14 @@ const Home = ({ onLoginSuccess }) => {
       const mobile = window.innerWidth <= 768;
       setIsMobile(mobile);
       if (mobile) {
-        setCurrentSlide((prev) => Math.min(prev, highlightsData.length - 1));
+        setCurrentSlide((prev) => Math.min(prev, Math.max(0, displayedHighlights.length - 1)));
       } else {
-        setCurrentSlide((prev) => Math.min(prev, Math.max(0, highlightsData.length - 2)));
+        setCurrentSlide((prev) => Math.min(prev, Math.max(0, displayedHighlights.length - 2)));
       }
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [displayedHighlights.length]);
 
   // Lock body scroll when mobile drawer is open
   useEffect(() => {
@@ -116,8 +191,8 @@ const Home = ({ onLoginSuccess }) => {
     setCurrentSlide((prev) => (prev > 0 ? prev - 1 : maxSlide));
   };
 
-  const openVideo = (videoUrl) => {
-    setActiveVideo(videoUrl);
+  const openVideo = (slide) => {
+    setActiveVideo(slide);
   };
 
   const closeVideo = () => {
@@ -329,11 +404,11 @@ const Home = ({ onLoginSuccess }) => {
                 type="button" 
                 className="hero-cta-primary"
                 onClick={() => {
-                  const el = document.getElementById('featured-content-section');
+                  const el = document.getElementById('game-highlights-section');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
               >
-                <span className="cta-icon">▶</span> WATCH HIGHLIGHTS
+                <span className="cta-icon">▶</span> WATCH GAME HIGHLIGHTS
               </button>
               <button 
                 type="button" 
@@ -364,12 +439,40 @@ const Home = ({ onLoginSuccess }) => {
           </div>
         </section>
 
-        {/* Featured Content Carousel Section */}
-        <section className="featured-section" id="featured-content-section">
+        {/* Game Highlights Carousel Section */}
+        <section className="featured-section" id="game-highlights-section">
           <div className="section-header-wide">
             <div className="section-title-wrapper">
               <span className="neon-title-dot" />
-              <p className="section-label">FEATURED CONTENT</p>
+              <p className="section-label">GAME HIGHLIGHTS</p>
+              <span className="yt-sync-pill" title="Synchronized with official YouTube channels">
+                <span className="yt-dot" /> YOUTUBE UPDATED
+              </span>
+            </div>
+
+            {/* Game Channel Filter Tabs */}
+            <div className="game-filter-tabs">
+              <button 
+                type="button" 
+                className={`filter-tab-btn ${activeGameFilter === 'ALL' ? 'active' : ''}`}
+                onClick={() => handleFilterChange('ALL')}
+              >
+                ALL
+              </button>
+              <button 
+                type="button" 
+                className={`filter-tab-btn ${activeGameFilter === 'CROSSFIRE' ? 'active' : ''}`}
+                onClick={() => handleFilterChange('CROSSFIRE')}
+              >
+                CROSSFIRE
+              </button>
+              <button 
+                type="button" 
+                className={`filter-tab-btn ${activeGameFilter === 'VALORANT' ? 'active' : ''}`}
+                onClick={() => handleFilterChange('VALORANT')}
+              >
+                VALORANT
+              </button>
             </div>
 
             <div className="carousel-controls-top">
@@ -412,19 +515,24 @@ const Home = ({ onLoginSuccess }) => {
                   : `translateX(calc(-${currentSlide * 50}% - ${currentSlide * 0.5}rem))` 
               }}
             >
-              {highlightsData.map((slide) => (
+              {displayedHighlights.map((slide) => (
                 <div className="carousel-slide-max" key={slide.id}>
                   <div
                     className="highlight-card-max"
                     style={{ backgroundImage: `url(${slide.img})` }}
-                    onClick={() => openVideo(slide.videoUrl)}
+                    onClick={() => openVideo(slide)}
                   >
                     <div className="card-gradient-vignette" />
 
-                    {/* Top Game Badge */}
+                    {/* Top Game & Official Channel Badge */}
                     <div className="card-top-badge">
-                      <span className="card-game-title">{slide.title}</span>
-                      <span className="card-highlight-pill">VOD</span>
+                      <span className="card-game-title">{slide.game || slide.title}</span>
+                      <span className="card-highlight-pill">NEW UPLOAD</span>
+                      {slide.author && (
+                        <span className="card-author-pill">
+                          {slide.author}
+                        </span>
+                      )}
                     </div>
 
                     {/* Centered Modern Play Button */}
@@ -434,8 +542,8 @@ const Home = ({ onLoginSuccess }) => {
 
                     {/* Bottom Card Title Info */}
                     <div className="card-bottom-info">
-                      <p className="card-stream-title">{slide.subtitle || `${slide.title} Match Highlights`}</p>
-                      <span className="card-tap-cue">Tap to watch video ▷</span>
+                      <p className="card-stream-title" title={slide.subtitle}>{slide.subtitle}</p>
+                      <span className="card-tap-cue">Watch Clip ▷</span>
                     </div>
                   </div>
                 </div>
@@ -458,19 +566,38 @@ const Home = ({ onLoginSuccess }) => {
         </section>
       </main>
 
-      {/* Video Modal */}
+      {/* Video Modal with YouTube Channel link */}
       {activeVideo && (
         <div className="video-modal-overlay" onClick={closeVideo}>
           <div className="video-modal-content" onClick={(event) => event.stopPropagation()}>
-            <button type="button" className="close-modal-btn" onClick={closeVideo} aria-label="Close video player">
-              ×
-            </button>
+            <div className="video-modal-top-bar">
+              <div className="video-modal-info">
+                <span className="video-modal-game-badge">{activeVideo.game || activeVideo.title}</span>
+                <span className="video-modal-title">{activeVideo.subtitle}</span>
+              </div>
+              <div className="video-modal-actions-top">
+                {activeVideo.watchUrl && (
+                  <a 
+                    href={activeVideo.watchUrl} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="watch-on-yt-link"
+                    title="Watch on official YouTube channel"
+                  >
+                    Open in YouTube ↗
+                  </a>
+                )}
+                <button type="button" className="close-modal-btn" onClick={closeVideo} aria-label="Close video player">
+                  ×
+                </button>
+              </div>
+            </div>
             <div className="video-player-frame">
               <iframe
                 width="100%"
                 height="100%"
-                src={activeVideo}
-                title="Esport highlight video"
+                src={`${activeVideo.videoUrl || activeVideo}?autoplay=1`}
+                title={activeVideo.subtitle || "Esport highlight video"}
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen

@@ -12,7 +12,7 @@ const crypto = require('crypto');
 const { createClient } = require('@supabase/supabase-js');
 const { generatePrediction } = require('./utils/predictor');
 const stats = require('./utils/statsCalculator');
-const { getLiveStreamId } = require('./utils/youtubeScraper');
+const { getLiveStreamId, getAllGameHighlights, getLatestChannelVideos } = require('./utils/youtubeScraper');
 const app = express();
 
 
@@ -195,6 +195,25 @@ app.get('/api/streams/live', cacheMiddleware, async (req, res) => {
     res.json(streamData);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch stream data', videoId: null, isLive: false });
+  }
+});
+
+app.get('/api/highlights', cacheMiddleware, async (req, res) => {
+  const { game } = req.query;
+  try {
+    if (game === 'crossfire') {
+      const videos = await getLatestChannelVideos('@CrossfirePhilippines', 'CROSSFIRE', 6);
+      return res.json(videos);
+    }
+    if (game === 'valorant') {
+      const videos = await getLatestChannelVideos('@ValorantEsports', 'VALORANT', 6);
+      return res.json(videos);
+    }
+    const data = await getAllGameHighlights();
+    res.json(data);
+  } catch (err) {
+    console.error('Failed to fetch highlights:', err);
+    res.status(500).json({ error: 'Failed to fetch highlights', highlights: [] });
   }
 });
 app.get('/api/audit-logs', authenticateToken, isAdmin, cacheMiddleware, async (req, res) => {

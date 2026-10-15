@@ -1407,6 +1407,19 @@ const DataEntry = ({ globalGame, globalTournament }) => {
               <style>{`
                 @keyframes pulse-beacon { 0%,100% { box-shadow: 0 0 0 0 rgba(251,191,36,0.5); } 50% { box-shadow: 0 0 0 10px rgba(251,191,36,0); } }
                 .round-beacon { animation: pulse-beacon 1.8s ease-in-out infinite; }
+                .round-dot-input { 
+                  width: 100% !important;
+                  height: 100% !important;
+                  padding: 0 !important;
+                  margin: 0 !important;
+                  text-align: center !important;
+                  border: none !important;
+                  outline: none !important;
+                  box-sizing: border-box !important;
+                  display: block !important;
+                  letter-spacing: 0 !important;
+                  line-height: 1 !important;
+                }
                 .round-dot-input:focus { 
                   outline: 2px solid #38bdf8 !important; 
                   outline-offset: 2px; 
@@ -1443,7 +1456,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                   </div>
                 </div>
                 <div style={{ padding: '16px 20px' }}>
-                  {[{ label: game === 'Valorant' ? 'Half 1 â€” Rounds 1â€“12' : 'Half 1 â€” Rounds 1â€“9', count: game === 'Valorant' ? 12 : 9, offset: 0, size: 36 }, { label: game === 'Valorant' ? 'Half 2 â€” Rounds 13â€“24' : 'Half 2 â€” Rounds 10â€“18', count: game === 'Valorant' ? 12 : 9, offset: game === 'Valorant' ? 12 : 9, size: 36 }, { label: game === 'Valorant' ? 'Overtime â€” Rounds 25+' : 'Overtime â€” Rounds 19+', count: game === 'Valorant' ? 16 : 22, offset: game === 'Valorant' ? 24 : 18, size: 32 }].map(({ label, count, offset, size }) => (
+                  {[{ label: game === 'Valorant' ? 'Half 1 - Rounds 1-12' : 'Half 1 - Rounds 1-9', count: game === 'Valorant' ? 12 : 9, offset: 0, size: 36 }, { label: game === 'Valorant' ? 'Half 2 - Rounds 13-24' : 'Half 2 - Rounds 10-18', count: game === 'Valorant' ? 12 : 9, offset: game === 'Valorant' ? 12 : 9, size: 36 }, { label: game === 'Valorant' ? 'Overtime - Rounds 25+' : 'Overtime - Rounds 19+', count: game === 'Valorant' ? 16 : 22, offset: game === 'Valorant' ? 24 : 18, size: 36 }].map(({ label, count, offset, size }) => (
                     <div key={label} style={{ marginBottom: '12px' }}>
                       <div style={{ fontSize: '9px', fontWeight: 700, color: 'rgba(148,163,184,0.5)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>{label}</div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
@@ -1456,7 +1469,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                             <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                               <div style={{ fontSize: '8px', fontWeight: 700, color: 'rgba(100,116,139,0.6)', letterSpacing: '0.05em' }}>R{i + 1}</div>
                               <div style={{ width: `${size}px`, height: `${size}px`, borderRadius: '10px', background: c.bg, border: `1px solid ${c.border}`, boxShadow: c.glow, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', cursor: 'text' }}>
-                                <input id={`round-input-A-${i}`} className="round-dot-input" type="text" maxLength="1" value={val} onChange={(e) => updateRoundEvent('A', i, e.target.value)} onFocus={(e) => e.target.select()} onKeyDown={(e) => handleRoundInputKeyDown(e, 'A', i)} style={{ width: '100%', height: '100%', textAlign: 'center', background: 'transparent', color: c.text, fontSize: size === 36 ? '14px' : '12px', fontWeight: 900, textTransform: 'uppercase', border: 'none', outline: 'none', cursor: 'text', borderRadius: '10px' }} />
+                                <input id={`round-input-A-${i}`} className="round-dot-input" type="text" maxLength="1" value={val} onChange={(e) => updateRoundEvent('A', i, e.target.value)} onFocus={(e) => e.target.select()} onKeyDown={(e) => handleRoundInputKeyDown(e, 'A', i)} style={{ width: '100%', height: '100%', padding: 0, margin: 0, textAlign: 'center', background: 'transparent', color: c.text, fontSize: '13px', fontWeight: 900, letterSpacing: '0px', lineHeight: '1', textTransform: 'uppercase', border: 'none', outline: 'none', cursor: 'text', borderRadius: '10px', boxSizing: 'border-box' }} />
                               </div>
                             </div>
                           );
@@ -1485,7 +1498,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                   </div>
                 </div>
                 <div style={{ padding: '16px 20px' }}>
-                  {[{ label: game === 'Valorant' ? 'Half 1 â€” Rounds 1â€“12' : 'Half 1 â€” Rounds 1â€“9', count: game === 'Valorant' ? 12 : 9, offset: 0, size: 36 }, { label: game === 'Valorant' ? 'Half 2 â€” Rounds 13â€“24' : 'Half 2 â€” Rounds 10â€“18', count: game === 'Valorant' ? 12 : 9, offset: game === 'Valorant' ? 12 : 9, size: 36 }, { label: game === 'Valorant' ? 'Overtime â€” Rounds 25+' : 'Overtime â€” Rounds 19+', count: game === 'Valorant' ? 16 : 22, offset: game === 'Valorant' ? 24 : 18, size: 32 }].map(({ label, count, offset, size }) => (
+                  {[{ label: game === 'Valorant' ? 'Half 1 - Rounds 1-12' : 'Half 1 - Rounds 1-9', count: game === 'Valorant' ? 12 : 9, offset: 0, size: 36 }, { label: game === 'Valorant' ? 'Half 2 - Rounds 13-24' : 'Half 2 - Rounds 10-18', count: game === 'Valorant' ? 12 : 9, offset: game === 'Valorant' ? 12 : 9, size: 36 }, { label: game === 'Valorant' ? 'Overtime - Rounds 25+' : 'Overtime - Rounds 19+', count: game === 'Valorant' ? 16 : 22, offset: game === 'Valorant' ? 24 : 18, size: 36 }].map(({ label, count, offset, size }) => (
                     <div key={label} style={{ marginBottom: '12px' }}>
                       <div style={{ fontSize: '9px', fontWeight: 700, color: 'rgba(148,163,184,0.5)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>{label}</div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
@@ -1498,7 +1511,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                             <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                               <div style={{ fontSize: '8px', fontWeight: 700, color: 'rgba(100,116,139,0.6)', letterSpacing: '0.05em' }}>R{i + 1}</div>
                               <div style={{ width: `${size}px`, height: `${size}px`, borderRadius: '10px', background: c.bg, border: `1px solid ${c.border}`, boxShadow: c.glow, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', cursor: 'text' }}>
-                                <input id={`round-input-B-${i}`} className="round-dot-input" type="text" maxLength="1" value={val} onChange={(e) => updateRoundEvent('B', i, e.target.value)} onFocus={(e) => e.target.select()} onKeyDown={(e) => handleRoundInputKeyDown(e, 'B', i)} style={{ width: '100%', height: '100%', textAlign: 'center', background: 'transparent', color: c.text, fontSize: size === 36 ? '14px' : '12px', fontWeight: 900, textTransform: 'uppercase', border: 'none', outline: 'none', cursor: 'text', borderRadius: '10px' }} />
+                                <input id={`round-input-B-${i}`} className="round-dot-input" type="text" maxLength="1" value={val} onChange={(e) => updateRoundEvent('B', i, e.target.value)} onFocus={(e) => e.target.select()} onKeyDown={(e) => handleRoundInputKeyDown(e, 'B', i)} style={{ width: '100%', height: '100%', padding: 0, margin: 0, textAlign: 'center', background: 'transparent', color: c.text, fontSize: '13px', fontWeight: 900, letterSpacing: '0px', lineHeight: '1', textTransform: 'uppercase', border: 'none', outline: 'none', cursor: 'text', borderRadius: '10px', boxSizing: 'border-box' }} />
                               </div>
                             </div>
                           );
