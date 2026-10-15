@@ -43,18 +43,26 @@ const upload = multer({
   storage: storage,
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
 });
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+let rawSupabaseUrl = process.env.SUPABASE_URL ? process.env.SUPABASE_URL.trim().replace(/^['"]|['"]$/g, '') : '';
+if (rawSupabaseUrl && !rawSupabaseUrl.startsWith('http://') && !rawSupabaseUrl.startsWith('https://')) {
+  rawSupabaseUrl = `https://${rawSupabaseUrl}`;
+}
+const supabaseUrl = rawSupabaseUrl;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY ? process.env.SUPABASE_SERVICE_ROLE_KEY.trim().replace(/^['"]|['"]$/g, '') : '';
 let supabase = null;
 if (supabaseUrl && supabaseKey && supabaseUrl !== 'your_supabase_project_url') {
-  supabase = createClient(supabaseUrl, supabaseKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-      detectSessionInUrl: false
-    }
-  });
-  console.log('database connected');
+  try {
+    supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false
+      }
+    });
+    console.log('database connected');
+  } catch (err) {
+    console.error('Failed to initialize Supabase client:', err.message);
+  }
 }
 app.get('/', (req, res) => {
   res.json({ message: 'Esports Backend is running!' });
@@ -202,7 +210,7 @@ app.post('/api/login', async (req, res) => {
     return res.status(400).json({ error: 'Email and password are required.' });
   }
   try {
-    const authClient = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+    const authClient = createClient(supabaseUrl, supabaseKey, {
       auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
     });
     const { data, error } = await authClient.auth.signInWithPassword({
@@ -227,7 +235,7 @@ app.post('/api/refresh', async (req, res) => {
     return res.status(400).json({ error: 'Refresh token is required.' });
   }
   try {
-    const authClient = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+    const authClient = createClient(supabaseUrl, supabaseKey, {
       auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
     });
     const { data, error } = await authClient.auth.refreshSession({ refresh_token });
