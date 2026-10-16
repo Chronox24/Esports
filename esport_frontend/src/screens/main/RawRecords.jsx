@@ -172,8 +172,10 @@ const RawRecords = ({ globalTournament }) => {
         .spreadsheet-table th, .spreadsheet-table td {
           white-space: nowrap;
         }
-        .spreadsheet-table th { padding: 12px 14px !important; }
-        .spreadsheet-table td { padding: 11px 14px !important; }
+        .spreadsheet-table th { padding: 14px 18px !important; }
+        .spreadsheet-table td { padding: 12px 18px !important; }
+        .spreadsheet-table th:first-child, .spreadsheet-table td:first-child { padding-left: 28px !important; }
+        .spreadsheet-table th:last-child, .spreadsheet-table td:last-child { padding-right: 28px !important; }
         .title-gradient {
           background: linear-gradient(135deg, #00d0eb, #818cf8);
           -webkit-background-clip: text;
@@ -182,44 +184,48 @@ const RawRecords = ({ globalTournament }) => {
       `}</style>
 
       {/* ════════ HEADER BAR & CONTROLS ════════ */}
-      <div className="border-b border-slate-800/80 bg-bg-200/90 backdrop-blur-md sticky top-0 z-20 flex flex-col gap-5 flex-shrink-0 shadow-xl px-6 py-5 lg:px-10 lg:py-6">
+      <div 
+        className="border-b border-slate-800/80 bg-bg-200/90 backdrop-blur-md sticky top-0 z-20 flex flex-col flex-shrink-0 shadow-xl"
+        style={{ padding: "28px 36px", gap: "22px" }}
+      >
         
         {/* Top Row: Title & Action Controls */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-widest title-gradient">Raw Match Records</h1>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+              <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-widest title-gradient" style={{ margin: 0, letterSpacing: "0.15em" }}>Raw Match Records</h1>
+              <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
                 {records.length} Records
               </span>
             </div>
-            <p className="text-theme-text-muted text-xs sm:text-sm tracking-wide font-medium mt-1">
+            <p className="text-theme-text-muted text-xs sm:text-sm tracking-wide font-medium" style={{ marginTop: "6px" }}>
               Complete database view of all submitted match and player performance records.
             </p>
           </div>
 
           {/* Quick Metrics Bar */}
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <div className="bg-slate-900/80 border border-slate-800 rounded-xl px-3 py-1.5 flex items-center gap-2">
-              <span className="text-[10px] font-bold uppercase text-slate-400">Total:</span>
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="bg-slate-900/80 border border-slate-800 rounded-xl flex items-center shadow-sm" style={{ padding: "8px 16px", gap: "10px" }}>
+              <span className="text-[11px] font-bold uppercase text-slate-400" style={{ letterSpacing: "0.1em" }}>Total:</span>
               <span className="font-mono font-black text-xs text-white">{stats.total}</span>
             </div>
-            <div className="bg-slate-900/80 border border-slate-800 rounded-xl px-3 py-1.5 flex items-center gap-2">
-              <span className="text-[10px] font-bold uppercase text-cyan-400">Valorant:</span>
+            <div className="bg-slate-900/80 border border-slate-800 rounded-xl flex items-center shadow-sm" style={{ padding: "8px 16px", gap: "10px" }}>
+              <span className="text-[11px] font-bold uppercase text-cyan-400" style={{ letterSpacing: "0.1em" }}>Valorant:</span>
               <span className="font-mono font-black text-xs text-cyan-300">{stats.valCount}</span>
             </div>
-            <div className="bg-slate-900/80 border border-slate-800 rounded-xl px-3 py-1.5 flex items-center gap-2">
-              <span className="text-[10px] font-bold uppercase text-blue-400">Crossfire:</span>
+            <div className="bg-slate-900/80 border border-slate-800 rounded-xl flex items-center shadow-sm" style={{ padding: "8px 16px", gap: "10px" }}>
+              <span className="text-[11px] font-bold uppercase text-blue-400" style={{ letterSpacing: "0.1em" }}>Crossfire:</span>
               <span className="font-mono font-black text-xs text-blue-300">{stats.cfCount}</span>
             </div>
-            <div className="bg-slate-900/80 border border-slate-800 rounded-xl px-3 py-1.5 flex items-center gap-2">
-              <span className="text-[10px] font-bold uppercase text-slate-400">Teams:</span>
+            <div className="bg-slate-900/80 border border-slate-800 rounded-xl flex items-center shadow-sm" style={{ padding: "8px 16px", gap: "10px" }}>
+              <span className="text-[11px] font-bold uppercase text-slate-400" style={{ letterSpacing: "0.1em" }}>Teams:</span>
               <span className="font-mono font-black text-xs text-amber-300">{stats.teamsCount}</span>
             </div>
             <button 
               onClick={fetchRecords}
               disabled={loading}
-              className="flex items-center gap-2 bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-white text-xs font-bold tracking-widest uppercase px-3.5 py-2 rounded-xl transition-all shadow-md active:scale-95 ml-auto sm:ml-0"
+              className="flex items-center bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-white text-xs font-bold tracking-widest uppercase rounded-xl transition-all shadow-md active:scale-95 ml-auto sm:ml-0"
+              style={{ padding: "8px 18px", gap: "8px" }}
               title="Refresh all records from database"
             >
               <svg className={`w-3.5 h-3.5 text-cyan-400 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -231,11 +237,11 @@ const RawRecords = ({ globalTournament }) => {
         </div>
 
         {/* Bottom Row: Search Bar, Game Filters & Tournament Dropdown */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3.5 pt-1">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-1">
           
           {/* SEARCH BAR (Prominent & Real-time) */}
           <div className="relative flex-1 max-w-lg">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+            <div className="absolute inset-y-0 left-0 flex items-center pointer-events-none text-slate-400" style={{ paddingLeft: "18px" }}>
               <svg className="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
@@ -245,12 +251,14 @@ const RawRecords = ({ globalTournament }) => {
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
               placeholder="Search by player IGN, team, map, tournament, week, day..."
-              className="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl pl-10 pr-9 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all shadow-inner"
+              className="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all shadow-inner"
+              style={{ paddingLeft: "48px", paddingRight: "44px", paddingTop: "12px", paddingBottom: "12px", height: "46px" }}
             />
             {searchQuery && (
               <button
                 onClick={() => { setSearchQuery(''); setCurrentPage(1); }}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-white"
+                className="absolute inset-y-0 right-0 flex items-center text-slate-400 hover:text-white"
+                style={{ paddingRight: "16px" }}
                 title="Clear search"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -261,19 +269,20 @@ const RawRecords = ({ globalTournament }) => {
           </div>
 
           {/* Filter Pills & Tournament Selector */}
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-3.5 flex-wrap">
             
             {/* Game Filter Pills */}
-            <div className="flex bg-slate-950/80 p-1 rounded-xl border border-slate-800 shadow-inner">
+            <div className="flex bg-slate-950/80 rounded-xl border border-slate-800 shadow-inner" style={{ padding: "4px 6px", gap: "4px" }}>
               {['All', 'Valorant', 'Crossfire'].map(filter => (
                 <button
                   key={filter}
                   onClick={() => { setGameFilter(filter); setCurrentPage(1); }}
-                  className={`text-xs font-black uppercase tracking-wider px-3.5 py-1.5 rounded-lg transition-all duration-200 ${
+                  className={`text-xs font-black uppercase tracking-wider rounded-lg transition-all duration-200 ${
                     gameFilter === filter 
                       ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md' 
                       : 'text-slate-400 hover:text-white hover:bg-white/5'
                   }`}
+                  style={{ padding: "8px 16px" }}
                 >
                   {filter}
                 </button>
@@ -281,8 +290,8 @@ const RawRecords = ({ globalTournament }) => {
             </div>
 
             {/* Tournament Selector */}
-            <div className="flex items-center gap-1.5 bg-slate-900/80 border border-slate-800 px-3 py-1.5 rounded-xl">
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Tournament:</span>
+            <div className="flex items-center bg-slate-900/80 border border-slate-800 rounded-xl shadow-sm" style={{ padding: "10px 18px", gap: "10px" }}>
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-400" style={{ letterSpacing: "0.12em" }}>Tournament:</span>
               <select
                 value={selectedTournament}
                 onChange={(e) => { setSelectedTournament(e.target.value); setCurrentPage(1); }}
@@ -295,8 +304,8 @@ const RawRecords = ({ globalTournament }) => {
             </div>
 
             {/* Page Size Selector */}
-            <div className="flex items-center gap-1.5 bg-slate-900/80 border border-slate-800 px-3 py-1.5 rounded-xl">
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Rows:</span>
+            <div className="flex items-center bg-slate-900/80 border border-slate-800 rounded-xl shadow-sm" style={{ padding: "10px 18px", gap: "10px" }}>
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-400" style={{ letterSpacing: "0.12em" }}>Rows:</span>
               <select
                 value={pageSize}
                 onChange={(e) => {
@@ -348,9 +357,32 @@ const RawRecords = ({ globalTournament }) => {
       )}
 
       {/* ════════ MAIN TABLE CONTAINER ════════ */}
-      <div className="flex-1 overflow-hidden flex flex-col p-6 lg:p-10">
-        <div className="flex-1 overflow-auto custom-scrollbar rounded-2xl border border-slate-800 bg-bg-200/95 shadow-2xl relative">
-          <table className="min-w-full text-left border-collapse spreadsheet-table">
+      <div className="flex-1 overflow-hidden flex flex-col" style={{ padding: "28px 36px" }}>
+        <div className="flex-1 overflow-hidden flex flex-col rounded-2xl border border-slate-800 bg-bg-200/95 shadow-2xl">
+          
+          {/* Card Header Component */}
+          <div 
+            className="border-b border-slate-800/80 bg-slate-950/90 flex flex-col sm:flex-row sm:items-center justify-between flex-shrink-0"
+            style={{ padding: "24px 32px", gap: "12px" }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.8)]"></div>
+              <h2 className="text-base font-black text-white uppercase tracking-[0.18em]" style={{ margin: 0 }}>
+                Match Performance Records
+              </h2>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">
+                ({filteredRecords.length} {filteredRecords.length === 1 ? 'Record' : 'Records'})
+              </span>
+            </div>
+            {filteredRecords.length > 0 && pageSize !== 'All' && (
+              <div className="text-xs font-bold text-slate-400 tracking-wider uppercase">
+                Page <span className="text-cyan-400 font-mono">{currentPage}</span> of <span className="text-white font-mono">{totalPages}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex-1 overflow-auto custom-scrollbar relative">
+            <table className="min-w-full text-left border-collapse spreadsheet-table">
             <thead className="bg-slate-950 sticky top-0 z-10 shadow-md">
               <tr className="border-b border-slate-800 text-[10px] font-black uppercase tracking-wider text-slate-400">
                 <th onClick={() => handleSort('tournament_name')} className="cursor-pointer hover:text-white transition-colors">
@@ -534,6 +566,7 @@ const RawRecords = ({ globalTournament }) => {
               )}
             </tbody>
           </table>
+          </div>
         </div>
 
         {/* ════════ PAGINATION CONTROLS ════════ */}
