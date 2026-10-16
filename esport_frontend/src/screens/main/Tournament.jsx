@@ -2663,234 +2663,303 @@ const Tournament = ({ globalGame, globalTournament }) => {
 
       {/* 4-Step Create Tournament Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
-          <div className="bg-[#f8fafc] dark:bg-[#0b1017] border border-slate-200 dark:border-slate-800/60 rounded-3xl w-full max-w-4xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col relative transition-all duration-300 max-h-[90vh] overflow-hidden">
-            
-            <div className="p-8 md:p-10 flex flex-col items-center flex-1 overflow-y-auto custom-scrollbar">
-              <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-10 tracking-wide text-center">
-                Create Tournament
-              </h2>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md animate-fade-in overflow-y-auto">
+          <div className="bg-[#090e17] border border-slate-800 rounded-3xl w-full max-w-4xl shadow-[0_25px_60px_rgba(0,0,0,0.8)] flex flex-col relative transition-all duration-300 max-h-[92vh] overflow-hidden">
+            {/* Top glowing ambient line */}
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-500 to-transparent z-20" />
 
-              {/* Progress Bar Container */}
-              <div className="flex items-start w-full max-w-2xl mb-12 relative">
-                {/* Progress Lines */}
-                <div className="absolute top-5 left-0 w-full h-1 bg-slate-200 dark:bg-slate-700 -z-10 -translate-y-1/2"></div>
-                <div 
-                  className="absolute top-5 left-0 h-1 bg-cyan-500 -z-10 -translate-y-1/2 transition-all duration-500"
-                  style={{ width: step === 1 ? '0%' : step === 2 ? '33.33%' : step === 3 ? '66.66%' : '100%' }}
-                ></div>
-
-                {/* Step 1 */}
-                <div className="flex-1 flex flex-col items-center z-10">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 ${
-                    step > 1 ? 'bg-[#f0f9ff] dark:bg-slate-800 border-2 border-cyan-500 text-cyan-500' : 'bg-cyan-500 text-white shadow-[0_0_15px_rgba(6,182,212,0.5)]'
-                  }`}>
-                    {step > 1 ? (
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                    ) : (
-                      '1'
-                    )}
-                  </div>
-                  <span className="text-[10px] md:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-3 text-center w-24">Basic Info</span>
+            {/* Modal Header Bar with Close Button */}
+            <div className="px-6 sm:px-8 py-5 border-b border-slate-800/80 bg-slate-950/70 flex items-center justify-between shrink-0 z-10">
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
+                  <Trophy size={20} />
                 </div>
-
-                {/* Step 2 */}
-                <div className="flex-1 flex flex-col items-center z-10">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 ${
-                    step > 2 ? 'bg-[#f0f9ff] dark:bg-slate-800 border-2 border-cyan-500 text-cyan-500' : step === 2 ? 'bg-cyan-500 text-white shadow-[0_0_15px_rgba(6,182,212,0.5)]' : 'bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-400'
-                  }`}>
-                    {step > 2 ? (
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                    ) : (
-                      '2'
-                    )}
-                  </div>
-                  <span className="text-[10px] md:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-3 text-center w-24">Schedule</span>
-                </div>
-
-                {/* Step 3 */}
-                <div className="flex-1 flex flex-col items-center z-10">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 ${
-                    step > 3 ? 'bg-[#f0f9ff] dark:bg-slate-800 border-2 border-cyan-500 text-cyan-500' : step === 3 ? 'bg-cyan-500 text-white shadow-[0_0_15px_rgba(6,182,212,0.5)]' : 'bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-400'
-                  }`}>
-                    {step > 3 ? (
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                    ) : (
-                      '3'
-                    )}
-                  </div>
-                  <span className="text-[10px] md:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-3 text-center w-24">Brackets</span>
-                </div>
-
-                {/* Step 4 */}
-                <div className="flex-1 flex flex-col items-center z-10">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 ${
-                    step === 4 ? 'bg-cyan-500 text-white shadow-[0_0_15px_rgba(6,182,212,0.5)]' : 'bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-400'
-                  }`}>
-                    4
-                  </div>
-                  <span className="text-[10px] md:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-3 text-center w-24">Confirmation</span>
+                <div>
+                  <h2 className="text-xl font-black uppercase text-white font-['Outfit'] tracking-wider leading-tight">
+                    Create Tournament
+                  </h2>
+                  <p className="text-xs text-slate-400 font-medium">
+                    {step === 1 && "Step 1 of 4 • Basic Information & Rules"}
+                    {step === 2 && "Step 2 of 4 • Match Scheduling & Lineups"}
+                    {step === 3 && "Step 3 of 4 • Tournament Bracket Generation"}
+                    {step === 4 && "Step 4 of 4 • Review & Launch Tournament"}
+                  </p>
                 </div>
               </div>
 
-              <div className="w-full mt-8 flex flex-col items-center">
-                {step === 1 && (
-                  <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm w-full max-w-2xl">
-                    <h3 className="text-lg font-black text-slate-800 dark:text-white mb-6 text-center">Tournament Information</h3>
-                    <div className="mb-4">
-                      <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest mb-2">Tournament Name</label>
-                      <input 
-                        type="text" 
-                        value={tournData.name}
-                        onChange={(e) => setTournData({...tournData, name: e.target.value})}
-                        disabled={isCreated}
-                        className="w-full bg-slate-50 dark:bg-[#070b10] border border-slate-200 dark:border-slate-800/80 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:border-cyan-500 outline-none transition-all disabled:opacity-50"
-                        placeholder="Enter tournament name"
-                      />
+              {/* Dedicated Close Button */}
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(false)}
+                className="w-9 h-9 rounded-full bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 text-slate-400 hover:text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-md cursor-pointer"
+                title="Close modal"
+              >
+                <X size={17} strokeWidth={2.5} />
+              </button>
+            </div>
+
+            {/* Stepper Progress Bar */}
+            <div className="px-6 sm:px-12 pt-6 pb-4 bg-slate-950/40 border-b border-slate-800/60 shrink-0">
+              <div className="flex items-center justify-between w-full max-w-2xl mx-auto relative">
+                {/* Background Connecting Line */}
+                <div className="absolute top-5 left-0 w-full h-[2px] bg-slate-800 -translate-y-1/2 z-0" />
+                {/* Active Connecting Line */}
+                <div
+                  className="absolute top-5 left-0 h-[2px] bg-gradient-to-r from-cyan-500 to-cyan-400 -translate-y-1/2 transition-all duration-500 z-0"
+                  style={{ width: step === 1 ? '0%' : step === 2 ? '33.33%' : step === 3 ? '66.66%' : '100%' }}
+                />
+
+                {[
+                  { s: 1, label: "Basic Info" },
+                  { s: 2, label: "Schedule" },
+                  { s: 3, label: "Brackets" },
+                  { s: 4, label: "Confirm" }
+                ].map(({ s, label }) => (
+                  <div key={s} className="flex flex-col items-center z-10">
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-xs transition-all duration-300 ${
+                        step > s
+                          ? "bg-slate-900 border-2 border-cyan-400 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.3)]"
+                          : step === s
+                          ? "bg-gradient-to-br from-cyan-400 to-cyan-500 text-slate-950 shadow-[0_0_20px_rgba(6,182,212,0.6)] font-black scale-110"
+                          : "bg-slate-900 border-2 border-slate-800 text-slate-500"
+                      }`}
+                    >
+                      {step > s ? <Check size={16} strokeWidth={3} /> : s}
                     </div>
-                    <div className="mb-4">
-                      <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest mb-2">Game Title</label>
-                      <select 
-                        value={tournData.game}
-                        onChange={(e) => setTournData({...tournData, game: e.target.value})}
-                        disabled={isCreated}
-                        className="w-full bg-slate-50 dark:bg-[#070b10] border border-slate-200 dark:border-slate-800/80 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:border-cyan-500 outline-none transition-all cursor-pointer disabled:opacity-50"
-                      >
-                        <option value="VALORANT">VALORANT</option>
-                        <option value="CROSSFIRE">CROSSFIRE</option>
-                      </select>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest mb-2">Prize Pool</label>
-                        <input 
-                          type="text" 
-                          value={tournData.prizePool}
-                          onChange={(e) => setTournData({...tournData, prizePool: e.target.value})}
-                          className="w-full bg-slate-50 dark:bg-[#070b10] border border-slate-200 dark:border-slate-800/80 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:border-cyan-500 outline-none transition-all"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest mb-2">Start Date</label>
-                        <input 
-                          type="date" 
-                          value={tournData.startDate}
-                          onChange={(e) => setTournData({...tournData, startDate: e.target.value})}
-                          className="w-full bg-slate-50 dark:bg-[#070b10] border border-slate-200 dark:border-slate-800/80 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:border-cyan-500 outline-none transition-all [color-scheme:dark]"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest mb-2">Region</label>
-                      <select 
-                        value={tournData.region}
-                        onChange={(e) => setTournData({...tournData, region: e.target.value})}
-                        className="w-full bg-slate-50 dark:bg-[#070b10] border border-slate-200 dark:border-slate-800/80 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:border-cyan-500 outline-none transition-all cursor-pointer"
-                      >
-                        <option value="NA">North America (NA)</option>
-                        <option value="EU">Europe (EU)</option>
-                        <option value="APAC">Asia Pacific (APAC)</option>
-                      </select>
-                    </div>
+                    <span
+                      className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider mt-2 transition-colors ${
+                        step === s ? "text-cyan-400 font-black" : step > s ? "text-slate-300" : "text-slate-500"
+                      }`}
+                    >
+                      {label}
+                    </span>
                   </div>
-                )}
-
-                {step === 2 && (
-                  <div className="w-full">
-                    <ManageScheduleTab globalGame={tournData.game} globalTournament={{ name: tournData.name }} embedded={true} />
-                  </div>
-                )}
-
-                {step === 3 && (
-                  <div className="w-full" style={{ minHeight: '600px' }}>
-                    <Bracket globalGame={tournData.game} globalTournament={{ name: tournData.name }} />
-                  </div>
-                )}
-
-                {step === 4 && (
-                  <div className="flex flex-col gap-6 w-full max-w-3xl">
-                    <div className="text-center mb-4">
-                      <h3 className="text-2xl font-black text-slate-800 dark:text-white tracking-wide">Review Your Tournament</h3>
-                      <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Please confirm the details below before creating.</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="bg-white dark:bg-[#0b1017] border border-slate-200 dark:border-slate-800/80 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-1 bg-cyan-500"></div>
-                        <h4 className="text-[10px] font-black text-cyan-500 uppercase tracking-widest mb-6 border-b border-slate-100 dark:border-slate-800 pb-3">Basic Info</h4>
-                        <div className="flex flex-col gap-4">
-                          <div>
-                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mb-1">Name</span>
-                            <span className="text-lg font-black text-slate-800 dark:text-white">{tournData.name || "N/A"}</span>
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mb-1">Game</span>
-                            <span className="text-sm font-bold text-slate-800 dark:text-slate-200 px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded text-cyan-500 inline-block">{tournData.game}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="bg-white dark:bg-[#0b1017] border border-slate-200 dark:border-slate-800/80 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-1 bg-blue-500"></div>
-                        <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-6 border-b border-slate-100 dark:border-slate-800 pb-3">Details</h4>
-                        <div className="flex flex-col gap-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mb-1">Prize</span>
-                              <span className="text-sm font-black text-emerald-500">{tournData.prizePool || "None"}</span>
-                            </div>
-                            <div>
-                              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mb-1">Region</span>
-                              <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{tournData.region}</span>
-                            </div>
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mb-1">Start Date</span>
-                            <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{tournData.startDate || "TBD"}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <label className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-2xl p-6 shadow-lg flex items-center justify-between cursor-pointer group transition-all hover:bg-cyan-500/20">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-black text-white group-hover:text-cyan-400 transition-colors">Make Tournament Public</span>
-                        <span className="text-xs text-slate-400 font-medium mt-1">This will list the tournament on the public viewer page.</span>
-                      </div>
-                      <div className="relative">
-                        <input 
-                          type="checkbox" 
-                          checked={tournData.isPublic}
-                          onChange={(e) => setTournData({...tournData, isPublic: e.target.checked})}
-                          className="sr-only"
-                        />
-                        <div className={`block w-14 h-8 rounded-full transition-colors ${tournData.isPublic ? 'bg-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.5)]' : 'bg-slate-700'}`}></div>
-                        <div className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${tournData.isPublic ? 'transform translate-x-6' : ''}`}></div>
-                      </div>
-                    </label>
-
-                    {/* Show Schedule in Confirmation Step */}
-                    <div className="mt-4 w-full">
-                      <ManageScheduleTab globalGame={tournData.game} globalTournament={{ name: tournData.name }} embedded={true} readOnly={true} />
-                    </div>
-                  </div>
-                )}
+                ))}
               </div>
             </div>
 
-            {/* Footer with Buttons */}
-            <div className="bg-slate-50 dark:bg-[#070b10] border-t border-slate-200 dark:border-slate-800/80 p-6 flex items-center justify-between shrink-0">
+            {/* Modal Body (Scrollable) */}
+            <div className="p-6 sm:p-8 flex flex-col items-center flex-1 overflow-y-auto custom-scrollbar">
+              {step === 1 && (
+                <div className="w-full max-w-2xl bg-slate-950/60 border border-slate-800/80 rounded-2xl p-6 sm:p-8 shadow-inner flex flex-col gap-5">
+                  <div className="text-center pb-2 border-b border-slate-800/60">
+                    <h3 className="text-lg font-black uppercase text-white font-['Outfit'] tracking-wider">
+                      Tournament Specifications
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Enter the tournament title, game title, and championship settings.
+                    </p>
+                  </div>
+
+                  {/* Tournament Name */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                      Tournament Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={tournData.name}
+                      onChange={(e) => setTournData({ ...tournData, name: e.target.value })}
+                      disabled={isCreated}
+                      className="w-full bg-[#060a12] border border-slate-800 focus:border-cyan-400 focus:shadow-[0_0_15px_rgba(6,182,212,0.2)] rounded-xl px-4 py-3 text-white text-sm placeholder:text-slate-600 focus:outline-none transition-all disabled:opacity-50"
+                      placeholder="e.g. VCT Champions 2026, CFS Masters..."
+                    />
+                  </div>
+
+                  {/* Game Title */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                      Game Title *
+                    </label>
+                    <select
+                      value={tournData.game}
+                      onChange={(e) => setTournData({ ...tournData, game: e.target.value })}
+                      disabled={isCreated}
+                      className="w-full bg-[#060a12] border border-slate-800 focus:border-cyan-400 rounded-xl px-4 py-3 text-white text-sm focus:outline-none transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      <option value="VALORANT" className="bg-[#0b1017] text-white">VALORANT</option>
+                      <option value="CROSSFIRE" className="bg-[#0b1017] text-white">CROSSFIRE</option>
+                    </select>
+                  </div>
+
+                  {/* Prize Pool & Start Date */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                        Prize Pool
+                      </label>
+                      <input
+                        type="text"
+                        value={tournData.prizePool}
+                        onChange={(e) => setTournData({ ...tournData, prizePool: e.target.value })}
+                        className="w-full bg-[#060a12] border border-slate-800 focus:border-cyan-400 rounded-xl px-4 py-3 text-white text-sm placeholder:text-slate-600 focus:outline-none transition-all"
+                        placeholder="e.g. $10,000"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                        Start Date
+                      </label>
+                      <input
+                        type="date"
+                        value={tournData.startDate}
+                        onChange={(e) => setTournData({ ...tournData, startDate: e.target.value })}
+                        className="w-full bg-[#060a12] border border-slate-800 focus:border-cyan-400 rounded-xl px-4 py-3 text-white text-sm [color-scheme:dark] focus:outline-none transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Region */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                      Region
+                    </label>
+                    <select
+                      value={tournData.region}
+                      onChange={(e) => setTournData({ ...tournData, region: e.target.value })}
+                      className="w-full bg-[#060a12] border border-slate-800 focus:border-cyan-400 rounded-xl px-4 py-3 text-white text-sm focus:outline-none transition-all cursor-pointer"
+                    >
+                      <option value="NA" className="bg-[#0b1017] text-white">North America (NA)</option>
+                      <option value="EU" className="bg-[#0b1017] text-white">Europe (EU)</option>
+                      <option value="APAC" className="bg-[#0b1017] text-white">Asia Pacific (APAC)</option>
+                      <option value="LATAM" className="bg-[#0b1017] text-white">Latin America (LATAM)</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {step === 2 && (
+                <div className="w-full">
+                  <ManageScheduleTab globalGame={tournData.game} globalTournament={{ name: tournData.name }} embedded={true} />
+                </div>
+              )}
+
+              {step === 3 && (
+                <div className="w-full" style={{ minHeight: '600px' }}>
+                  <Bracket globalGame={tournData.game} globalTournament={{ name: tournData.name }} />
+                </div>
+              )}
+
+              {step === 4 && (
+                <div className="flex flex-col gap-6 w-full max-w-3xl">
+                  <div className="text-center mb-2">
+                    <h3 className="text-2xl font-black text-white uppercase font-['Outfit'] tracking-wider">
+                      Review Tournament Configuration
+                    </h3>
+                    <p className="text-slate-400 text-sm mt-1">
+                      Verify tournament specifications and schedule before final publication.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+                      <div className="absolute top-0 left-0 w-full h-1 bg-cyan-500" />
+                      <h4 className="text-[10px] font-black text-cyan-400 uppercase tracking-widest mb-5 border-b border-slate-800 pb-3 flex items-center gap-1.5">
+                        <Trophy size={13} />
+                        <span>Basic Information</span>
+                      </h4>
+                      <div className="flex flex-col gap-4">
+                        <div>
+                          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest block mb-1">
+                            Tournament Name
+                          </span>
+                          <span className="text-lg font-black text-white font-['Outfit']">
+                            {tournData.name || "N/A"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest block mb-1">
+                            Game Title
+                          </span>
+                          <span className="text-xs font-black text-cyan-400 px-3 py-1 bg-cyan-500/10 border border-cyan-500/25 rounded-md inline-block uppercase tracking-wider">
+                            {tournData.game}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+                      <div className="absolute top-0 left-0 w-full h-1 bg-blue-500" />
+                      <h4 className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-5 border-b border-slate-800 pb-3 flex items-center gap-1.5">
+                        <Sparkles size={13} />
+                        <span>Tournament Details</span>
+                      </h4>
+                      <div className="flex flex-col gap-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest block mb-1">
+                              Prize Pool
+                            </span>
+                            <span className="text-sm font-black text-emerald-400">
+                              {tournData.prizePool || "None"}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest block mb-1">
+                              Region
+                            </span>
+                            <span className="text-sm font-bold text-slate-200">
+                              {tournData.region}
+                            </span>
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest block mb-1">
+                            Start Date
+                          </span>
+                          <span className="text-sm font-bold text-slate-200">
+                            {tournData.startDate || "TBD"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <label className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/25 rounded-2xl p-6 shadow-lg flex items-center justify-between cursor-pointer group transition-all hover:bg-cyan-500/15">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-black text-white group-hover:text-cyan-400 transition-colors">
+                        Make Tournament Public
+                      </span>
+                      <span className="text-xs text-slate-400 font-medium mt-0.5">
+                        Broadcast this tournament on public match viewers and fan pick'em pages.
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <input 
+                        type="checkbox" 
+                        checked={tournData.isPublic}
+                        onChange={(e) => setTournData({ ...tournData, isPublic: e.target.checked })}
+                        className="sr-only"
+                      />
+                      <div className={`block w-14 h-8 rounded-full transition-colors ${tournData.isPublic ? 'bg-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.5)]' : 'bg-slate-800'}`}></div>
+                      <div className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${tournData.isPublic ? 'transform translate-x-6' : ''}`}></div>
+                    </div>
+                  </label>
+
+                  {/* Show Schedule in Confirmation Step */}
+                  <div className="mt-2 w-full">
+                    <ManageScheduleTab globalGame={tournData.game} globalTournament={{ name: tournData.name }} embedded={true} readOnly={true} />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Sticky Fixed Modal Footer */}
+            <div className="bg-[#060a12] border-t border-slate-800/80 px-6 sm:px-8 py-4 flex items-center justify-between shrink-0 z-10">
               {step > 1 ? (
                 <button 
+                  type="button"
                   onClick={() => setStep(step - 1)}
-                  className="px-6 py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors"
+                  className="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
                 >
-                  Previous
+                  Previous Step
                 </button>
               ) : (
                 <button 
+                  type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-6 py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors"
+                  className="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -2898,6 +2967,7 @@ const Tournament = ({ globalGame, globalTournament }) => {
 
               {step < 4 ? (
                 <button 
+                  type="button"
                   onClick={async () => {
                     if (step === 1 && !isCreated) {
                       if (!tournData.name.trim()) {
@@ -2919,24 +2989,25 @@ const Tournament = ({ globalGame, globalTournament }) => {
                       setStep(step + 1);
                     }
                   }}
-                  className="px-8 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-white font-bold transition-colors shadow-[0_0_15px_rgba(6,182,212,0.3)]"
+                  className="px-8 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-slate-950 font-black text-xs uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] hover:scale-105 active:scale-95 cursor-pointer"
                 >
-                  Next
+                  Next Step
                 </button>
               ) : (
                 <button 
+                  type="button"
                   onClick={() => {
                     setShowCreateModal(false);
                     setStep(1);
                     alert("Tournament creation finalized! Refresh the page to see it in the sidebar.");
                   }}
-                  className="px-8 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-white font-bold transition-colors shadow-[0_0_15px_rgba(6,182,212,0.3)]"
+                  className="px-8 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-slate-950 font-black text-xs uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] hover:scale-105 active:scale-95 cursor-pointer"
                 >
-                  Submit
+                  Submit & Finalize
                 </button>
               )}
             </div>
-            
+
           </div>
         </div>
       )}
