@@ -521,16 +521,58 @@ const Admin = ({ globalGame, globalTournament }) => {
           {}
           
           <div className="flex justify-center mb-8">
-            <div className="flex items-center gap-6 p-2">
-              {['League Quick Stats', 'Admin Accounts & User Directory', 'Rulebook Viewer'].map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${activeTab === tab ? 'bg-green-500/20 text-green-500' : 'text-gray-400 hover:text-white'}`}
-                >
-                  {tab}
-                </button>
-              ))}
+            <div 
+              className="flex items-center bg-slate-900/80 border border-slate-800 rounded-2xl shadow-xl backdrop-blur-md"
+              style={{ padding: "6px 8px", gap: "10px" }}
+            >
+              {[
+                {
+                  id: 'League Quick Stats',
+                  label: 'League Quick Stats',
+                  icon: (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  )
+                },
+                {
+                  id: 'Admin Accounts & User Directory',
+                  label: 'Admin Accounts & User Directory',
+                  icon: (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                  )
+                },
+                {
+                  id: 'Rulebook Viewer',
+                  label: 'Rulebook Viewer',
+                  icon: (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                  )
+                }
+              ].map(tab => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center rounded-xl text-xs sm:text-sm font-black tracking-wide uppercase transition-all duration-200 active:scale-95 ${
+                      isActive
+                        ? 'bg-gradient-to-r from-emerald-500/25 to-teal-500/15 text-emerald-300 border border-emerald-500/40 shadow-[0_0_20px_rgba(16,185,129,0.25)]'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800/60 border border-transparent'
+                    }`}
+                    style={{ padding: "12px 28px", gap: "10px" }}
+                  >
+                    <span className={isActive ? "text-emerald-400" : "text-slate-500"}>
+                      {tab.icon}
+                    </span>
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -771,7 +813,8 @@ const Admin = ({ globalGame, globalTournament }) => {
               <button
                 onClick={handleCreateUser}
                 disabled={isCreating}
-                className="w-full bg-cyan-500 hover:bg-cyan-400 text-[#090e14] font-black uppercase tracking-widest py-3 rounded-lg mt-4 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-cyan-500/20"
+                className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-black uppercase tracking-widest rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(6,182,212,0.3)] active:scale-95"
+                style={{ padding: "14px 28px", marginTop: "16px" }}
               >
                 {isCreating ? 'Creating...' : 'Create Account'}
               </button>

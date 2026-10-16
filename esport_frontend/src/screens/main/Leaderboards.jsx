@@ -758,76 +758,64 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
       {/* Main Container - Expands to modern wide monitors */}
       <div className="flex-1 px-4 sm:px-6 lg:px-10 py-6 w-full max-w-[1780px] mx-auto flex flex-col gap-6">
 
-        {/* ════════ TOP HERO / CONTROL BAR ════════ */}
-        <div className="lb-card p-4 sm:p-6 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-6 border-slate-800 bg-gradient-to-r from-slate-900/90 via-bg-300 to-slate-900/90">
-          
-          {/* Header Title & Tournament Info */}
-          <div className="flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center border shadow-lg flex-shrink-0 ${
-              isValorant
-                ? 'bg-gradient-to-br from-cyan-500/20 to-blue-600/30 border-cyan-500/40 shadow-cyan-500/20'
-                : 'bg-gradient-to-br from-blue-500/20 to-indigo-600/30 border-blue-500/40 shadow-blue-500/20'
-            }`}>
-              <svg className={`w-6 h-6 ${isValorant ? 'text-cyan-400' : 'text-blue-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <div>
-              <div className="flex items-center gap-2.5">
-                <h1 className="text-xl sm:text-2xl font-black uppercase tracking-wider text-white">Esports Leaderboards</h1>
-                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-                  isValorant
-                    ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
-                    : 'bg-blue-500/20 text-blue-300 border-blue-500/30'
-                }`}>
-                  {activeGame}
-                </span>
-              </div>
-              <p className="text-xs font-semibold text-theme-text-muted mt-0.5">
-                Tournament: <span className="text-white font-bold">{globalTournament || 'regular season'}</span> — {isValorant ? 'Valorant Tactical Intelligence & Rosters' : 'Crossfire Official Leaderboard'}
-              </p>
+        {/* ════════ VIEW SWITCHER / CONTROL BAR ════════ */}
+        {isValorant && (
+          <div className="flex justify-center items-center w-full">
+            <div 
+              className="flex items-center bg-slate-950/80 rounded-2xl border border-slate-800/80 shadow-2xl backdrop-blur-md"
+              style={{ padding: "6px 8px", gap: "10px" }}
+            >
+              {[
+                {
+                  id: 'matchup',
+                  label: 'Matchup & Rosters',
+                  icon: (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  )
+                },
+                {
+                  id: 'standings',
+                  label: 'Standings',
+                  icon: (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  )
+                },
+                {
+                  id: 'all',
+                  label: 'Split View',
+                  icon: (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                  )
+                }
+              ].map(tab => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center rounded-xl text-xs sm:text-sm font-black uppercase tracking-wider transition-all duration-200 active:scale-95 ${
+                      isActive
+                        ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-[0_0_20px_rgba(6,182,212,0.4)] border border-cyan-400/40'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800/60 border border-transparent'
+                    }`}
+                    style={{ padding: "12px 28px", gap: "10px" }}
+                  >
+                    <span className={isActive ? "text-cyan-200" : "text-slate-500"}>
+                      {tab.icon}
+                    </span>
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
-
-          {/* View Switcher Tabs (Only in Valorant) */}
-          {isValorant && (
-            <div className="flex items-center bg-slate-950/80 p-1.5 rounded-xl border border-slate-800/80 self-start lg:self-center shadow-lg">
-              <button
-                onClick={() => setActiveTab('matchup')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all duration-200 ${
-                  activeTab === 'matchup'
-                    ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-900/50'
-                    : 'text-theme-text-muted hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-                <span>Matchup & Rosters</span>
-              </button>
-              <button
-                onClick={() => setActiveTab('standings')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all duration-200 ${
-                  activeTab === 'standings'
-                    ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-900/50'
-                    : 'text-theme-text-muted hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                <span>Standings</span>
-              </button>
-              <button
-                onClick={() => setActiveTab('all')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all duration-200 ${
-                  activeTab === 'all'
-                    ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-900/50'
-                    : 'text-theme-text-muted hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
-                <span>Split View</span>
-              </button>
-            </div>
-          )}
-        </div>
+        )}
 
         {/* ═══════════════════════════════════════════════════════════════ */}
         {/* VALORANT SPECIFIC LAYOUT                                      */}
