@@ -102,23 +102,34 @@ const IconSave = () => (
   </svg>
 );
 const SectionHeader = ({ icon, label, sub, accent = "#06b6d4" }) => (
-  <div className="border-b border-slate-800/60 light:border-slate-200 flex items-center gap-4 sm:gap-6 bg-slate-900/30 light:bg-slate-50 px-5 py-4 sm:px-6 sm:py-5">
+  <div
+    className="border-b border-slate-800/60 light:border-slate-200 flex items-center bg-slate-900/40 light:bg-slate-50"
+    style={{ padding: "24px 32px", gap: "20px" }}
+  >
     <div
-      className="rounded-xl flex-shrink-0 p-3 sm:p-3.5"
+      className="rounded-xl flex-shrink-0 flex items-center justify-center shadow-sm"
       style={{
-        backgroundColor: accent + "18",
-        border: `1px solid ${accent}30`,
+        width: "44px",
+        height: "44px",
+        backgroundColor: accent + "20",
+        border: `1.5px solid ${accent}40`,
       }}
     >
-      <span style={{ color: accent }}>{icon}</span>
+      <span style={{ color: accent, display: "flex", alignItems: "center", justifyContent: "center" }}>{icon}</span>
     </div>
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col" style={{ gap: "6px" }}>
       {sub && (
-        <div className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500 light:text-slate-400">
+        <div
+          className="text-[11px] font-black uppercase text-slate-400 light:text-slate-500"
+          style={{ letterSpacing: "0.22em" }}
+        >
           {sub}
         </div>
       )}
-      <h2 className="text-sm font-black text-white light:text-slate-900 uppercase tracking-[0.2em]">
+      <h2
+        className="text-base font-black text-white light:text-slate-900 uppercase"
+        style={{ letterSpacing: "0.18em", margin: 0 }}
+      >
         {label}
       </h2>
     </div>
@@ -1113,7 +1124,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                   label="Main Match Header"
                   sub="Configuration"
                 />
-                <div className="grid grid-cols-2 lg:grid-cols-4" style={{ padding: "24px", gap: "20px" }}>
+                <div className="grid grid-cols-2 lg:grid-cols-4" style={{ padding: "28px 32px", gap: "20px" }}>
 
                   <Field label="Week:">
                     <input
@@ -1189,7 +1200,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                     sub="Live Assessment"
                     accent="#f59e0b"
                   />
-                  <div style={{ padding: "24px" }}>
+                  <div style={{ padding: "28px 32px" }}>
                     <div className="w-full">
                       <div className="bg-slate-800/50 light:bg-slate-50 border border-slate-700/70 light:border-slate-300 rounded-xl p-6">
                         <div className="flex items-center justify-between mb-4">
@@ -1220,7 +1231,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                     sub="Live Assessment"
                     accent="#f59e0b"
                   />
-                  <div style={{ padding: "24px" }}>
+                  <div style={{ padding: "28px 32px" }}>
                     <div className="flex flex-wrap items-end gap-8">
                       <div className="w-full max-w-xl">
                         <div className="bg-slate-800/50 light:bg-slate-50 border border-slate-700/70 light:border-slate-300 rounded-xl p-6">
@@ -1303,7 +1314,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                 sub="Matchup"
                 accent="#6366f1"
               />
-              <div className="flex flex-col" style={{ padding: "24px", gap: "24px" }}>
+              <div className="flex flex-col" style={{ padding: "28px 32px", gap: "24px" }}>
                 {/* Team A & B side by side */}
                 <div className="flex" style={{ display: 'flex', gap: '24px' }}>
                   <div className="flex-1 bg-blue-900/10 border border-blue-900/30 rounded-xl hover:border-blue-700/40 transition-colors" style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
@@ -1637,7 +1648,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                   sub="Per-Player Input Cards"
                   accent="#8b5cf6"
                 />
-                <div className="p-3 sm:p-4 md:p-5">
+                <div style={{ padding: "28px 32px" }}>
                   {/* ── Team A Players ── */}
                   <div className="flex flex-col gap-2">
                     {playersA.map((p, idx) => (
@@ -2293,7 +2304,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                   sub="Event Coordinate Plotting"
                   accent="#06b6d4"
                 />
-                <div className="flex flex-col p-4 sm:p-6">
+                <div className="flex flex-col" style={{ padding: "28px 32px" }}>
                   {/* ── Compact Toolbar ── */}
                   <div className="flex flex-wrap items-center justify-between gap-3 mb-4 rounded-xl bg-slate-900/60 light:bg-slate-100 border border-slate-700/40 light:border-slate-200 backdrop-blur-sm p-3 sm:px-4 sm:py-3">
                     {/* Round Selector */}
@@ -2440,7 +2451,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                   sub="Match Data Submission"
                   accent="#10b981"
                 />
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 p-6 sm:p-8">
+                <div className="flex flex-col sm:flex-row items-center justify-center" style={{ padding: "28px 32px", gap: "24px" }}>
                   <button
                     onClick={handleSubmit}
                     disabled={isSubmitting}
@@ -2498,9 +2509,22 @@ const DataEntry = ({ globalGame, globalTournament }) => {
 
         {submittedRecords.length > 0 && (
           <div className="bg-[#0d131c] light:bg-white rounded-2xl border border-slate-800/60 light:border-slate-200 overflow-hidden shadow-2xl">
-            <div className="px-6 py-4 border-b border-slate-800/60 light:border-slate-200 bg-slate-900/50 light:bg-slate-50 flex flex-col gap-1">
-              <h3 className="text-xl font-black text-white light:text-slate-900 tracking-wider">SUBMITTED RECORDS</h3>
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{game.toUpperCase()} | REGULAR SEASON | W{week} D{day} M{match} (ALL SETS)</span>
+            <div 
+              className="border-b border-slate-800/60 light:border-slate-200 bg-slate-900/50 light:bg-slate-50 flex flex-col"
+              style={{ padding: "24px 32px", gap: "8px" }}
+            >
+              <h3 
+                className="text-xl font-black text-white light:text-slate-900 tracking-wider uppercase"
+                style={{ margin: 0, letterSpacing: "0.12em" }}
+              >
+                SUBMITTED RECORDS
+              </h3>
+              <span 
+                className="text-xs font-bold text-slate-400 light:text-slate-500 uppercase"
+                style={{ letterSpacing: "0.2em" }}
+              >
+                {game.toUpperCase()} | REGULAR SEASON | W{week} D{day} M{match} (ALL SETS)
+              </span>
             </div>
             <div className="overflow-x-auto overflow-y-auto max-h-[600px] de-scroll">
               <table className="w-full text-left border-collapse text-sm text-slate-300 light:text-slate-700 whitespace-nowrap">
