@@ -1,6 +1,23 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import Bracket from "./Bracket.jsx";
 import { apiFetch } from "../../utils/api";
+import {
+  Calendar,
+  Clock,
+  Swords,
+  Plus,
+  Trash2,
+  Upload,
+  CheckCircle2,
+  AlertCircle,
+  Trophy,
+  Sparkles,
+  Search,
+  Layers,
+  X,
+  RefreshCw,
+  Image as ImageIcon
+} from "lucide-react";
 
 function useStickyState(defaultValue, key) {
   const [value, setValue] = React.useState(() => {
@@ -1527,14 +1544,18 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
   const key = `tourney_schedule_${safeFolder}_${activeGame}`;
 
   const [schedule, setSchedule] = useState([]);
+  const [searchSchedule, setSearchSchedule] = useState("");
+  const [successToast, setSuccessToast] = useState(null);
 
   const [teamA, setTeamA] = useStickyState("", `${key}_teamA`);
   const [teamALogo, setTeamALogo] = useStickyState("", `${key}_teamALogo`);
   const [teamAFile, setTeamAFile] = useState(null);
+  const teamAInputRef = useRef(null);
 
   const [teamB, setTeamB] = useStickyState("", `${key}_teamB`);
   const [teamBLogo, setTeamBLogo] = useStickyState("", `${key}_teamBLogo`);
   const [teamBFile, setTeamBFile] = useState(null);
+  const teamBInputRef = useRef(null);
 
   const [day, setDay] = useStickyState(new Date().toISOString().split("T")[0], `${key}_day`);
   const [time, setTime] = useStickyState("14:00", `${key}_time_v2`);
@@ -1542,25 +1563,81 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
   const [showErrors, setShowErrors] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const showToast = (msg) => {
+    setSuccessToast(msg);
+    setTimeout(() => {
+      setSuccessToast(prev => (prev === msg ? null : prev));
+    }, 3200);
+  };
+
+  const formatScheduleTime = (timeStr) => {
+    if (!timeStr) return "TBD";
+    const clean = String(timeStr).trim();
+    // Normalize format like "17:00 AM" or "14:00"
+    const match24 = clean.match(/^(\d{1,2}):(\d{2})$/);
+    if (match24) {
+      let hours = parseInt(match24[1], 10);
+      const minutes = match24[2];
+      const ampm = hours >= 12 ? "PM" : "AM";
+      hours = hours % 12 || 12;
+      return `${hours}:${minutes} ${ampm}`;
+    }
+    const matchBad = clean.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+    if (matchBad) {
+      let hours = parseInt(matchBad[1], 10);
+      const minutes = matchBad[2];
+      if (hours > 12) {
+        return `${hours - 12}:${minutes} PM`;
+      } else if (hours === 12) {
+        return `12:${minutes} PM`;
+      } else if (hours === 0) {
+        return `12:${minutes} AM`;
+      }
+      return `${hours}:${minutes} ${matchBad[3] ? matchBad[3].toUpperCase() : (hours >= 12 ? 'PM' : 'AM')}`;
+    }
+    return clean;
+  };
+
+  const formatScheduleDay = (dayVal) => {
+    if (!dayVal) return "Day 1";
+    const str = String(dayVal);
+    if (str.includes("-")) {
+      const d = new Date(str);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      }
+    }
+    return `Day ${str}`;
+  };
+
+  const getTeamInitials = (name) => {
+    if (!name || name === "TBD") return "?";
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return name.slice(0, 3).toUpperCase();
+  };
+
   const fetchMatches = async () => {
     try {
       const res = await apiFetch(
-        `/api/matches?tournament=${globalTournament?.name || "Default"}`,
+        `/api/matches?tournament=${encodeURIComponent(globalTournament?.name || "Default")}`,
       );
       if (res.ok) {
         const data = await res.json();
-        const formatted = data.map((m) => ({
-          id: m.match_id,
-          teamA: m.team_a?.team_name || "TBD",
-          teamALogo: m.team_a?.logo_url || null,
-          teamB: m.team_b?.team_name || "TBD",
-          teamBLogo: m.team_b?.logo_url || null,
-          day: m.match_day || (day ? parseInt(day.split("-")[2], 10) : 1),
-          time: m.match_time || "00:00",
-          timezone: m.match_timezone || "PST",
-          reminded: false,
-        }));
-        setSchedule(formatted);
+        if (Array.isArray(data)) {
+          const formatted = data.map((m) => ({
+            id: m.match_id,
+            teamA: m.team_a?.team_name || "TBD",
+            teamALogo: m.team_a?.logo_url || null,
+            teamB: m.team_b?.team_name || "TBD",
+            teamBLogo: m.team_b?.logo_url || null,
+            day: m.match_day || (day ? parseInt(day.split("-")[2], 10) : 1),
+            time: m.match_time || "00:00",
+            timezone: m.match_timezone || "PST",
+            reminded: false,
+          }));
+          setSchedule(formatted);
+        }
       }
     } catch (err) {
       console.error(err);
@@ -1572,14 +1649,22 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
   }, [globalTournament?.name]);
 
   const getOrCreateTeam = async (teamName, teamLogoUrl, teamFile) => {
-    const res = await apiFetch(
-      `/api/teams?tournament=${globalTournament?.name || "Default"}`,
-    );
-    const teams = await res.json();
-    const existing = teams.find(
-      (t) => t.team_name.toLowerCase() === teamName.toLowerCase(),
-    );
-    if (existing) return existing.team_id;
+    try {
+      const res = await apiFetch(
+        `/api/teams?tournament=${encodeURIComponent(globalTournament?.name || "Default")}`,
+      );
+      if (res.ok) {
+        const teams = await res.json();
+        if (Array.isArray(teams)) {
+          const existing = teams.find(
+            (t) => t.team_name.toLowerCase() === teamName.toLowerCase(),
+          );
+          if (existing) return existing.team_id;
+        }
+      }
+    } catch (e) {
+      console.warn("Could not fetch teams list:", e);
+    }
 
     const formData = new FormData();
     formData.append("team_name", teamName);
@@ -1588,138 +1673,239 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
     if (teamFile) {
       formData.append("logo", teamFile);
     } else if (teamLogoUrl && teamLogoUrl.startsWith("data:")) {
-      const res = await fetch(teamLogoUrl);
-      const blob = await res.blob();
-      formData.append("logo", blob, "logo.png");
+      try {
+        const res = await fetch(teamLogoUrl);
+        const blob = await res.blob();
+        formData.append("logo", blob, "logo.png");
+      } catch (e) {}
     }
 
-    const createRes = await apiFetch("/api/teams", {
-      method: "POST",
-      body: formData,
-    });
-    if (createRes.ok) {
-      const newTeam = await createRes.json();
-      return newTeam.team_id;
-    } else {
-      const errText = await createRes.text();
-      console.error("Failed to create team:", teamName, errText);
-      alert(`Failed to create team ${teamName}: ${errText}`);
+    try {
+      const createRes = await apiFetch("/api/teams", {
+        method: "POST",
+        body: formData,
+      });
+      if (createRes.ok) {
+        const newTeam = await createRes.json();
+        return newTeam.team_id;
+      }
+    } catch (e) {
+      console.error("Failed to create team:", e);
     }
     return null;
   };
 
   const addMatch = async () => {
-    if (!teamA || !teamB || !day || !time) {
+    if (!teamA.trim() || !teamB.trim() || !day || !time) {
       setShowErrors(true);
       return;
     }
 
     setIsSubmitting(true);
+    try {
+      const teamAId = await getOrCreateTeam(teamA.trim(), teamALogo, teamAFile);
+      const teamBId = await getOrCreateTeam(teamB.trim(), teamBLogo, teamBFile);
 
-    const teamAId = await getOrCreateTeam(teamA, teamALogo, teamAFile);
-    const teamBId = await getOrCreateTeam(teamB, teamBLogo, teamBFile);
+      if (teamAId && teamBId) {
+        const parsedDay = day.includes("-")
+          ? parseInt(day.split("-")[2], 10)
+          : parseInt(day, 10);
 
-    if (teamAId && teamBId) {
-      const parsedDay = day.includes("-")
-        ? parseInt(day.split("-")[2], 10)
-        : parseInt(day, 10);
-      const matchRes = await apiFetch("/api/matches", {
-        method: "POST",
-        body: JSON.stringify({
-          tournament_name: globalTournament?.name || "Default",
-          team_a_id: teamAId,
-          team_b_id: teamBId,
-          game_title: activeGame,
-          status: "scheduled",
-          match_day: parsedDay.toString(),
-          match_time: time,
-          match_timezone: "Local",
-        }),
-      });
+        const matchRes = await apiFetch("/api/matches", {
+          method: "POST",
+          body: JSON.stringify({
+            tournament_name: globalTournament?.name || "Default",
+            team_a_id: teamAId,
+            team_b_id: teamBId,
+            game_title: activeGame,
+            status: "scheduled",
+            match_day: parsedDay.toString(),
+            match_time: time,
+            match_timezone: "Local",
+          }),
+        });
 
-      if (!matchRes.ok) {
-        const errText = await matchRes.text();
-        console.error("Failed to create match:", errText);
-        alert(`Failed to create match: ${errText}`);
+        if (!matchRes.ok) {
+          const errText = await matchRes.text();
+          console.error("Failed to create match:", errText);
+        }
+        await fetchMatches();
+
+        setTeamA("");
+        setTeamALogo("");
+        setTeamAFile(null);
+        setTeamB("");
+        setTeamBLogo("");
+        setTeamBFile(null);
+        setShowErrors(false);
+        showToast("Match successfully added to tournament schedule!");
       }
-      await fetchMatches();
-
-      setTeamA("");
-      setTeamALogo("");
-      setTeamAFile(null);
-      setTeamB("");
-      setTeamBLogo("");
-      setTeamBFile(null);
-      setShowErrors(false);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   const removeMatch = async (id) => {
-    await apiFetch(`/api/matches/${id}`, {
-      method: "DELETE",
-    });
-    setSchedule(schedule.filter((m) => m.id !== id));
+    try {
+      await apiFetch(`/api/matches/${id}`, {
+        method: "DELETE",
+      });
+      setSchedule(prev => prev.filter((m) => m.id !== id));
+      showToast("Match removed from schedule.");
+    } catch (e) {
+      console.error("Failed to delete match:", e);
+    }
   };
 
-  const inputClass = (val) =>
-    `w-full bg-[#070b10] border border-slate-800/80 rounded-xl px-4 py-3 text-white text-sm normal-nums transition-all ${showErrors && !val ? "border-2 border-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]" : "focus:border-cyan-500/50 focus:shadow-[0_0_15px_rgba(6,182,212,0.15)] outline-none"}`;
+  // Filtered schedule list
+  const filteredSchedule = useMemo(() => {
+    if (!searchSchedule.trim()) return schedule;
+    const q = searchSchedule.toLowerCase();
+    return schedule.filter(m =>
+      (m.teamA && m.teamA.toLowerCase().includes(q)) ||
+      (m.teamB && m.teamB.toLowerCase().includes(q))
+    );
+  }, [schedule, searchSchedule]);
+
+  const setDateOffset = (days) => {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    setDay(d.toISOString().split("T")[0]);
+  };
 
   return (
-    <div className="flex justify-center w-full mb-10">
-      <div className="flex flex-col lg:flex-row gap-6 w-full max-w-[1400px] px-4 lg:px-8 mt-6">
+    <div className="flex justify-center w-full mb-10 relative">
+      {/* Toast Notification */}
+      {successToast && (
+        <div className="fixed top-6 right-8 z-50 animate-bounce flex items-center gap-3 px-5 py-3 rounded-2xl bg-slate-900/95 border border-cyan-500/50 shadow-[0_10px_35px_rgba(6,182,212,0.3)] backdrop-blur-md text-sm font-bold text-cyan-300">
+          <CheckCircle2 size={18} className="text-cyan-400" />
+          <span>{successToast}</span>
+        </div>
+      )}
+
+      <div className="flex flex-col lg:flex-row gap-6 w-full max-w-[1400px] px-2 sm:px-4 lg:px-8 mt-4">
         
-        {/* LEFT COLUMN */}
+        {/* LEFT COLUMN: SETUP & SCHEDULE FORM */}
         <div className="flex-1 flex flex-col gap-6">
-          {/* Create Tournament Box (Only shown if not embedded and has callback) */}
+
+          {/* ── Top Tournament Setup Banner ── */}
           {!readOnly && !embedded && onOpenCreateModal && (
-            <div className="bg-[#0b1017] light:bg-white rounded-3xl border border-slate-800/60 light:border-slate-200 shadow-2xl w-full p-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-              <h2 className="text-xl font-black uppercase text-white light:text-slate-900 tracking-widest m-0">
-                Tournament Setup
-              </h2>
+            <div className="relative overflow-hidden rounded-3xl bg-slate-900/60 border border-slate-800/80 p-6 sm:p-7 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.45)] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5">
+              {/* Top ambient highlight line */}
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
+
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.25)] shrink-0">
+                  <Trophy size={28} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-cyan-500/15 text-cyan-400 border border-cyan-500/25">
+                      Tournament Hub
+                    </span>
+                    <span className="text-xs font-bold text-slate-500">•</span>
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                      {globalTournament?.name || "Default Tournament"}
+                    </span>
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black uppercase text-white font-['Outfit'] tracking-wider">
+                    Tournament Setup
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Configure tournament fixtures, register team rosters, and manage match schedules.
+                  </p>
+                </div>
+              </div>
+
               <button 
                 onClick={onOpenCreateModal}
-                className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 uppercase rounded-full transition-all duration-300 shadow-[0_0_15px_rgba(6,182,212,0.3)] hover:shadow-[0_0_25px_rgba(6,182,212,0.5)] shrink-0"
-                style={{ padding: '14px 32px', fontWeight: 'bold', letterSpacing: '1px', fontSize: '13px' }}
+                className="group relative flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-slate-950 text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-[0_0_25px_rgba(6,182,212,0.4)] hover:shadow-[0_0_35px_rgba(6,182,212,0.6)] hover:scale-105 active:scale-95 shrink-0"
               >
-                + Create Tournament
+                <Plus size={16} strokeWidth={3} className="transition-transform group-hover:rotate-90" />
+                <span>+ Create Tournament</span>
               </button>
             </div>
           )}
 
-          {/* Manage Schedule Form Box */}
+          {/* ── Manage Schedule Form ── */}
           {!readOnly && (
-            <div
-              className="bg-[#0b1017] light:bg-white rounded-3xl border border-slate-800/60 light:border-slate-200 shadow-2xl w-full flex flex-col"
-              style={{ padding: '32px', boxSizing: 'border-box' }}
-            >
-              <h2 className="text-2xl font-black uppercase text-white light:text-slate-900 tracking-widest mb-8 text-center md:text-left">
-                Manage Schedule
-              </h2>
+            <div className="relative overflow-hidden rounded-3xl bg-slate-900/60 border border-slate-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-6 sm:p-8 backdrop-blur-xl flex flex-col gap-7">
+              {/* Top ambient highlight line */}
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-cyan-500/30 via-slate-700 to-rose-500/30" />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full" style={{ padding: '0 8px' }}>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 text-left" style={{ marginBottom: "12px", paddingLeft: "16px" }}>
-                    TEAM A NAME
-                  </label>
-                  <input
-                    type="text"
-                    value={teamA}
-                    onChange={(e) => setTeamA(e.target.value)}
-                    className={inputClass(teamA)}
-                    placeholder="e.g. All Gamers"
-                    disabled={isSubmitting}
-                  />
+              {/* Form Title & Subtitle */}
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-cyan-400 shadow-inner">
+                    <Swords size={20} />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black uppercase text-white font-['Outfit'] tracking-wider">
+                      Schedule Match Showdown
+                    </h2>
+                    <p className="text-xs text-slate-400">
+                      Enter competing team details, customize team emblems, and set the battle time.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 text-left" style={{ marginBottom: "12px", paddingLeft: "16px" }}>
-                    TEAM A LOGO
-                  </label>
-                  <div className="flex items-center gap-2">
+
+                <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-slate-800/60 text-slate-300 border border-slate-700/60">
+                  <Sparkles size={12} className="text-cyan-400" />
+                  Auto-Syncs With Predictions
+                </span>
+              </div>
+
+              {/* ── Versus Teams Arena (Team A vs Team B) ── */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
+                
+                {/* TEAM A CARD */}
+                <div className="relative rounded-2xl bg-slate-950/50 border border-slate-800/90 hover:border-cyan-500/40 p-5 flex flex-col gap-4 transition-all shadow-inner">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.8)]" />
+                      <span className="text-xs font-black uppercase tracking-wider text-cyan-400">
+                        Team A (Home / Blue)
+                      </span>
+                    </div>
+                    {teamALogo && (
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                        Emblem Loaded
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Team A Name Input */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                      Team Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={teamA}
+                      onChange={(e) => setTeamA(e.target.value)}
+                      placeholder="e.g. Sentinels, All Gamers..."
+                      disabled={isSubmitting}
+                      className={`w-full bg-[#060a12] border rounded-xl px-4 py-3 text-white text-sm placeholder:text-slate-600 focus:outline-none transition-all ${
+                        showErrors && !teamA.trim()
+                          ? "border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]"
+                          : "border-slate-800 focus:border-cyan-400 focus:shadow-[0_0_20px_rgba(6,182,212,0.2)]"
+                      }`}
+                    />
+                  </div>
+
+                  {/* Team A Custom Logo Uploader */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                      Team Logo (Optional)
+                    </label>
                     <input
                       type="file"
+                      ref={teamAInputRef}
                       accept="image/*"
                       disabled={isSubmitting}
+                      className="hidden"
                       onChange={(e) => {
                         const file = e.target.files[0];
                         if (file) {
@@ -1729,40 +1915,98 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                           reader.readAsDataURL(file);
                         }
                       }}
-                      className="w-full bg-[#070b10] border border-slate-800/80 rounded-xl px-4 py-2.5 text-white text-sm file:mr-4 file:py-1.5 file:px-6 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-cyan-500 file:text-slate-900 hover:file:bg-cyan-400 cursor-pointer"
                     />
-                    {teamALogo && (
-                      <img
-                        src={teamALogo}
-                        alt="Preview"
-                        className="w-10 h-10 object-contain rounded bg-slate-800 shrink-0"
-                      />
+
+                    {teamALogo ? (
+                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-slate-700/80">
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          <img
+                            src={teamALogo}
+                            alt="Team A"
+                            className="w-10 h-10 object-contain rounded-lg bg-slate-950 p-1 border border-slate-700 shrink-0"
+                          />
+                          <div className="truncate text-xs font-bold text-slate-200">
+                            {teamAFile ? teamAFile.name : "Custom Logo"}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => teamAInputRef.current?.click()}
+                            className="px-2.5 py-1 text-[11px] font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
+                          >
+                            Change
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTeamALogo("");
+                              setTeamAFile(null);
+                            }}
+                            className="p-1 text-slate-400 hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-colors"
+                          >
+                            <X size={15} />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        onClick={() => teamAInputRef.current?.click()}
+                        className="cursor-pointer border border-dashed border-slate-800 hover:border-cyan-400/60 bg-slate-900/40 hover:bg-cyan-500/5 rounded-xl p-3 flex items-center justify-center gap-2.5 transition-all text-slate-400 hover:text-cyan-300 text-xs font-bold"
+                      >
+                        <Upload size={15} className="text-cyan-400" />
+                        <span>Upload Team A Emblem</span>
+                      </div>
                     )}
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 text-left" style={{ marginBottom: "12px", paddingLeft: "16px" }}>
-                    TEAM B NAME
-                  </label>
-                  <input
-                    type="text"
-                    value={teamB}
-                    onChange={(e) => setTeamB(e.target.value)}
-                    className={inputClass(teamB)}
-                    placeholder="e.g. Baisha Gaming"
-                    disabled={isSubmitting}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 text-left" style={{ marginBottom: "12px", paddingLeft: "16px" }}>
-                    TEAM B LOGO
-                  </label>
-                  <div className="flex items-center gap-2">
+                {/* TEAM B CARD */}
+                <div className="relative rounded-2xl bg-slate-950/50 border border-slate-800/90 hover:border-rose-500/40 p-5 flex flex-col gap-4 transition-all shadow-inner">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.8)]" />
+                      <span className="text-xs font-black uppercase tracking-wider text-rose-400">
+                        Team B (Away / Red)
+                      </span>
+                    </div>
+                    {teamBLogo && (
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                        Emblem Loaded
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Team B Name Input */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                      Team Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={teamB}
+                      onChange={(e) => setTeamB(e.target.value)}
+                      placeholder="e.g. Fnatic, BaiSha Gaming..."
+                      disabled={isSubmitting}
+                      className={`w-full bg-[#060a12] border rounded-xl px-4 py-3 text-white text-sm placeholder:text-slate-600 focus:outline-none transition-all ${
+                        showErrors && !teamB.trim()
+                          ? "border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]"
+                          : "border-slate-800 focus:border-rose-400 focus:shadow-[0_0_20px_rgba(244,63,94,0.2)]"
+                      }`}
+                    />
+                  </div>
+
+                  {/* Team B Custom Logo Uploader */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                      Team Logo (Optional)
+                    </label>
                     <input
                       type="file"
+                      ref={teamBInputRef}
                       accept="image/*"
                       disabled={isSubmitting}
+                      className="hidden"
                       onChange={(e) => {
                         const file = e.target.files[0];
                         if (file) {
@@ -1772,124 +2016,291 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                           reader.readAsDataURL(file);
                         }
                       }}
-                      className="w-full bg-[#070b10] border border-slate-800/80 rounded-xl px-4 py-2.5 text-white text-sm file:mr-4 file:py-1.5 file:px-6 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-cyan-500 file:text-slate-900 hover:file:bg-cyan-400 cursor-pointer"
                     />
-                    {teamBLogo && (
-                      <img
-                        src={teamBLogo}
-                        alt="Preview"
-                        className="w-10 h-10 object-contain rounded bg-slate-800 shrink-0"
-                      />
+
+                    {teamBLogo ? (
+                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-slate-700/80">
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          <img
+                            src={teamBLogo}
+                            alt="Team B"
+                            className="w-10 h-10 object-contain rounded-lg bg-slate-950 p-1 border border-slate-700 shrink-0"
+                          />
+                          <div className="truncate text-xs font-bold text-slate-200">
+                            {teamBFile ? teamBFile.name : "Custom Logo"}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => teamBInputRef.current?.click()}
+                            className="px-2.5 py-1 text-[11px] font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
+                          >
+                            Change
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTeamBLogo("");
+                              setTeamBFile(null);
+                            }}
+                            className="p-1 text-slate-400 hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-colors"
+                          >
+                            <X size={15} />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        onClick={() => teamBInputRef.current?.click()}
+                        className="cursor-pointer border border-dashed border-slate-800 hover:border-rose-400/60 bg-slate-900/40 hover:bg-rose-500/5 rounded-xl p-3 flex items-center justify-center gap-2.5 transition-all text-slate-400 hover:text-rose-300 text-xs font-bold"
+                      >
+                        <Upload size={15} className="text-rose-400" />
+                        <span>Upload Team B Emblem</span>
+                      </div>
                     )}
                   </div>
                 </div>
 
+              </div>
+
+              {/* ── Date & Time Scheduling Section ── */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-3 border-t border-slate-800/60">
+                {/* Date Input */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 text-left" style={{ marginBottom: "12px", paddingLeft: "16px" }}>
-                    DATE
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Calendar size={13} className="text-cyan-400" />
+                      <span>Match Date *</span>
+                    </label>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setDateOffset(0)}
+                        className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+                      >
+                        Today
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDateOffset(1)}
+                        className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+                      >
+                        Tomorrow
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDateOffset(2)}
+                        className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+                      >
+                        +2 Days
+                      </button>
+                    </div>
+                  </div>
                   <input
                     type="date"
                     value={day}
                     onChange={(e) => setDay(e.target.value)}
-                    className={inputClass(day) + " [color-scheme:dark]"}
                     disabled={isSubmitting}
+                    className={`w-full bg-[#060a12] border rounded-xl px-4 py-3 text-white text-sm [color-scheme:dark] focus:outline-none transition-all ${
+                      showErrors && !day
+                        ? "border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]"
+                        : "border-slate-800 focus:border-cyan-400"
+                    }`}
                   />
                 </div>
+
+                {/* Time Input */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 text-left" style={{ marginBottom: "12px", paddingLeft: "16px" }}>
-                    TIME
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Clock size={13} className="text-cyan-400" />
+                      <span>Kickoff Time *</span>
+                    </label>
+                    <div className="flex items-center gap-1">
+                      {["14:00", "17:00", "20:00"].map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => setTime(preset)}
+                          className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+                        >
+                          {preset === "14:00" ? "2 PM" : preset === "17:00" ? "5 PM" : "8 PM"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                   <input
                     type="time"
                     value={time}
                     onChange={(e) => setTime(e.target.value)}
-                    className={inputClass(time) + " cursor-pointer [color-scheme:dark]"}
                     disabled={isSubmitting}
+                    className={`w-full bg-[#060a12] border rounded-xl px-4 py-3 text-white text-sm [color-scheme:dark] cursor-pointer focus:outline-none transition-all ${
+                      showErrors && !time
+                        ? "border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]"
+                        : "border-slate-800 focus:border-cyan-400"
+                    }`}
                   />
                 </div>
               </div>
 
-              {showErrors && (
-                <div className="text-red-500 text-xs font-bold mt-6 text-center uppercase animate-pulse">
-                  Please fill in all required fields.
+              {/* Validation Error Feedback */}
+              {showErrors && (!teamA.trim() || !teamB.trim() || !day || !time) && (
+                <div className="flex items-center justify-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold uppercase tracking-wider animate-pulse">
+                  <AlertCircle size={15} />
+                  <span>Please fill in both Team Names, Match Date, and Kickoff Time.</span>
                 </div>
               )}
-              <div style={{ display: 'flex', justifyContent: 'center', marginTop: '32px' }}>
+
+              {/* Submit Button */}
+              <div className="flex justify-end pt-2">
                 <button
+                  type="button"
                   onClick={addMatch}
                   disabled={isSubmitting}
-                  className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 uppercase rounded-full transition-all duration-300 shadow-[0_0_15px_rgba(6,182,212,0.3)] hover:shadow-[0_0_25px_rgba(6,182,212,0.5)] disabled:opacity-50"
-                  style={{ padding: '12px 32px', fontWeight: 'bold', letterSpacing: '0.5px', fontSize: '12px' }}
+                  className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-slate-950 text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] hover:scale-[1.02] active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2.5"
                 >
-                  {isSubmitting ? "Saving..." : "Add Match"}
+                  {isSubmitting ? (
+                    <>
+                      <RefreshCw size={16} className="animate-spin text-slate-950" />
+                      <span>Scheduling Match...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus size={16} strokeWidth={3} />
+                      <span>Add Match To Schedule</span>
+                    </>
+                  )}
                 </button>
               </div>
+
             </div>
           )}
+
         </div>
 
-        {/* RIGHT COLUMN - Current Schedule */}
-        <div className="w-full lg:w-[400px] xl:w-[450px] shrink-0">
-          <div
-            className="bg-[#0d131c] light:bg-white rounded-3xl border border-slate-800/50 light:border-slate-200 shadow-2xl h-full flex flex-col"
-            style={{ padding: '32px', boxSizing: 'border-box', minHeight: '500px' }}
-          >
-            <h3 className="text-sm font-black uppercase text-slate-400 mb-6 mt-0">
-              Current Schedule
-            </h3>
-            <div className="flex flex-col gap-3 overflow-y-auto custom-scrollbar flex-1 pr-2">
-              {schedule.length === 0 && (
-                <div className="text-slate-500 text-sm italic">No matches scheduled yet.</div>
-              )}
-              {schedule.map((m) => (
-                <div
-                  key={m.id}
-                  className="flex flex-col bg-[#0b1017] p-4 rounded-2xl border border-slate-800/80 gap-4 hover:border-slate-600 transition-colors shadow-lg"
-                >
-                  {/* Match Teams Header */}
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center gap-3">
-                      {m.teamALogo ? (
-                        <img src={m.teamALogo} alt="Team A" className="w-8 h-8 object-contain rounded bg-slate-900" />
-                      ) : (
-                        <div className="w-8 h-8 rounded bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-500">?</div>
-                      )}
-                      <div className="text-white font-bold text-sm truncate max-w-[90px]" title={m.teamA}>{m.teamA}</div>
-                    </div>
-                    <span className="text-cyan-500/70 font-black text-xs mx-2">VS</span>
-                    <div className="flex items-center gap-3 flex-row-reverse">
-                      {m.teamBLogo ? (
-                        <img src={m.teamBLogo} alt="Team B" className="w-8 h-8 object-contain rounded bg-slate-900" />
-                      ) : (
-                        <div className="w-8 h-8 rounded bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-500">?</div>
-                      )}
-                      <div className="text-white font-bold text-sm truncate max-w-[90px] text-right" title={m.teamB}>{m.teamB}</div>
-                    </div>
+        {/* ── RIGHT COLUMN: CURRENT SCHEDULE SIDEBAR ── */}
+        <div className="w-full lg:w-[420px] xl:w-[460px] shrink-0">
+          <div className="relative overflow-hidden rounded-3xl bg-slate-900/60 border border-slate-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-6 sm:p-7 backdrop-blur-xl h-full flex flex-col min-h-[560px]">
+            {/* Top ambient highlight line */}
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
+
+            {/* Sidebar Header */}
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800/80">
+              <div className="flex items-center gap-2">
+                <Calendar size={16} className="text-cyan-400" />
+                <h3 className="text-sm font-black uppercase text-white font-['Outfit'] tracking-wider">
+                  Current Schedule
+                </h3>
+              </div>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-800 text-cyan-400 border border-slate-700/60">
+                {schedule.length} {schedule.length === 1 ? "Match" : "Matches"}
+              </span>
+            </div>
+
+            {/* Quick Search */}
+            <div className="relative mb-4">
+              <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+              <input
+                type="text"
+                value={searchSchedule}
+                onChange={(e) => setSearchSchedule(e.target.value)}
+                placeholder="Filter by team..."
+                className="w-full bg-[#060a12] border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs font-medium text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50 transition-all"
+              />
+            </div>
+
+            {/* Schedule Items List */}
+            <div className="flex flex-col gap-3 overflow-y-auto custom-scrollbar flex-1 pr-1 max-h-[620px]">
+              {filteredSchedule.length === 0 ? (
+                <div className="flex flex-col items-center justify-center text-center py-16 px-4 rounded-2xl border border-dashed border-slate-800/80 bg-slate-950/30">
+                  <Calendar size={32} className="text-slate-600 mb-3" />
+                  <div className="text-sm font-bold text-slate-300">
+                    {searchSchedule ? "No matching fixtures" : "No matches scheduled yet"}
                   </div>
-                  
-                  <div className="w-full h-px bg-slate-800/60"></div>
-                  
-                  {/* Match Details Footer */}
-                  <div className="flex items-center justify-between">
-                    <div className="text-slate-400 text-xs font-semibold flex items-center gap-2">
-                      <svg className="w-3.5 h-3.5 text-cyan-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      {m.day} <span className="text-slate-600">•</span> {m.time}
-                    </div>
-                    <button
-                      onClick={() => removeMatch(m.id)}
-                      className="text-red-500 hover:text-red-400 text-[10px] font-black uppercase tracking-wider transition-colors px-2 py-1.5 hover:bg-red-500/10 rounded"
-                    >
-                      Remove
-                    </button>
+                  <div className="text-xs text-slate-500 mt-1 max-w-[220px]">
+                    {searchSchedule ? "Try another team search." : "Add your first matchup using the form on the left!"}
                   </div>
                 </div>
-              ))}
+              ) : (
+                filteredSchedule.map((m, index) => (
+                  <div
+                    key={m.id}
+                    className="group relative flex flex-col bg-slate-950/50 p-4 rounded-2xl border border-slate-800/80 hover:border-slate-700 transition-all shadow-md hover:shadow-xl gap-3.5"
+                  >
+                    {/* Top Meta Strip */}
+                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                      <span className="px-2 py-0.5 rounded bg-slate-800/60 text-slate-300 border border-slate-700/40">
+                        Match #{index + 1}
+                      </span>
+                      <span className="text-slate-400 flex items-center gap-1 font-semibold">
+                        <Clock size={11} className="text-slate-500" />
+                        {formatScheduleDay(m.day)} • {formatScheduleTime(m.time)}
+                      </span>
+                    </div>
+
+                    {/* Team Showdown Row */}
+                    <div className="flex items-center justify-between w-full gap-2">
+                      {/* Team A */}
+                      <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                        {m.teamALogo ? (
+                          <img
+                            src={m.teamALogo}
+                            alt={m.teamA}
+                            className="w-8 h-8 object-contain rounded-lg bg-slate-900 border border-slate-700/60 p-0.5 shrink-0"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-[10px] font-black text-cyan-400 shrink-0">
+                            {getTeamInitials(m.teamA)}
+                          </div>
+                        )}
+                        <span className="text-white font-bold text-xs truncate" title={m.teamA}>
+                          {m.teamA}
+                        </span>
+                      </div>
+
+                      {/* VS Center */}
+                      <div className="px-2 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-[10px] font-black text-cyan-400 tracking-wider shrink-0">
+                        VS
+                      </div>
+
+                      {/* Team B */}
+                      <div className="flex items-center gap-2.5 flex-1 min-w-0 justify-end">
+                        <span className="text-white font-bold text-xs truncate text-right" title={m.teamB}>
+                          {m.teamB}
+                        </span>
+                        {m.teamBLogo ? (
+                          <img
+                            src={m.teamBLogo}
+                            alt={m.teamB}
+                            className="w-8 h-8 object-contain rounded-lg bg-slate-900 border border-slate-700/60 p-0.5 shrink-0"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-[10px] font-black text-rose-400 shrink-0">
+                            {getTeamInitials(m.teamB)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Bottom Action Footer */}
+                    <div className="flex items-center justify-end pt-2 border-t border-slate-800/60">
+                      <button
+                        type="button"
+                        onClick={() => removeMatch(m.id)}
+                        className="flex items-center gap-1.5 text-slate-500 hover:text-red-400 text-[11px] font-bold uppercase tracking-wider transition-colors px-2.5 py-1 rounded-lg hover:bg-red-500/10"
+                      >
+                        <Trash2 size={12} />
+                        <span>Remove</span>
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
+
       </div>
     </div>
   );
