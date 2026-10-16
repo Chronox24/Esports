@@ -1100,81 +1100,100 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
                     </div>
 
                     {/* Player Profile Pickers */}
-                    <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-center p-5 sm:p-6 border-b border-slate-800/80 bg-slate-950/50 gap-4 sm:gap-6">
-                      
-                      {/* Left Player (Team 1) */}
-                      <div className="flex items-center gap-4 bg-slate-900/50 p-3 sm:p-4 rounded-2xl border border-cyan-500/20 max-w-lg w-full">
-                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center font-black text-xl sm:text-2xl flex-shrink-0 shadow-lg relative overflow-hidden"
-                          style={{ background: theme.t1Bg, border: `2px solid ${theme.t1Accent}`, color: theme.t1Accent, boxShadow: `0 0 20px ${theme.t1Accent}35` }}>
-                          {resolvedKeyPlayer1.ign?.[0] || 'P'}
-                          <span className="absolute bottom-0 right-0 px-1 text-[9px] font-mono font-bold bg-cyan-950 text-cyan-300 rounded-tl">T1</span>
+                    <div 
+                      className="border-b border-slate-800/80 bg-slate-950/50"
+                      style={{ padding: '24px 32px' }}
+                    >
+                      <div 
+                        style={{ 
+                          maxWidth: '1100px', 
+                          margin: '0 auto', 
+                          width: '100%', 
+                          display: 'grid', 
+                          gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 1fr)', 
+                          alignItems: 'center', 
+                          gap: '24px' 
+                        }}
+                      >
+                        {/* Left Player (Team 1) */}
+                        <div 
+                          className="flex items-center gap-4 bg-slate-900/50 rounded-2xl border border-cyan-500/20"
+                          style={{ padding: '16px 20px', width: '100%', boxSizing: 'border-box' }}
+                        >
+                          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center font-black text-xl sm:text-2xl flex-shrink-0 shadow-lg relative overflow-hidden"
+                            style={{ background: theme.t1Bg, border: `2px solid ${theme.t1Accent}`, color: theme.t1Accent, boxShadow: `0 0 20px ${theme.t1Accent}35` }}>
+                            {resolvedKeyPlayer1.ign?.[0] || 'P'}
+                            <span className="absolute bottom-0 right-0 px-1 text-[9px] font-mono font-bold bg-cyan-950 text-cyan-300 rounded-tl">T1</span>
+                          </div>
+                          <div className="flex flex-col flex-1 min-w-0">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-cyan-400 truncate">{team1Name}</span>
+                            <select
+                              value={keyPlayer1 || resolvedKeyPlayer1.ign}
+                              onChange={(e) => setKeyPlayer1(e.target.value)}
+                              className="bg-slate-950 border border-slate-700/80 text-white font-black text-sm sm:text-base rounded-xl px-3 py-1.5 focus:outline-none focus:border-cyan-400 cursor-pointer lb-select-custom w-full max-w-[280px] mt-0.5"
+                            >
+                              {team1Roster.map(p => (
+                                <option key={p.ign} value={p.ign}>{p.ign}</option>
+                              ))}
+                            </select>
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
+                                🎯 {resolvedKeyPlayer1.agent || 'Duelist'}
+                              </span>
+                              <span className="text-[11px] font-mono text-slate-400">
+                                KDA: <strong className="text-white">{resolvedKeyPlayer1.kda || '0.00'}</strong>
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex flex-col flex-1 min-w-0">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-cyan-400 truncate">{team1Name}</span>
-                          <select
-                            value={keyPlayer1 || resolvedKeyPlayer1.ign}
-                            onChange={(e) => setKeyPlayer1(e.target.value)}
-                            className="bg-slate-950 border border-slate-700/80 text-white font-black text-sm sm:text-base rounded-xl px-3 py-1.5 focus:outline-none focus:border-cyan-400 cursor-pointer lb-select-custom w-auto min-w-[170px] max-w-[240px] mt-0.5"
-                          >
-                            {team1Roster.map(p => (
-                              <option key={p.ign} value={p.ign}>{p.ign}</option>
-                            ))}
-                          </select>
-                          <div className="flex items-center gap-2 mt-1.5">
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
-                              🎯 {resolvedKeyPlayer1.agent || 'Duelist'}
-                            </span>
-                            <span className="text-[11px] font-mono text-slate-400">
-                              KDA: <strong className="text-white">{resolvedKeyPlayer1.kda || '0.00'}</strong>
-                            </span>
+
+                        {/* Center Duel Badge */}
+                        <div className="flex flex-col items-center justify-center" style={{ padding: '0 12px' }}>
+                          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 shadow-xl flex items-center justify-center font-black text-sm italic tracking-widest text-slate-200">
+                            VS
+                          </div>
+                          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 mt-2 whitespace-nowrap">
+                            Star Clash
+                          </span>
+                        </div>
+
+                        {/* Right Player (Team 2) */}
+                        <div 
+                          className="flex items-center gap-4 bg-slate-900/50 rounded-2xl border border-amber-500/20 text-right justify-end"
+                          style={{ padding: '16px 20px', width: '100%', boxSizing: 'border-box' }}
+                        >
+                          <div className="flex flex-col flex-1 min-w-0 items-end">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 truncate">{team2Name}</span>
+                            <select
+                              value={keyPlayer2 || resolvedKeyPlayer2.ign}
+                              onChange={(e) => setKeyPlayer2(e.target.value)}
+                              className="bg-slate-950 border border-slate-700/80 text-white font-black text-sm sm:text-base rounded-xl px-3 py-1.5 focus:outline-none focus:border-amber-400 cursor-pointer lb-select-custom w-full max-w-[280px] mt-0.5"
+                            >
+                              {team2Roster.map(p => (
+                                <option key={p.ign} value={p.ign}>{p.ign}</option>
+                              ))}
+                            </select>
+                            <div className="flex items-center gap-2 mt-1.5 justify-end">
+                              <span className="text-[11px] font-mono text-slate-400">
+                                KDA: <strong className="text-white">{resolvedKeyPlayer2.kda || '0.00'}</strong>
+                              </span>
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                                ⚡ {resolvedKeyPlayer2.agent || 'Initiator'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center font-black text-xl sm:text-2xl flex-shrink-0 shadow-lg relative overflow-hidden"
+                            style={{ background: theme.t2Bg, border: `2px solid ${theme.t2Accent}`, color: theme.t2Accent, boxShadow: `0 0 20px ${theme.t2Accent}35` }}>
+                            {resolvedKeyPlayer2.ign?.[0] || 'P'}
+                            <span className="absolute bottom-0 left-0 px-1 text-[9px] font-mono font-bold bg-amber-950 text-amber-300 rounded-tr">T2</span>
                           </div>
                         </div>
                       </div>
-
-                      {/* Center Duel Badge */}
-                      <div className="flex flex-col items-center justify-center px-2">
-                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 shadow-xl flex items-center justify-center font-black text-sm italic tracking-widest text-slate-200">
-                          VS
-                        </div>
-                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 mt-2">
-                          Star Clash
-                        </span>
-                      </div>
-
-                      {/* Right Player (Team 2) */}
-                      <div className="flex items-center gap-4 bg-slate-900/50 p-3 sm:p-4 rounded-2xl border border-amber-500/20 text-right justify-end max-w-lg w-full ml-auto">
-                        <div className="flex flex-col flex-1 min-w-0 items-end">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 truncate">{team2Name}</span>
-                          <select
-                            value={keyPlayer2 || resolvedKeyPlayer2.ign}
-                            onChange={(e) => setKeyPlayer2(e.target.value)}
-                            className="bg-slate-950 border border-slate-700/80 text-white font-black text-sm sm:text-base rounded-xl px-3 py-1.5 focus:outline-none focus:border-amber-400 cursor-pointer lb-select-custom w-auto min-w-[170px] max-w-[240px] mt-0.5"
-                          >
-                            {team2Roster.map(p => (
-                              <option key={p.ign} value={p.ign}>{p.ign}</option>
-                            ))}
-                          </select>
-                          <div className="flex items-center gap-2 mt-1.5 justify-end">
-                            <span className="text-[11px] font-mono text-slate-400">
-                              KDA: <strong className="text-white">{resolvedKeyPlayer2.kda || '0.00'}</strong>
-                            </span>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20">
-                              ⚡ {resolvedKeyPlayer2.agent || 'Initiator'}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center font-black text-xl sm:text-2xl flex-shrink-0 shadow-lg relative overflow-hidden"
-                          style={{ background: theme.t2Bg, border: `2px solid ${theme.t2Accent}`, color: theme.t2Accent, boxShadow: `0 0 20px ${theme.t2Accent}35` }}>
-                          {resolvedKeyPlayer2.ign?.[0] || 'P'}
-                          <span className="absolute bottom-0 left-0 px-1 text-[9px] font-mono font-bold bg-amber-950 text-amber-300 rounded-tr">T2</span>
-                        </div>
-                      </div>
-
                     </div>
 
                     {/* Key Players Comparison Table */}
-                    <div className="p-4 sm:p-6 space-y-3">
-                      <div className="max-w-4xl mx-auto w-full space-y-2.5">
+                    <div style={{ padding: '28px 32px', width: '100%', boxSizing: 'border-box' }}>
+                      <div style={{ maxWidth: '1100px', margin: '0 auto', width: '100%', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         {keyPlayerComparison.map((row) => {
                           const num1 = parseFloat(row.p1Val) || 0;
                           const num2 = parseFloat(row.p2Val) || 0;
@@ -1183,10 +1202,22 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
                           const p2Percent = 100 - p1Percent;
 
                           return (
-                            <div key={row.stat} className="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 sm:px-6 hover:border-slate-700/80 transition-all grid grid-cols-[130px_1fr_130px] sm:grid-cols-[160px_1fr_160px] items-center gap-3">
+                            <div 
+                              key={row.stat} 
+                              className="bg-slate-900/60 border border-slate-800/80 rounded-xl hover:border-slate-700/80 transition-all"
+                              style={{ 
+                                display: 'grid', 
+                                gridTemplateColumns: '160px 1fr 160px', 
+                                alignItems: 'center', 
+                                gap: '16px', 
+                                padding: '14px 24px', 
+                                width: '100%', 
+                                boxSizing: 'border-box' 
+                              }}
+                            >
                               
                               {/* Left Player Value */}
-                              <div className="flex items-center gap-2.5 justify-start">
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'flex-start' }}>
                                 <span className="inline-block px-2 py-0.5 rounded-md text-[11px] font-mono font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-800/50 flex-shrink-0">
                                   #{row.p1Rank}
                                 </span>
@@ -1201,7 +1232,7 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
                               </div>
 
                               {/* Center Metric & Comparative Bar */}
-                              <div className="flex flex-col items-center w-full px-2">
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', padding: '0 8px' }}>
                                 <span className="text-[11px] font-black uppercase tracking-widest text-slate-300 mb-1.5 text-center">
                                   {row.stat}
                                 </span>
@@ -1219,7 +1250,7 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
                               </div>
 
                               {/* Right Player Value */}
-                              <div className="flex items-center gap-2.5 justify-end">
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'flex-end' }}>
                                 {!row.p1Wins && row.p2Val !== '-' && (
                                   <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30 flex-shrink-0">
                                     LEAD
