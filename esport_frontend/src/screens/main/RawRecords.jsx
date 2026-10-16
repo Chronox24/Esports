@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { apiFetch } from '../../utils/api';
+import { AgentBadge } from '../../utils/agentHelper';
 
 const RawRecords = ({ globalTournament }) => {
   const [records, setRecords] = useState([]);
@@ -465,9 +466,7 @@ const RawRecords = ({ globalTournament }) => {
                       {!isCfFilter && (
                         <td className="px-3 py-3 text-xs border-r border-slate-800/40 text-center">
                           {row.agent ? (
-                            <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-slate-900 text-slate-200 border border-slate-700/60">
-                              {row.agent}
-                            </span>
+                            <AgentBadge agent={row.agent} />
                           ) : row.group_label ? (
                             <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-slate-900 text-slate-400 border border-slate-800">
                               {row.group_label}

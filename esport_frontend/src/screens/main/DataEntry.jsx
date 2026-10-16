@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { apiFetch } from "../../utils/api";
 import { io } from "socket.io-client";
+import { AgentBadge, getAgentImagePath } from "../../utils/agentHelper";
 
 const SOCKET_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:5000' : undefined);
 const socket = io(SOCKET_URL);
@@ -623,6 +624,11 @@ const DataEntry = ({ globalGame, globalTournament }) => {
     "Deadlock",
     "Iso",
     "Vyse",
+    "Yoru",
+    "Tejo",
+    "Veto",
+    "Waylay",
+    "Miks",
   ];
   const valorantMaps = [
     "Abyss",
@@ -1664,9 +1670,22 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                               </select>
                             </div>
                             {/* Agent */}
-                            <div className="flex items-center gap-1 min-w-0 flex-shrink-0">
-                              <div className="w-5 h-5 rounded bg-slate-700/50 border border-slate-600/40 flex items-center justify-center text-[8px] font-bold text-slate-400 shrink-0">
-                                {p.agent ? p.agent[0] : ""}
+                            <div className="flex items-center gap-1.5 min-w-0 flex-shrink-0">
+                              <div className="w-5 h-5 rounded-full overflow-hidden bg-slate-700/50 border border-slate-600/40 flex items-center justify-center text-[8px] font-bold text-slate-400 shrink-0 shadow-sm">
+                                {p.agent && getAgentImagePath(p.agent) ? (
+                                  <img
+                                    src={getAgentImagePath(p.agent)}
+                                    alt={p.agent}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                      if (e.currentTarget.nextElementSibling) e.currentTarget.nextElementSibling.style.display = 'inline';
+                                    }}
+                                  />
+                                ) : null}
+                                <span style={{ display: p.agent && getAgentImagePath(p.agent) ? 'none' : 'inline' }}>
+                                  {p.agent ? p.agent[0] : ""}
+                                </span>
                               </div>
                               <select
                                 className="bg-transparent text-white light:text-slate-900 text-xs font-bold outline-none cursor-pointer appearance-none w-16 sm:w-20"
@@ -1946,9 +1965,22 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                               </select>
                             </div>
                             {/* Agent */}
-                            <div className="flex items-center gap-1 min-w-0 flex-shrink-0">
-                              <div className="w-6 h-6 rounded-md bg-slate-700/50 border border-slate-600/40 flex items-center justify-center text-[8px] font-bold text-slate-400 shrink-0">
-                                {p.agent ? p.agent[0] : ""}
+                            <div className="flex items-center gap-1.5 min-w-0 flex-shrink-0">
+                              <div className="w-5 h-5 rounded-full overflow-hidden bg-slate-700/50 border border-slate-600/40 flex items-center justify-center text-[8px] font-bold text-slate-400 shrink-0 shadow-sm">
+                                {p.agent && getAgentImagePath(p.agent) ? (
+                                  <img
+                                    src={getAgentImagePath(p.agent)}
+                                    alt={p.agent}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                      if (e.currentTarget.nextElementSibling) e.currentTarget.nextElementSibling.style.display = 'inline';
+                                    }}
+                                  />
+                                ) : null}
+                                <span style={{ display: p.agent && getAgentImagePath(p.agent) ? 'none' : 'inline' }}>
+                                  {p.agent ? p.agent[0] : ""}
+                                </span>
                               </div>
                               <select
                                 className="bg-transparent text-white light:text-slate-900 text-xs font-bold outline-none cursor-pointer appearance-none w-16 sm:w-20"
@@ -2476,7 +2508,9 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                         <td className="px-3 py-2 text-center text-xs font-bold">{rec.set_num}</td>
                         <td className={`px-4 py-2 text-left font-bold ${teamColorClass}`}>{rec.team_name}</td>
                         <td className={`px-4 py-2 text-left font-bold ${teamColorClass}`}>{rec.ign}</td>
-                        <td className="px-4 py-2 text-center font-bold">{rec.agent}</td>
+                        <td className="px-4 py-2 text-center font-bold">
+                          {rec.agent ? <AgentBadge agent={rec.agent} /> : '—'}
+                        </td>
                         <td className={`px-3 py-2 text-center font-bold ${rec.win ? 'text-emerald-400' : 'text-red-500'}`}>{rec.win ? 'Yes' : 'No'}</td>
                         <td className="px-4 py-2 text-center font-bold text-emerald-400">{rec.acs}</td>
                         <td className="px-3 py-2 text-center font-bold">{rec.kills}</td>

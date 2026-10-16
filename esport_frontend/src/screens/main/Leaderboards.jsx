@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { apiFetch } from '../../utils/api';
+import { AgentBadge, getAgentRoleStyle, getAgentImagePath } from '../../utils/agentHelper';
 
 // Modal for team details
 const TeamModal = ({ team, onClose, activeGame }) => {
@@ -84,7 +85,7 @@ const PlayerModal = ({ player, onClose, activeGame }) => {
               <div className="flex justify-between items-center"><span className="text-theme-text-muted font-bold">Avg Kills / Rnd</span><span className="font-mono font-black text-sm text-[#8a9db8]">{player.avgKills || player.kr || '0.00'}</span></div>
               <div className="flex justify-between items-center"><span className="text-theme-text-muted font-bold">{isVal ? 'Avg Assist / Rnd' : 'Headshot % (H/K)'}</span><span className="font-mono font-black text-sm text-[#8a9db8]">{isVal ? (player.avgAssists || '0.00') : ((parseFloat(player.hk || 0) * 100).toFixed(0) + '%')}</span></div>
               <div className="flex justify-between items-center"><span className="text-theme-text-muted font-bold">Rounds Played</span><span className="font-mono font-black text-sm text-[#8a9db8]">{player.rounds || 0}</span></div>
-              <div className="flex justify-between items-center"><span className="text-theme-text-muted font-bold">{isVal ? 'Main Agent' : 'Survive Rate'}</span><span className="font-mono font-bold text-xs text-theme-accent-base text-[#00d0eb]">{isVal ? (player.agent || 'Flex') : ((parseFloat(player.sr || 0) * 100).toFixed(0) + '%')}</span></div>
+              <div className="flex justify-between items-center"><span className="text-theme-text-muted font-bold">{isVal ? 'Main Agent' : 'Survive Rate'}</span><span className="font-mono font-bold text-xs text-theme-accent-base text-[#00d0eb]">{isVal ? (player.agent ? <AgentBadge agent={player.agent} /> : 'Flex') : ((parseFloat(player.sr || 0) * 100).toFixed(0) + '%')}</span></div>
             </div>
           </div>
         </div>
@@ -1137,9 +1138,7 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
                               ))}
                             </select>
                             <div className="flex items-center gap-2 mt-1.5">
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
-                                🎯 {resolvedKeyPlayer1.agent || 'Duelist'}
-                              </span>
+                              <AgentBadge agent={resolvedKeyPlayer1.agent || 'Duelist'} />
                               <span className="text-[11px] font-mono text-slate-400">
                                 KDA: <strong className="text-white">{resolvedKeyPlayer1.kda || '0.00'}</strong>
                               </span>
@@ -1177,9 +1176,7 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
                               <span className="text-[11px] font-mono text-slate-400">
                                 KDA: <strong className="text-white">{resolvedKeyPlayer2.kda || '0.00'}</strong>
                               </span>
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20">
-                                ⚡ {resolvedKeyPlayer2.agent || 'Initiator'}
-                              </span>
+                              <AgentBadge agent={resolvedKeyPlayer2.agent || 'Initiator'} />
                             </div>
                           </div>
                           <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center font-black text-xl sm:text-2xl flex-shrink-0 shadow-lg relative overflow-hidden"
@@ -1315,15 +1312,7 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
                                   </div>
                                 </td>
                                 <td className="py-3 px-2 text-center">
-                                  {(() => {
-                                    const aStyle = getAgentRoleStyle(player.agent);
-                                    return (
-                                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border ${aStyle.badge}`}>
-                                        <span>{aStyle.icon}</span>
-                                        <span>{player.agent || 'Flex'}</span>
-                                      </span>
-                                    );
-                                  })()}
+                                  <AgentBadge agent={player.agent || 'Flex'} />
                                 </td>
                                 <td className="py-3 px-2 text-center">
                                   <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-mono font-black border ${getKdaBadge(player.kda)}`}>
@@ -1398,15 +1387,7 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
                                   </div>
                                 </td>
                                 <td className="py-3 px-2 text-center">
-                                  {(() => {
-                                    const aStyle = getAgentRoleStyle(player.agent);
-                                    return (
-                                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border ${aStyle.badge}`}>
-                                        <span>{aStyle.icon}</span>
-                                        <span>{player.agent || 'Flex'}</span>
-                                      </span>
-                                    );
-                                  })()}
+                                  <AgentBadge agent={player.agent || 'Flex'} />
                                 </td>
                                 <td className="py-3 px-2 text-center">
                                   <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-mono font-black border ${getKdaBadge(player.kda)}`}>
@@ -1627,15 +1608,9 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
                                   {g.played ? g.map : '—'}
                                 </td>
                                 <td className="py-3 px-3">
-                                  {g.played ? (() => {
-                                    const aStyle = getAgentRoleStyle(g.agent);
-                                    return (
-                                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border ${aStyle.badge}`}>
-                                        <span>{aStyle.icon}</span>
-                                        <span>{g.agent}</span>
-                                      </span>
-                                    );
-                                  })() : (
+                                  {g.played ? (
+                                    <AgentBadge agent={g.agent} />
+                                  ) : (
                                     <span className="text-slate-600 font-mono">—</span>
                                   )}
                                 </td>
