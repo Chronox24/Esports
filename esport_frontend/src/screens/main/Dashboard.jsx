@@ -42,7 +42,6 @@ const db = {
       { title: 'VCT Tournaments', icon: 'globe', stats: [{ label: 'Active', value: '3' }, { label: 'Upcoming', value: '12' }] },      
       { title: 'Valorant Players', icon: 'users', stats: [{ label: 'Registered', value: '18,250' }, { label: 'Active', value: '6,400' }] },      
       { title: 'Total Teams', icon: 'crosshair', stats: [{ label: 'Verified', value: '450' }, { label: 'Amateur', value: '1,800' }] },      
-      { title: 'Prize Pool', icon: 'trophy', stats: [{ label: 'Total', value: '₱5.75M' }, { label: 'Current', value: '₱1.20M' }] },    
     ],    
     liveMatch: { team1: 'PRX', team2: 'SEN', score: '7 – 9', map: 'Sunset', status: 'LIVE' },    
     standings: [      
@@ -70,7 +69,6 @@ const db = {
       { title: 'CFS Tournaments', icon: 'globe', stats: [{ label: 'Active', value: '1' }, { label: 'Upcoming', value: '4' }] },      
       { title: 'Crossfire Players', icon: 'users', stats: [{ label: 'Registered', value: '45,120' }, { label: 'Active', value: '12,300' }] },      
       { title: 'Clan Rosters', icon: 'crosshair', stats: [{ label: 'Verified', value: '890' }, { label: 'Amateur', value: '3,200' }] },      
-      { title: 'Prize Pool', icon: 'trophy', stats: [{ label: 'Total', value: '$2.5M' }, { label: 'Current', value: '$500K' }] },    
     ],    
     liveMatch: { team1: 'ALL GAMERS', team2: 'BAISHA', score: '5 – 3', map: 'Black Widow', status: 'LIVE' },    
     standings: [      
@@ -364,11 +362,6 @@ const Dashboard = ({ globalGame, globalTournament }) => {
             icon: 'crosshair', 
             stats: [{ label: 'Verified', value: gameTeams.length }, { label: 'Amateur', value: 0 }] 
           },
-          { 
-            title: 'Prize Pool', 
-            icon: 'trophy', 
-            stats: [{ label: 'Total', value: '₱0' }, { label: 'Current', value: '₱0' }] 
-          },
         ]);
       } catch (e) {
         console.error('Failed to fetch KPIs', e);
@@ -480,7 +473,7 @@ const Dashboard = ({ globalGame, globalTournament }) => {
       {}
       <div className="relative z-10 w-full max-w-[1400px] flex flex-col mx-auto" style={{ padding: '48px', gap: '48px' }}>
         {}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4" style={{ gap: '32px' }}>
+        <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: '32px' }}>
           {kpiData.map((card, i) => (
             <KpiCard key={i} card={card} accent={data.accent} onClick={setActiveModal} />
           ))}
