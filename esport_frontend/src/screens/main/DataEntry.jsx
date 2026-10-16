@@ -1457,8 +1457,34 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                   </div>
                 </div>
                 <div style={{ padding: '16px 20px' }}>
-                  {[{ label: game === 'Valorant' ? 'Half 1 - Rounds 1-12' : 'Half 1 - Rounds 1-9', count: game === 'Valorant' ? 12 : 9, offset: 0, size: 36 }, { label: game === 'Valorant' ? 'Half 2 - Rounds 13-24' : 'Half 2 - Rounds 10-18', count: game === 'Valorant' ? 12 : 9, offset: game === 'Valorant' ? 12 : 9, size: 36 }, { label: game === 'Valorant' ? 'Overtime - Rounds 25+' : 'Overtime - Rounds 19+', count: game === 'Valorant' ? 16 : 22, offset: game === 'Valorant' ? 24 : 18, size: 36 }].map(({ label, count, offset, size }) => (
-                    <div key={label} style={{ marginBottom: '12px' }}>
+                  {/* Top row: Half 1 & Half 2 side-by-side */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '28px', marginBottom: '14px' }}>
+                    {[{ label: game === 'Valorant' ? 'Half 1 - Rounds 1-12' : 'Half 1 - Rounds 1-9', count: game === 'Valorant' ? 12 : 9, offset: 0, size: 36 }, { label: game === 'Valorant' ? 'Half 2 - Rounds 13-24' : 'Half 2 - Rounds 10-18', count: game === 'Valorant' ? 12 : 9, offset: game === 'Valorant' ? 12 : 9, size: 36 }].map(({ label, count, offset, size }) => (
+                      <div key={label}>
+                        <div style={{ fontSize: '9px', fontWeight: 700, color: 'rgba(148,163,184,0.5)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>{label}</div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          {Array.from({ length: count }, (_, j) => {
+                            const i = offset + j;
+                            const val = roundLogsA[i] || '';
+                            const colorMap = { K: { bg: 'rgba(74,222,128,0.2)', border: 'rgba(74,222,128,0.6)', text: '#4ade80', glow: '0 0 8px rgba(74,222,128,0.4)' }, D: { bg: 'rgba(248,113,113,0.2)', border: 'rgba(248,113,113,0.6)', text: '#f87171', glow: '0 0 8px rgba(248,113,113,0.4)' }, P: { bg: 'rgba(167,139,250,0.2)', border: 'rgba(167,139,250,0.6)', text: '#a78bfa', glow: '0 0 8px rgba(167,139,250,0.4)' }, T: { bg: 'rgba(251,191,36,0.2)', border: 'rgba(251,191,36,0.6)', text: '#fbbf24', glow: '0 0 8px rgba(251,191,36,0.4)' } };
+                            const c = colorMap[val] || { bg: 'rgba(30,41,59,0.6)', border: 'rgba(51,65,85,0.5)', text: 'transparent', glow: 'none' };
+                            return (
+                              <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                <div style={{ fontSize: '8px', fontWeight: 700, color: 'rgba(100,116,139,0.6)', letterSpacing: '0.05em' }}>R{i + 1}</div>
+                                <div style={{ width: `${size}px`, height: `${size}px`, borderRadius: '10px', background: c.bg, border: `1px solid ${c.border}`, boxShadow: c.glow, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', cursor: 'text' }}>
+                                  <input id={`round-input-A-${i}`} className="round-dot-input" type="text" maxLength="1" value={val} onChange={(e) => updateRoundEvent('A', i, e.target.value)} onFocus={(e) => e.target.select()} onKeyDown={(e) => handleRoundInputKeyDown(e, 'A', i)} style={{ width: '100%', height: '100%', padding: 0, margin: 0, textAlign: 'center', background: 'transparent', color: c.text, fontSize: '13px', fontWeight: 900, letterSpacing: '0px', lineHeight: '1', textTransform: 'uppercase', border: 'none', outline: 'none', cursor: 'text', borderRadius: '10px', boxSizing: 'border-box' }} />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Row 2: Overtime */}
+                  {[{ label: game === 'Valorant' ? 'Overtime - Rounds 25+' : 'Overtime - Rounds 19+', count: game === 'Valorant' ? 16 : 22, offset: game === 'Valorant' ? 24 : 18, size: 36 }].map(({ label, count, offset, size }) => (
+                    <div key={label}>
                       <div style={{ fontSize: '9px', fontWeight: 700, color: 'rgba(148,163,184,0.5)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>{label}</div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                         {Array.from({ length: count }, (_, j) => {
@@ -1499,8 +1525,34 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                   </div>
                 </div>
                 <div style={{ padding: '16px 20px' }}>
-                  {[{ label: game === 'Valorant' ? 'Half 1 - Rounds 1-12' : 'Half 1 - Rounds 1-9', count: game === 'Valorant' ? 12 : 9, offset: 0, size: 36 }, { label: game === 'Valorant' ? 'Half 2 - Rounds 13-24' : 'Half 2 - Rounds 10-18', count: game === 'Valorant' ? 12 : 9, offset: game === 'Valorant' ? 12 : 9, size: 36 }, { label: game === 'Valorant' ? 'Overtime - Rounds 25+' : 'Overtime - Rounds 19+', count: game === 'Valorant' ? 16 : 22, offset: game === 'Valorant' ? 24 : 18, size: 36 }].map(({ label, count, offset, size }) => (
-                    <div key={label} style={{ marginBottom: '12px' }}>
+                  {/* Top row: Half 1 & Half 2 side-by-side */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '28px', marginBottom: '14px' }}>
+                    {[{ label: game === 'Valorant' ? 'Half 1 - Rounds 1-12' : 'Half 1 - Rounds 1-9', count: game === 'Valorant' ? 12 : 9, offset: 0, size: 36 }, { label: game === 'Valorant' ? 'Half 2 - Rounds 13-24' : 'Half 2 - Rounds 10-18', count: game === 'Valorant' ? 12 : 9, offset: game === 'Valorant' ? 12 : 9, size: 36 }].map(({ label, count, offset, size }) => (
+                      <div key={label}>
+                        <div style={{ fontSize: '9px', fontWeight: 700, color: 'rgba(148,163,184,0.5)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>{label}</div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          {Array.from({ length: count }, (_, j) => {
+                            const i = offset + j;
+                            const val = roundLogsB[i] || '';
+                            const colorMap = { K: { bg: 'rgba(244,114,182,0.2)', border: 'rgba(244,114,182,0.6)', text: '#f472b6', glow: '0 0 8px rgba(244,114,182,0.4)' }, D: { bg: 'rgba(248,113,113,0.2)', border: 'rgba(248,113,113,0.6)', text: '#f87171', glow: '0 0 8px rgba(248,113,113,0.4)' }, P: { bg: 'rgba(167,139,250,0.2)', border: 'rgba(167,139,250,0.6)', text: '#a78bfa', glow: '0 0 8px rgba(167,139,250,0.4)' }, T: { bg: 'rgba(251,191,36,0.2)', border: 'rgba(251,191,36,0.6)', text: '#fbbf24', glow: '0 0 8px rgba(251,191,36,0.4)' } };
+                            const c = colorMap[val] || { bg: 'rgba(30,41,59,0.6)', border: 'rgba(51,65,85,0.5)', text: 'transparent', glow: 'none' };
+                            return (
+                              <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                <div style={{ fontSize: '8px', fontWeight: 700, color: 'rgba(100,116,139,0.6)', letterSpacing: '0.05em' }}>R{i + 1}</div>
+                                <div style={{ width: `${size}px`, height: `${size}px`, borderRadius: '10px', background: c.bg, border: `1px solid ${c.border}`, boxShadow: c.glow, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', cursor: 'text' }}>
+                                  <input id={`round-input-B-${i}`} className="round-dot-input" type="text" maxLength="1" value={val} onChange={(e) => updateRoundEvent('B', i, e.target.value)} onFocus={(e) => e.target.select()} onKeyDown={(e) => handleRoundInputKeyDown(e, 'B', i)} style={{ width: '100%', height: '100%', padding: 0, margin: 0, textAlign: 'center', background: 'transparent', color: c.text, fontSize: '13px', fontWeight: 900, letterSpacing: '0px', lineHeight: '1', textTransform: 'uppercase', border: 'none', outline: 'none', cursor: 'text', borderRadius: '10px', boxSizing: 'border-box' }} />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Row 2: Overtime */}
+                  {[{ label: game === 'Valorant' ? 'Overtime - Rounds 25+' : 'Overtime - Rounds 19+', count: game === 'Valorant' ? 16 : 22, offset: game === 'Valorant' ? 24 : 18, size: 36 }].map(({ label, count, offset, size }) => (
+                    <div key={label}>
                       <div style={{ fontSize: '9px', fontWeight: 700, color: 'rgba(148,163,184,0.5)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>{label}</div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                         {Array.from({ length: count }, (_, j) => {
