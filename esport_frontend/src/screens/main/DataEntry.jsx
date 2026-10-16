@@ -236,7 +236,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
   const [playersA, setPlayersA] = useStickyState(() => {
     return Array(5).fill(null).map(() => ({
       ign: "",
-      agent: "",
+      agent: "Jett",
       k: 0,
       d: 0,
       a: 0,
@@ -251,7 +251,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
   const [playersB, setPlayersB] = useStickyState(() => {
     return Array(5).fill(null).map(() => ({
       ign: "",
-      agent: "",
+      agent: "Jett",
       k: 0,
       d: 0,
       a: 0,
@@ -923,7 +923,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
           .fill(null)
           .map((_, i) => ({
             ign: "",
-            agent: "",
+            agent: "Jett",
             k: 0,
             d: 0,
             a: 0,
@@ -940,7 +940,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
           .fill(null)
           .map((_, i) => ({
             ign: "",
-            agent: "",
+            agent: "Jett",
             k: 0,
             d: 0,
             a: 0,
@@ -1670,31 +1670,37 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                               </select>
                             </div>
                             {/* Agent */}
-                            <div className="flex items-center gap-1.5 min-w-0 flex-shrink-0">
-                              <div className="w-5 h-5 rounded-full overflow-hidden bg-slate-700/50 border border-slate-600/40 flex items-center justify-center text-[8px] font-bold text-slate-400 shrink-0 shadow-sm">
-                                {p.agent && getAgentImagePath(p.agent) ? (
-                                  <img
-                                    src={getAgentImagePath(p.agent)}
-                                    alt={p.agent}
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      e.currentTarget.style.display = 'none';
-                                      if (e.currentTarget.nextElementSibling) e.currentTarget.nextElementSibling.style.display = 'inline';
-                                    }}
-                                  />
-                                ) : null}
-                                <span style={{ display: p.agent && getAgentImagePath(p.agent) ? 'none' : 'inline' }}>
-                                  {p.agent ? p.agent[0] : ""}
-                                </span>
-                              </div>
-                              <select
-                                className="bg-transparent text-white light:text-slate-900 text-xs font-bold outline-none cursor-pointer appearance-none w-16 sm:w-20"
-                                value={p.agent}
-                                onChange={(e) => updatePlayer("A", idx, "agent", e.target.value)}
-                              >
-                                {agents.map((a) => (<option key={a} value={a}>{a}</option>))}
-                              </select>
-                            </div>
+                            {(() => {
+                              const currentAgent = p.agent || "Jett";
+                              const imgPath = getAgentImagePath(currentAgent);
+                              return (
+                                <div className="flex items-center gap-1.5 min-w-0 flex-shrink-0">
+                                  <div className="w-6 h-6 rounded-full overflow-hidden bg-slate-800 border border-slate-600/60 flex items-center justify-center text-[9px] font-bold text-slate-300 shrink-0 shadow-md ring-1 ring-white/10">
+                                    {imgPath ? (
+                                      <img
+                                        src={imgPath}
+                                        alt={currentAgent}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none';
+                                          if (e.currentTarget.nextElementSibling) e.currentTarget.nextElementSibling.style.display = 'inline';
+                                        }}
+                                      />
+                                    ) : null}
+                                    <span style={{ display: imgPath ? 'none' : 'inline' }}>
+                                      {currentAgent[0]}
+                                    </span>
+                                  </div>
+                                  <select
+                                    className="bg-transparent text-white light:text-slate-900 text-xs font-bold outline-none cursor-pointer appearance-none w-16 sm:w-20"
+                                    value={p.agent || "Jett"}
+                                    onChange={(e) => updatePlayer("A", idx, "agent", e.target.value)}
+                                  >
+                                    {agents.map((a) => (<option key={a} value={a} className="bg-slate-900 text-white">{a}</option>))}
+                                  </select>
+                                </div>
+                              );
+                            })()}
                             {/* Divider */}
                             <div className="w-px h-5 bg-slate-700/50 light:bg-slate-300 flex-shrink-0 hidden md:block"></div>
                             {/* Performance score */}
@@ -1965,31 +1971,37 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                               </select>
                             </div>
                             {/* Agent */}
-                            <div className="flex items-center gap-1.5 min-w-0 flex-shrink-0">
-                              <div className="w-5 h-5 rounded-full overflow-hidden bg-slate-700/50 border border-slate-600/40 flex items-center justify-center text-[8px] font-bold text-slate-400 shrink-0 shadow-sm">
-                                {p.agent && getAgentImagePath(p.agent) ? (
-                                  <img
-                                    src={getAgentImagePath(p.agent)}
-                                    alt={p.agent}
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      e.currentTarget.style.display = 'none';
-                                      if (e.currentTarget.nextElementSibling) e.currentTarget.nextElementSibling.style.display = 'inline';
-                                    }}
-                                  />
-                                ) : null}
-                                <span style={{ display: p.agent && getAgentImagePath(p.agent) ? 'none' : 'inline' }}>
-                                  {p.agent ? p.agent[0] : ""}
-                                </span>
-                              </div>
-                              <select
-                                className="bg-transparent text-white light:text-slate-900 text-xs font-bold outline-none cursor-pointer appearance-none w-16 sm:w-20"
-                                value={p.agent}
-                                onChange={(e) => updatePlayer("B", idx, "agent", e.target.value)}
-                              >
-                                {agents.map((a) => (<option key={a} value={a}>{a}</option>))}
-                              </select>
-                            </div>
+                            {(() => {
+                              const currentAgent = p.agent || "Jett";
+                              const imgPath = getAgentImagePath(currentAgent);
+                              return (
+                                <div className="flex items-center gap-1.5 min-w-0 flex-shrink-0">
+                                  <div className="w-6 h-6 rounded-full overflow-hidden bg-slate-800 border border-slate-600/60 flex items-center justify-center text-[9px] font-bold text-slate-300 shrink-0 shadow-md ring-1 ring-white/10">
+                                    {imgPath ? (
+                                      <img
+                                        src={imgPath}
+                                        alt={currentAgent}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none';
+                                          if (e.currentTarget.nextElementSibling) e.currentTarget.nextElementSibling.style.display = 'inline';
+                                        }}
+                                      />
+                                    ) : null}
+                                    <span style={{ display: imgPath ? 'none' : 'inline' }}>
+                                      {currentAgent[0]}
+                                    </span>
+                                  </div>
+                                  <select
+                                    className="bg-transparent text-white light:text-slate-900 text-xs font-bold outline-none cursor-pointer appearance-none w-16 sm:w-20"
+                                    value={p.agent || "Jett"}
+                                    onChange={(e) => updatePlayer("B", idx, "agent", e.target.value)}
+                                  >
+                                    {agents.map((a) => (<option key={a} value={a} className="bg-slate-900 text-white">{a}</option>))}
+                                  </select>
+                                </div>
+                              );
+                            })()}
                             {/* Divider */}
                             <div className="w-px h-5 bg-slate-700/50 light:bg-slate-300 flex-shrink-0 hidden md:block"></div>
                             {/* Performance score */}
