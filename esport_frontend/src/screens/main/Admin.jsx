@@ -124,16 +124,16 @@ const CloseIcon = () => (
 const Modal = ({ isOpen, onClose, title, children, maxWidth = "max-w-2xl" }) => {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ padding: "20px" }}>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
       <div className={`relative bg-bg-300 light:bg-white w-full ${maxWidth} rounded-2xl border border-[#1c2532] light:border-slate-200 shadow-2xl flex flex-col overflow-hidden max-h-[90vh]`}>
-        <div className="p-5 border-b border-[#1c2532] light:border-slate-200 flex justify-between items-center bg-bg-300 light:bg-slate-50">
-          <h2 className="text-xl font-black tracking-wider text-theme-text-base light:text-slate-900 uppercase">{title}</h2>
-          <button onClick={onClose} className="text-theme-text-muted hover:text-theme-text-base transition-colors">
+        <div className="border-b border-[#1c2532] light:border-slate-200 flex justify-between items-center bg-bg-300 light:bg-slate-50" style={{ padding: "24px 32px" }}>
+          <h2 className="text-xl font-black tracking-wider text-theme-text-base light:text-slate-900 uppercase" style={{ margin: 0, letterSpacing: "0.05em" }}>{title}</h2>
+          <button onClick={onClose} className="text-theme-text-muted hover:text-theme-text-base transition-colors" style={{ background: "transparent", border: "none", cursor: "pointer", padding: "6px", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <CloseIcon />
           </button>
         </div>
-        <div className="p-6 overflow-y-auto custom-scrollbar">
+        <div className="overflow-y-auto custom-scrollbar" style={{ padding: "28px 32px" }}>
           {children}
         </div>
       </div>

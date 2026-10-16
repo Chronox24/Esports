@@ -156,16 +156,16 @@ const CloseIcon = () => (
 const Modal = ({ isOpen, onClose, title, children, maxWidth = "max-w-2xl" }) => {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ padding: "20px" }}>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
       <div className={`relative bg-bg-300 light:bg-white w-full ${maxWidth} rounded-2xl border border-[#1c2532] light:border-slate-200 shadow-2xl flex flex-col overflow-hidden max-h-[90vh]`}>
-        <div className="p-5 border-b border-[#1c2532] light:border-slate-200 flex justify-between items-center bg-bg-300 light:bg-slate-50">
-          <h2 className="text-xl font-black tracking-wider text-theme-text-base light:text-slate-900 uppercase">{title}</h2>
-          <button onClick={onClose} className="text-theme-text-muted hover:text-theme-text-base transition-colors">
+        <div className="border-b border-[#1c2532] light:border-slate-200 flex justify-between items-center bg-bg-300 light:bg-slate-50" style={{ padding: "24px 32px" }}>
+          <h2 className="text-xl font-black tracking-wider text-theme-text-base light:text-slate-900 uppercase" style={{ margin: 0, letterSpacing: "0.05em" }}>{title}</h2>
+          <button onClick={onClose} className="text-theme-text-muted hover:text-theme-text-base transition-colors" style={{ background: "transparent", border: "none", cursor: "pointer", padding: "6px", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <CloseIcon />
           </button>
         </div>
-        <div className="p-6 overflow-y-auto custom-scrollbar">
+        <div className="overflow-y-auto custom-scrollbar" style={{ padding: "28px 32px" }}>
           {children}
         </div>
       </div>
@@ -692,15 +692,15 @@ const Settings = ({ globalGame, themeBg, setThemeBg, themeAccent, setThemeAccent
 
       <Modal isOpen={activeModal === 'health'} onClose={() => setActiveModal(null)} title="Regional System Health">
         <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: "24px" }}>
-          <div className="bg-bg-300 light:bg-slate-50 rounded-xl border border-[#2a3648] light:border-slate-200 flex flex-col justify-between h-32" style={{ padding: "24px" }}>
-            <span className="text-xs font-bold text-theme-text-muted uppercase tracking-widest">Global Server Status</span>
+          <div className="bg-bg-300 light:bg-slate-50 rounded-xl border border-[#2a3648] light:border-slate-200 flex flex-col justify-between" style={{ padding: "24px", minHeight: "136px" }}>
+            <span className="text-xs font-bold text-theme-text-muted uppercase tracking-widest" style={{ marginBottom: "12px", display: "block" }}>Global Server Status</span>
             <div className="flex items-center" style={{ gap: "12px" }}>
               <div className={`w-3 h-3 rounded-full shadow-[0_0_10px_rgba(45,212,191,0.8)] animate-pulse ${health?.server_status === 'OPTIMAL' ? 'bg-teal-400' : 'bg-red-400'}`}></div>
               <span className="text-2xl font-black text-theme-text-base">{health?.server_status || 'LOADING...'}</span>
             </div>
           </div>
-          <div className="bg-bg-300 light:bg-slate-50 rounded-xl border border-[#2a3648] light:border-slate-200 flex flex-col justify-between h-32" style={{ padding: "24px" }}>
-            <div className="flex justify-between items-center">
+          <div className="bg-bg-300 light:bg-slate-50 rounded-xl border border-[#2a3648] light:border-slate-200 flex flex-col justify-between" style={{ padding: "24px", minHeight: "136px" }}>
+            <div className="flex justify-between items-center" style={{ marginBottom: "12px" }}>
               <span className="text-xs font-bold text-theme-text-muted uppercase tracking-widest">Server Load</span>
               <span className="text-xs font-bold text-teal-400">{health?.server_load || 0}%</span>
             </div>
@@ -708,15 +708,15 @@ const Settings = ({ globalGame, themeBg, setThemeBg, themeAccent, setThemeAccent
               <div className="bg-gradient-to-r from-teal-500 to-blue-500 h-3 rounded-full shadow-[0_0_10px_rgba(45,212,191,0.5)]" style={{ width: `${health?.server_load || 0}%` }}></div>
             </div>
           </div>
-          <div className="bg-bg-300 light:bg-slate-50 rounded-xl border border-[#2a3648] light:border-slate-200 flex flex-col justify-between h-32" style={{ padding: "24px" }}>
-            <span className="text-xs font-bold text-theme-text-muted uppercase tracking-widest">Avg Latency (US-East)</span>
+          <div className="bg-bg-300 light:bg-slate-50 rounded-xl border border-[#2a3648] light:border-slate-200 flex flex-col justify-between" style={{ padding: "24px", minHeight: "136px" }}>
+            <span className="text-xs font-bold text-theme-text-muted uppercase tracking-widest" style={{ marginBottom: "12px", display: "block" }}>Avg Latency (US-East)</span>
             <div className="flex items-baseline" style={{ gap: "8px", marginTop: "8px" }}>
               <span className="text-3xl font-black text-theme-text-base">{health?.avg_latency || 0}</span>
               <span className="text-sm font-bold text-theme-text-faint">ms</span>
             </div>
           </div>
-          <div className="bg-bg-300 light:bg-slate-50 rounded-xl border border-[#2a3648] light:border-slate-200 flex flex-col justify-between h-32" style={{ padding: "24px" }}>
-            <span className="text-xs font-bold text-theme-text-muted uppercase tracking-widest">Active Matches</span>
+          <div className="bg-bg-300 light:bg-slate-50 rounded-xl border border-[#2a3648] light:border-slate-200 flex flex-col justify-between" style={{ padding: "24px", minHeight: "136px" }}>
+            <span className="text-xs font-bold text-theme-text-muted uppercase tracking-widest" style={{ marginBottom: "12px", display: "block" }}>Active Matches</span>
             <div className="flex items-baseline" style={{ gap: "8px", marginTop: "8px" }}>
               <span className="text-3xl font-black text-theme-text-base">{health?.active_matches || 0}</span>
               <span className="text-sm font-bold text-green-500">{health?.active_matches_trend || '+0%'}</span>
