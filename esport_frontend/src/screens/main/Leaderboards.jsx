@@ -828,22 +828,37 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
               const t2Standing = standings.find(s => s.team === team2Name);
 
               return (
-                <div className="lb-card p-4 sm:p-6 bg-gradient-to-r from-slate-950 via-slate-900/95 to-slate-950 border border-slate-800 shadow-2xl relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-1/3 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-80"></div>
-                  <div className="absolute top-0 right-0 w-1/3 h-[2px] bg-gradient-to-r from-transparent via-amber-400 to-transparent opacity-80"></div>
+                <div className="lb-card bg-gradient-to-r from-slate-950 via-slate-900/95 to-slate-950 border border-slate-800 shadow-2xl relative overflow-hidden" style={{ minHeight: "155px" }}>
+                  {/* Neon Top Glow Accents */}
+                  <div className="absolute top-0 left-0 w-1/3 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-80 pointer-events-none"></div>
+                  <div className="absolute top-0 right-0 w-1/3 h-[2px] bg-gradient-to-r from-transparent via-amber-400 to-transparent opacity-80 pointer-events-none"></div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-center gap-5 sm:gap-6">
+                  {/* Ambient Radial Background Glows */}
+                  <div className="absolute -left-12 top-1/2 -translate-y-1/2 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                  <div className="absolute -right-12 top-1/2 -translate-y-1/2 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-                    {/* Team 1 Hero Card */}
-                    <div className="flex items-center gap-4 bg-slate-900/70 p-3.5 sm:p-4 rounded-2xl border border-cyan-500/25 backdrop-blur-md shadow-lg shadow-cyan-950/20 max-w-lg w-full">
-                      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center font-black text-xl sm:text-2xl flex-shrink-0 shadow-lg relative overflow-hidden group"
-                        style={{ background: 'linear-gradient(135deg, rgba(6,182,212,0.25), rgba(14,116,144,0.1))', border: `2px solid ${theme.t1Accent}`, color: theme.t1Accent, boxShadow: `0 0 20px ${theme.t1Accent}35` }}>
+                  {/* DESKTOP: Absolute Position UI */}
+                  <div className="hidden md:block relative w-full" style={{ height: "155px" }}>
+                    {/* Team 1 Hero Card (Absolute Left) */}
+                    <div 
+                      className="absolute left-6 top-1/2 -translate-y-1/2 flex items-center gap-4 bg-slate-900/80 p-4 rounded-2xl border border-cyan-500/25 backdrop-blur-md shadow-lg shadow-cyan-950/20"
+                      style={{ width: "calc(50% - 90px)", maxWidth: "480px" }}
+                    >
+                      <div 
+                        className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center font-black text-xl sm:text-2xl flex-shrink-0 shadow-lg relative overflow-hidden group transition-transform hover:scale-105"
+                        style={{ 
+                          background: 'linear-gradient(135deg, rgba(6,182,212,0.25), rgba(14,116,144,0.1))', 
+                          border: `2px solid ${theme.t1Accent}`, 
+                          color: theme.t1Accent, 
+                          boxShadow: `0 0 20px ${theme.t1Accent}35` 
+                        }}
+                      >
                         <div className="absolute inset-0 bg-cyan-400/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                         {(team1Name || 'T1')[0]}
                       </div>
                       <div className="flex flex-col flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                          <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
                             Team 1 • Home
                           </span>
                           <span className="text-[11px] font-mono font-bold text-slate-400">
@@ -853,7 +868,7 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
                         <select
                           value={team1Name}
                           onChange={(e) => setTeam1Name(e.target.value)}
-                          className="bg-slate-950/90 border border-slate-700/80 text-white font-black text-sm sm:text-base rounded-xl px-3 py-1.5 focus:outline-none focus:border-cyan-400 cursor-pointer lb-select-custom w-auto min-w-[170px] max-w-[240px]"
+                          className="bg-slate-950/90 border border-slate-700/80 text-white font-black text-sm sm:text-base rounded-xl px-3 py-1.5 focus:outline-none focus:border-cyan-400 cursor-pointer lb-select-custom w-full max-w-[260px]"
                         >
                           {availableTeams.map(t => (
                             <option key={t} value={t} disabled={t === team2Name}>{t}</option>
@@ -867,12 +882,15 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
                       </div>
                     </div>
 
-                    {/* Center Match Clash & Swap Controls */}
-                    <div className="flex flex-col items-center justify-center px-2 py-1 gap-1.5">
-                      <div className="text-[9px] font-black uppercase tracking-[0.25em] text-cyan-400">
+                    {/* Center Match Clash & Swap Controls (Absolute Center) */}
+                    <div 
+                      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center z-10"
+                      style={{ width: "140px" }}
+                    >
+                      <div className="text-[9px] font-black uppercase tracking-[0.25em] text-cyan-400 mb-1">
                         Tactical Clash
                       </div>
-                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 shadow-xl flex items-center justify-center font-black text-base italic tracking-widest text-white">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 shadow-xl flex items-center justify-center font-black text-base italic tracking-widest text-white mb-1.5 hover:scale-105 transition-transform">
                         VS
                       </div>
                       <button
@@ -882,33 +900,36 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
                           setTeam2Name(temp);
                         }}
                         title="Swap Teams"
-                        className="px-3 py-1 rounded-full bg-slate-800 hover:bg-cyan-600 border border-slate-700 hover:border-cyan-400 text-[10px] font-black tracking-wider text-slate-300 hover:text-white transition-all flex items-center gap-1 shadow-md group"
+                        className="px-3 py-1 rounded-full bg-slate-800 hover:bg-cyan-600 border border-slate-700 hover:border-cyan-400 text-[10px] font-black tracking-wider text-slate-300 hover:text-white transition-all flex items-center gap-1 shadow-md group mb-1 cursor-pointer"
                       >
                         <svg className="w-3 h-3 group-hover:rotate-180 transition-transform duration-300 text-cyan-400 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                         </svg>
                         <span>SWAP</span>
                       </button>
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                      <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
                         Best of 3 Series
                       </span>
                     </div>
 
-                    {/* Team 2 Hero Card */}
-                    <div className="flex items-center gap-4 bg-slate-900/70 p-3.5 sm:p-4 rounded-2xl border border-amber-500/25 backdrop-blur-md shadow-lg shadow-amber-950/20 text-right justify-end max-w-lg w-full ml-auto">
+                    {/* Team 2 Hero Card (Absolute Right) */}
+                    <div 
+                      className="absolute right-6 top-1/2 -translate-y-1/2 flex items-center gap-4 bg-slate-900/80 p-4 rounded-2xl border border-amber-500/25 backdrop-blur-md shadow-lg shadow-amber-950/20 text-right justify-end"
+                      style={{ width: "calc(50% - 90px)", maxWidth: "480px" }}
+                    >
                       <div className="flex flex-col flex-1 min-w-0 items-end">
                         <div className="flex items-center gap-2 mb-1 justify-end">
                           <span className="text-[11px] font-mono font-bold text-slate-400">
                             Rank #{t2Standing?.rank || 2}
                           </span>
-                          <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                          <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
                             Team 2 • Away
                           </span>
                         </div>
                         <select
                           value={team2Name}
                           onChange={(e) => setTeam2Name(e.target.value)}
-                          className="bg-slate-950/90 border border-slate-700/80 text-white font-black text-sm sm:text-base rounded-xl px-3 py-1.5 focus:outline-none focus:border-amber-400 cursor-pointer lb-select-custom w-auto min-w-[170px] max-w-[240px]"
+                          className="bg-slate-950/90 border border-slate-700/80 text-white font-black text-sm sm:text-base rounded-xl px-3 py-1.5 focus:outline-none focus:border-amber-400 cursor-pointer lb-select-custom w-full max-w-[260px]"
                         >
                           {availableTeams.map(t => (
                             <option key={t} value={t} disabled={t === team1Name}>{t}</option>
@@ -920,13 +941,119 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
                           <span className="text-emerald-400 font-mono font-bold">{t2Standing?.w || 0}W - {t2Standing?.l || 0}L</span>
                         </div>
                       </div>
-                      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center font-black text-xl sm:text-2xl flex-shrink-0 shadow-lg relative overflow-hidden group"
-                        style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.25), rgba(180,83,9,0.1))', border: `2px solid ${theme.t2Accent}`, color: theme.t2Accent, boxShadow: `0 0 20px ${theme.t2Accent}35` }}>
+                      <div 
+                        className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center font-black text-xl sm:text-2xl flex-shrink-0 shadow-lg relative overflow-hidden group transition-transform hover:scale-105"
+                        style={{ 
+                          background: 'linear-gradient(135deg, rgba(245,158,11,0.25), rgba(180,83,9,0.1))', 
+                          border: `2px solid ${theme.t2Accent}`, 
+                          color: theme.t2Accent, 
+                          boxShadow: `0 0 20px ${theme.t2Accent}35` 
+                        }}
+                      >
                         <div className="absolute inset-0 bg-amber-400/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                         {(team2Name || 'T2')[0]}
                       </div>
                     </div>
+                  </div>
 
+                  {/* MOBILE / TABLET FALLBACK: Vertical Stack */}
+                  <div className="md:hidden flex flex-col items-center gap-4 p-4">
+                    {/* Team 1 Hero Card */}
+                    <div className="flex items-center gap-3 bg-slate-900/80 p-3.5 rounded-2xl border border-cyan-500/25 w-full">
+                      <div 
+                        className="w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg flex-shrink-0 shadow-lg"
+                        style={{ 
+                          background: 'linear-gradient(135deg, rgba(6,182,212,0.25), rgba(14,116,144,0.1))', 
+                          border: `2px solid ${theme.t1Accent}`, 
+                          color: theme.t1Accent 
+                        }}
+                      >
+                        {(team1Name || 'T1')[0]}
+                      </div>
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                            Team 1 • Home
+                          </span>
+                          <span className="text-[10px] font-mono font-bold text-slate-400">
+                            Rank #{t1Standing?.rank || 1}
+                          </span>
+                        </div>
+                        <select
+                          value={team1Name}
+                          onChange={(e) => setTeam1Name(e.target.value)}
+                          className="bg-slate-950/90 border border-slate-700/80 text-white font-black text-sm rounded-xl px-2.5 py-1 focus:outline-none focus:border-cyan-400 cursor-pointer lb-select-custom w-full"
+                        >
+                          {availableTeams.map(t => (
+                            <option key={t} value={t} disabled={t === team2Name}>{t}</option>
+                          ))}
+                        </select>
+                        <div className="flex items-center gap-2 mt-1 text-[10px] font-semibold text-slate-400">
+                          <span className="text-emerald-400 font-mono font-bold">{t1Standing?.w || 0}W - {t1Standing?.l || 0}L</span>
+                          <span className="text-slate-600">•</span>
+                          <span>Set Diff: <strong className="text-white font-mono">{t1Standing?.setDiff > 0 ? `+${t1Standing.setDiff}` : (t1Standing?.setDiff || 0)}</strong></span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Center VS & Swap */}
+                    <div className="flex items-center justify-between w-full px-2">
+                      <span className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-400">
+                        Tactical Clash
+                      </span>
+                      <button
+                        onClick={() => {
+                          const temp = team1Name;
+                          setTeam1Name(team2Name);
+                          setTeam2Name(temp);
+                        }}
+                        title="Swap Teams"
+                        className="px-3 py-1 rounded-full bg-slate-800 hover:bg-cyan-600 border border-slate-700 text-[10px] font-black tracking-wider text-slate-300 flex items-center gap-1 shadow-md cursor-pointer"
+                      >
+                        <svg className="w-3 h-3 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                        </svg>
+                        <span>SWAP</span>
+                      </button>
+                    </div>
+
+                    {/* Team 2 Hero Card */}
+                    <div className="flex items-center gap-3 bg-slate-900/80 p-3.5 rounded-2xl border border-amber-500/25 w-full">
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            Team 2 • Away
+                          </span>
+                          <span className="text-[10px] font-mono font-bold text-slate-400">
+                            Rank #{t2Standing?.rank || 2}
+                          </span>
+                        </div>
+                        <select
+                          value={team2Name}
+                          onChange={(e) => setTeam2Name(e.target.value)}
+                          className="bg-slate-950/90 border border-slate-700/80 text-white font-black text-sm rounded-xl px-2.5 py-1 focus:outline-none focus:border-amber-400 cursor-pointer lb-select-custom w-full"
+                        >
+                          {availableTeams.map(t => (
+                            <option key={t} value={t} disabled={t === team1Name}>{t}</option>
+                          ))}
+                        </select>
+                        <div className="flex items-center gap-2 mt-1 text-[10px] font-semibold text-slate-400">
+                          <span className="text-emerald-400 font-mono font-bold">{t2Standing?.w || 0}W - {t2Standing?.l || 0}L</span>
+                          <span className="text-slate-600">•</span>
+                          <span>Set Diff: <strong className="text-white font-mono">{t2Standing?.setDiff > 0 ? `+${t2Standing.setDiff}` : (t2Standing?.setDiff || 0)}</strong></span>
+                        </div>
+                      </div>
+                      <div 
+                        className="w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg flex-shrink-0 shadow-lg"
+                        style={{ 
+                          background: 'linear-gradient(135deg, rgba(245,158,11,0.25), rgba(180,83,9,0.1))', 
+                          border: `2px solid ${theme.t2Accent}`, 
+                          color: theme.t2Accent 
+                        }}
+                      >
+                        {(team2Name || 'T2')[0]}
+                      </div>
+                    </div>
                   </div>
                 </div>
               );
