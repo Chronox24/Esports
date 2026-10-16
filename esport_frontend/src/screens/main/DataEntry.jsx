@@ -1678,12 +1678,21 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                                   <div className="w-6 h-6 rounded-full overflow-hidden bg-slate-800 border border-slate-600/60 flex items-center justify-center text-[9px] font-bold text-slate-300 shrink-0 shadow-md ring-1 ring-white/10">
                                     {imgPath ? (
                                       <img
+                                        key={currentAgent}
                                         src={imgPath}
                                         alt={currentAgent}
                                         className="w-full h-full object-cover"
+                                        onLoad={(e) => {
+                                          e.currentTarget.style.display = 'block';
+                                          if (e.currentTarget.nextElementSibling) {
+                                            e.currentTarget.nextElementSibling.style.display = 'none';
+                                          }
+                                        }}
                                         onError={(e) => {
                                           e.currentTarget.style.display = 'none';
-                                          if (e.currentTarget.nextElementSibling) e.currentTarget.nextElementSibling.style.display = 'inline';
+                                          if (e.currentTarget.nextElementSibling) {
+                                            e.currentTarget.nextElementSibling.style.display = 'inline';
+                                          }
                                         }}
                                       />
                                     ) : null}
@@ -1979,12 +1988,21 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                                   <div className="w-6 h-6 rounded-full overflow-hidden bg-slate-800 border border-slate-600/60 flex items-center justify-center text-[9px] font-bold text-slate-300 shrink-0 shadow-md ring-1 ring-white/10">
                                     {imgPath ? (
                                       <img
+                                        key={currentAgent}
                                         src={imgPath}
                                         alt={currentAgent}
                                         className="w-full h-full object-cover"
+                                        onLoad={(e) => {
+                                          e.currentTarget.style.display = 'block';
+                                          if (e.currentTarget.nextElementSibling) {
+                                            e.currentTarget.nextElementSibling.style.display = 'none';
+                                          }
+                                        }}
                                         onError={(e) => {
                                           e.currentTarget.style.display = 'none';
-                                          if (e.currentTarget.nextElementSibling) e.currentTarget.nextElementSibling.style.display = 'inline';
+                                          if (e.currentTarget.nextElementSibling) {
+                                            e.currentTarget.nextElementSibling.style.display = 'inline';
+                                          }
                                         }}
                                       />
                                     ) : null}

@@ -1,6 +1,7 @@
 import React from 'react';
 
 export const AGENT_IMAGE_MAP = {
+  'astra': 'astra agent.png',
   'breach': 'breach agent.png',
   'brimstone': 'brimstone agent.png',
   'chamber': 'chamber agent.png',
@@ -65,9 +66,16 @@ export const AgentBadge = ({ agent, className = '', imgClassName = '', showName 
     <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold border transition-colors ${aStyle.badge} ${className}`}>
       {imgPath ? (
         <img
+          key={agent}
           src={imgPath}
           alt={agent}
           className={`w-4 h-4 rounded-full object-cover shrink-0 border border-white/20 shadow-sm ${imgClassName}`}
+          onLoad={(e) => {
+            e.currentTarget.style.display = 'block';
+            if (e.currentTarget.nextElementSibling) {
+              e.currentTarget.nextElementSibling.style.display = 'none';
+            }
+          }}
           onError={(e) => {
             e.currentTarget.style.display = 'none';
             if (e.currentTarget.nextElementSibling) {
