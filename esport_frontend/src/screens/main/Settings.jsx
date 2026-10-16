@@ -418,7 +418,7 @@ const Settings = ({ globalGame, themeBg, setThemeBg, themeAccent, setThemeAccent
             {}
           </div>
           {}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 pt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4">
             <button onClick={() => setActiveModal('admins')} className="bg-bg-300 light:bg-white border border-blue-500/30 light:border-blue-200 rounded-xl p-4 flex flex-col items-center justify-center hover:bg-blue-900/20 light:hover:bg-blue-50 transition-all group shadow-lg light:shadow-sm">
               <span className="text-xs font-black uppercase tracking-widest text-blue-400 light:text-blue-600 mb-2">
                 Match Admins
@@ -428,42 +428,6 @@ const Settings = ({ globalGame, themeBg, setThemeBg, themeAccent, setThemeAccent
                 <div className="w-8 h-8 rounded-full bg-cyan-500 border-2 border-[#0f1722] light:border-white"></div>
                 <div className="w-8 h-8 rounded-full bg-purple-500 border-2 border-[#0f1722] light:border-white"></div>
               </div>
-            </button>
-            <button onClick={() => setActiveModal('reports')} className="bg-bg-300 light:bg-white border border-red-500/30 light:border-red-200 rounded-xl p-4 flex flex-col items-center justify-center hover:bg-red-900/20 light:hover:bg-red-50 transition-all group shadow-lg light:shadow-sm">
-              <span className="text-xs font-black uppercase tracking-widest text-red-400 light:text-red-600 mb-2">
-                Cheat Reports
-              </span>
-              <svg
-                className="w-8 h-8 text-red-500 light:text-red-600 opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
-            </button>
-            <button onClick={() => setActiveModal('bans')} className="bg-bg-300 light:bg-white border border-red-700/50 light:border-red-300 rounded-xl p-4 flex flex-col items-center justify-center hover:bg-red-900/30 light:hover:bg-red-100 transition-all group shadow-lg light:shadow-sm">
-              <span className="text-xs font-black uppercase tracking-widest text-red-600 light:text-red-700 mb-2">
-                Bans
-              </span>
-              <svg
-                className="w-8 h-8 text-red-600 light:text-red-700 opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
-                />
-              </svg>
             </button>
             <button onClick={() => setActiveModal('health')} className="bg-bg-300 light:bg-white border border-teal-500/30 light:border-teal-200 rounded-xl p-4 flex flex-col items-center justify-center hover:bg-teal-900/20 light:hover:bg-teal-50 transition-all group shadow-lg light:shadow-sm">
               <span className="text-xs font-black uppercase tracking-widest text-teal-400 light:text-teal-600 mb-2">
