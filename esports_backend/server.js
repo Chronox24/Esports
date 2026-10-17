@@ -1240,33 +1240,41 @@ app.delete('/api/matches/:id', authenticateToken, isAdmin, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-app.get('/api/predictions/matches', cacheMiddleware, async (req, res) => {
+app.get('/api/predictions/matches', async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   try {
-    const tournamentName = req.query.tournament || 'Default';
-    const { data, error } = await supabase
+    const tournamentName = req.query.tournament;
+    const gameTitle = req.query.game;
+
+    let query = supabase
       .from('matches')
       .select(`
-        match_id, match_schedule, status,
+        match_id, match_schedule, match_day, match_time, match_timezone, status, tournament_name, game_title,
         team_a:teams!matches_team_a_id_fkey(team_id, team_name, logo_url),
         team_b:teams!matches_team_b_id_fkey(team_id, team_name, logo_url)
       `)
       .eq('status', 'scheduled')
-      .not('match_schedule', 'is', null)
-      .order('match_schedule', { ascending: true });
+      .order('match_schedule', { ascending: true, nullsFirst: false });
+
+    if (tournamentName && tournamentName.toLowerCase() !== 'all') {
+      query = query.ilike('tournament_name', tournamentName.trim());
+    }
+    if (gameTitle && gameTitle.toLowerCase() !== 'all') {
+      query = query.ilike('game_title', gameTitle.trim());
+    }
+
+    const { data, error } = await query;
     if (error) throw error;
-    let filtered = (data || []).filter(m => {
-      if (!tournamentName || tournamentName.toLowerCase() === 'all') return true;
-      const tA = m.team_a?.tournament_name;
-      const tB = m.team_b?.tournament_name;
-      return (tA && tA.toLowerCase() === tournamentName.toLowerCase()) ||
-             (tB && tB.toLowerCase() === tournamentName.toLowerCase());
-    });
-    filtered = await Promise.all(filtered.map(async (match) => {
+
+    const matchesWithPredictions = await Promise.all((data || []).map(async (match) => {
+      let scheduleDate = match.match_schedule;
+      if (!scheduleDate && match.match_day && match.match_time) {
+        scheduleDate = `${match.match_day} ${match.match_time}`;
+      }
       const system_prediction = await generatePrediction(supabase, match.team_a, match.team_b);
-      return { ...match, system_prediction };
+      return { ...match, match_schedule: scheduleDate, system_prediction };
     }));
-    res.json(filtered);
+    res.json(matchesWithPredictions);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1289,15 +1297,22 @@ app.post('/api/predictions', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-app.get('/api/predictions/user/:username', cacheMiddleware, async (req, res) => {
+app.get('/api/predictions/user/:username', async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   try {
     const { username } = req.params;
-    const { data, error } = await supabase
+    const tournamentName = req.query.tournament;
+
+    let query = supabase
       .from('predictions')
-      .select('*, matches(team_a_id, team_b_id, match_schedule, status)')
-      .eq('username', username)
-      .order('created_at', { ascending: false });
+      .select('*, matches!inner(match_id, team_a_id, team_b_id, match_schedule, status, tournament_name)')
+      .eq('username', username);
+
+    if (tournamentName && tournamentName.toLowerCase() !== 'all') {
+      query = query.ilike('matches.tournament_name', tournamentName.trim());
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
     if (error) throw error;
     res.json(data || []);
   } catch (err) {
@@ -1307,10 +1322,17 @@ app.get('/api/predictions/user/:username', cacheMiddleware, async (req, res) => 
 app.get('/api/predictions/leaderboard', async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   try {
-    const { data, error } = await supabase
+    const tournamentName = req.query.tournament;
+    let query = supabase
       .from('predictions')
-      .select('username, points_awarded')
+      .select('username, points_awarded, matches!inner(tournament_name)')
       .eq('status', 'evaluated');
+
+    if (tournamentName && tournamentName.toLowerCase() !== 'all') {
+      query = query.ilike('matches.tournament_name', tournamentName.trim());
+    }
+
+    const { data, error } = await query;
     if (error) throw error;
     const leaderboardMap = {};
     (data || []).forEach(p => {

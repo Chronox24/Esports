@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import Bracket from "./Bracket.jsx";
 import { apiFetch } from "../../utils/api";
 import {
@@ -8,6 +9,7 @@ import {
   Plus,
   Trash2,
   Upload,
+  Check,
   CheckCircle2,
   AlertCircle,
   Trophy,
@@ -16,7 +18,8 @@ import {
   Layers,
   X,
   RefreshCw,
-  Image as ImageIcon
+  Image as ImageIcon,
+  ChevronRight
 } from "lucide-react";
 
 function useStickyState(defaultValue, key) {
@@ -2067,8 +2070,13 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
 
   const fetchMatches = async () => {
     try {
+      const tourneyName = globalTournament?.name?.trim();
+      if (!tourneyName) {
+        setSchedule([]);
+        return;
+      }
       const res = await apiFetch(
-        `/api/matches?tournament=${encodeURIComponent(globalTournament?.name || "Default")}`,
+        `/api/matches?tournament=${encodeURIComponent(tourneyName)}`,
       );
       if (res.ok) {
         const data = await res.json();
@@ -2224,7 +2232,7 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
   };
 
   return (
-    <div className="flex justify-center w-full mb-10 relative">
+    <div className={`flex justify-center w-full relative ${embedded ? 'mb-2' : 'mb-10'}`}>
       {/* Toast Notification */}
       {successToast && (
         <div className="fixed top-6 right-8 z-50 animate-bounce flex items-center gap-3 px-5 py-3 rounded-2xl bg-slate-900/95 border border-cyan-500/50 shadow-[0_10px_35px_rgba(6,182,212,0.3)] backdrop-blur-md text-sm font-bold text-cyan-300">
@@ -2233,10 +2241,10 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
         </div>
       )}
 
-      <div className="flex flex-col lg:flex-row gap-6 w-full max-w-[1400px] px-2 sm:px-4 lg:px-8 mt-4">
+      <div className={`flex flex-col lg:flex-row gap-6 w-full items-start ${embedded ? 'max-w-full px-0 mt-0' : 'max-w-[1400px] px-2 sm:px-4 lg:px-8 mt-4'}`}>
         
         {/* LEFT COLUMN: SETUP & SCHEDULE FORM */}
-        <div className="flex-1 flex flex-col gap-6">
+        <div className="flex-1 flex flex-col gap-6 w-full min-w-0">
 
           {/* ── Top Tournament Setup Banner ── */}
           {!readOnly && !embedded && onOpenCreateModal && (
@@ -2279,9 +2287,9 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
 
           {/* ── Manage Schedule Form ── */}
           {!readOnly && (
-            <div className="relative overflow-hidden rounded-3xl bg-slate-900/60 border border-slate-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-6 sm:p-8 backdrop-blur-xl flex flex-col gap-7">
+            <div className={`relative rounded-3xl bg-slate-900/60 border border-slate-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl flex flex-col w-full ${embedded ? 'px-6 pt-5 pb-6 gap-5' : 'px-6 sm:px-8 pt-6 sm:pt-7 pb-8 sm:pb-10 gap-6'}`}>
               {/* Top ambient highlight line */}
-              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-cyan-500/30 via-slate-700 to-rose-500/30" />
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-cyan-500/30 via-slate-700 to-rose-500/30 rounded-t-3xl" />
 
               {/* Form Title & Subtitle */}
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-5">
@@ -2306,10 +2314,10 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
               </div>
 
               {/* ── Versus Teams Arena (Team A vs Team B) ── */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
+              <div className={`grid grid-cols-1 md:grid-cols-2 relative ${embedded ? 'gap-4' : 'gap-6'}`}>
                 
                 {/* TEAM A CARD */}
-                <div className="relative rounded-2xl bg-slate-950/50 border border-slate-800/90 hover:border-cyan-500/40 p-5 flex flex-col gap-4 transition-all shadow-inner">
+                <div className={`relative rounded-2xl bg-slate-950/50 border border-slate-800/90 hover:border-cyan-500/40 flex flex-col transition-all shadow-inner ${embedded ? 'p-4 gap-3' : 'p-5 gap-4'}`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.8)]" />
@@ -2381,7 +2389,7 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                           <button
                             type="button"
                             onClick={() => teamAInputRef.current?.click()}
-                            className="px-2.5 py-1 text-[11px] font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
+                            className="px-2.5 py-1 text-[11px] font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
                           >
                             Change
                           </button>
@@ -2391,7 +2399,7 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                               setTeamALogo("");
                               setTeamAFile(null);
                             }}
-                            className="p-1 text-slate-400 hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-colors"
+                            className="p-1 text-slate-400 hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-colors cursor-pointer"
                           >
                             <X size={15} />
                           </button>
@@ -2410,7 +2418,7 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                 </div>
 
                 {/* TEAM B CARD */}
-                <div className="relative rounded-2xl bg-slate-950/50 border border-slate-800/90 hover:border-rose-500/40 p-5 flex flex-col gap-4 transition-all shadow-inner">
+                <div className={`relative rounded-2xl bg-slate-950/50 border border-slate-800/90 hover:border-rose-500/40 flex flex-col transition-all shadow-inner ${embedded ? 'p-4 gap-3' : 'p-5 gap-4'}`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.8)]" />
@@ -2482,7 +2490,7 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                           <button
                             type="button"
                             onClick={() => teamBInputRef.current?.click()}
-                            className="px-2.5 py-1 text-[11px] font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
+                            className="px-2.5 py-1 text-[11px] font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
                           >
                             Change
                           </button>
@@ -2492,7 +2500,7 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                               setTeamBLogo("");
                               setTeamBFile(null);
                             }}
-                            className="p-1 text-slate-400 hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-colors"
+                            className="p-1 text-slate-400 hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-colors cursor-pointer"
                           >
                             <X size={15} />
                           </button>
@@ -2516,30 +2524,30 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-3 border-t border-slate-800/60">
                 {/* Date Input */}
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
                     <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                       <Calendar size={13} className="text-cyan-400" />
                       <span>Match Date *</span>
                     </label>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
                       <button
                         type="button"
                         onClick={() => setDateOffset(0)}
-                        className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+                        className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition-colors cursor-pointer"
                       >
                         Today
                       </button>
                       <button
                         type="button"
                         onClick={() => setDateOffset(1)}
-                        className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+                        className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition-colors cursor-pointer"
                       >
                         Tomorrow
                       </button>
                       <button
                         type="button"
                         onClick={() => setDateOffset(2)}
-                        className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+                        className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition-colors cursor-pointer"
                       >
                         +2 Days
                       </button>
@@ -2560,18 +2568,18 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
 
                 {/* Time Input */}
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
                     <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                       <Clock size={13} className="text-cyan-400" />
                       <span>Kickoff Time *</span>
                     </label>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
                       {["14:00", "17:00", "20:00"].map((preset) => (
                         <button
                           key={preset}
                           type="button"
                           onClick={() => setTime(preset)}
-                          className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+                          className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition-colors cursor-pointer"
                         >
                           {preset === "14:00" ? "2 PM" : preset === "17:00" ? "5 PM" : "8 PM"}
                         </button>
@@ -2601,16 +2609,16 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
               )}
 
               {/* Submit Button */}
-              <div className="flex justify-end pt-2">
+              <div className="flex flex-col gap-3 pt-5 pb-1 border-t border-slate-800/60 mt-3">
                 <button
                   type="button"
                   onClick={addMatch}
                   disabled={isSubmitting}
-                  className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-slate-950 text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] hover:scale-[1.02] active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2.5"
+                  className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-slate-950 text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] hover:scale-[1.01] active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isSubmitting ? (
                     <>
-                      <RefreshCw size={16} className="animate-spin text-slate-950" />
+                      <RefreshCw size={15} className="animate-spin text-slate-950" />
                       <span>Scheduling Match...</span>
                     </>
                   ) : (
@@ -2620,6 +2628,9 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                     </>
                   )}
                 </button>
+                <p className="text-[11px] text-slate-400 text-center font-medium">
+                  Both teams and match timing will be locked into schedule fixtures.
+                </p>
               </div>
 
             </div>
@@ -2629,7 +2640,7 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
 
         {/* ── RIGHT COLUMN: CURRENT SCHEDULE SIDEBAR ── */}
         <div className="w-full lg:w-[420px] xl:w-[460px] shrink-0">
-          <div className="relative overflow-hidden rounded-3xl bg-slate-900/60 border border-slate-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-6 sm:p-7 backdrop-blur-xl h-full flex flex-col min-h-[560px]">
+          <div className={`relative overflow-hidden rounded-3xl bg-slate-900/60 border border-slate-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-6 sm:p-7 backdrop-blur-xl flex flex-col ${embedded ? 'min-h-[420px]' : 'min-h-[520px] h-full'}`}>
             {/* Top ambient highlight line */}
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
 
@@ -2648,13 +2659,14 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
 
             {/* Quick Search */}
             <div className="relative mb-4">
-              <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
               <input
                 type="text"
                 value={searchSchedule}
                 onChange={(e) => setSearchSchedule(e.target.value)}
                 placeholder="Filter by team..."
-                className="w-full bg-[#060a12] border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs font-medium text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50 transition-all"
+                style={{ paddingLeft: '38px' }}
+                className="w-full bg-[#060a12] border border-slate-800 rounded-xl pr-4 py-2.5 text-xs font-medium text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/50 transition-all"
               />
             </div>
 
@@ -3017,10 +3029,24 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament }) => {
 
   ];
 
+  const handleOpenCreateModal = () => {
+    setStep(1);
+    setTournData({
+      name: "",
+      game: activeGame,
+      prizePool: "$5,000",
+      startDate: "",
+      region: "NA",
+      isPublic: true
+    });
+    setIsCreated(false);
+    setShowCreateModal(true);
+  };
+
   const renderTab = () => {
     switch (activeTab) {
       case "LIVE & UPCOMING":
-        return <LiveUpcomingTab game={activeGame} globalTournament={globalTournament} setGlobalTournament={setGlobalTournament} onOpenCreateModal={() => { setStep(1); setShowCreateModal(true); }} />;
+        return <LiveUpcomingTab game={activeGame} globalTournament={globalTournament} setGlobalTournament={setGlobalTournament} onOpenCreateModal={handleOpenCreateModal} />;
       case "RESULT":
         return (
           <ResultTab game={activeGame} globalTournament={globalTournament} />
@@ -3034,7 +3060,7 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament }) => {
           <ManageScheduleTab
             globalGame={globalGame}
             globalTournament={globalTournament}
-            onOpenCreateModal={() => { setStep(1); setShowCreateModal(true); }}
+            onOpenCreateModal={handleOpenCreateModal}
           />
         );
       case "BRACKET MANAGEMENT":
@@ -3110,14 +3136,14 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament }) => {
       </div>
 
       {/* 4-Step Create Tournament Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md animate-fade-in overflow-y-auto">
-          <div className="bg-[#090e17] border border-slate-800 rounded-3xl w-full max-w-4xl shadow-[0_25px_60px_rgba(0,0,0,0.8)] flex flex-col relative transition-all duration-300 max-h-[92vh] overflow-hidden">
+      {showCreateModal && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md animate-fade-in overflow-hidden">
+          <div className="bg-[#090e17] border border-slate-800/90 rounded-3xl w-full max-w-5xl 2xl:max-w-6xl shadow-[0_25px_60px_rgba(0,0,0,0.85)] flex flex-col relative overflow-hidden max-h-[88vh]">
             {/* Top glowing ambient line */}
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-500 to-transparent z-20" />
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-500 to-transparent z-20 pointer-events-none" />
 
             {/* Modal Header Bar with Close Button */}
-            <div className="px-6 sm:px-8 py-5 border-b border-slate-800/80 bg-slate-950/70 flex items-center justify-between shrink-0 z-10">
+            <div className="px-6 sm:px-8 py-4 border-b border-slate-800/80 bg-slate-950/70 flex items-center justify-between shrink-0 z-10">
               <div className="flex items-center gap-3.5">
                 <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
                   <Trophy size={20} />
@@ -3147,7 +3173,7 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament }) => {
             </div>
 
             {/* Stepper Progress Bar */}
-            <div className="px-6 sm:px-12 pt-6 pb-4 bg-slate-950/40 border-b border-slate-800/60 shrink-0">
+            <div className="px-6 sm:px-12 pt-4 pb-3.5 bg-slate-950/40 border-b border-slate-800/60 shrink-0">
               <div className="flex items-center justify-between w-full max-w-2xl mx-auto relative">
                 {/* Background Connecting Line */}
                 <div className="absolute top-5 left-0 w-full h-[2px] bg-slate-800 -translate-y-1/2 z-0" />
@@ -3188,7 +3214,7 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament }) => {
             </div>
 
             {/* Modal Body (Scrollable) */}
-            <div className="p-6 sm:p-8 flex flex-col items-center flex-1 overflow-y-auto custom-scrollbar">
+            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar w-full p-4 sm:p-6 flex flex-col items-center">
               {step === 1 && (
                 <div className="w-full max-w-2xl bg-slate-950/60 border border-slate-800/80 rounded-2xl p-6 sm:p-8 shadow-inner flex flex-col gap-5">
                   <div className="text-center pb-2 border-b border-slate-800/60">
@@ -3278,7 +3304,7 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament }) => {
               )}
 
               {step === 2 && (
-                <div className="w-full">
+                <div className="w-full min-h-0">
                   <ManageScheduleTab globalGame={tournData.game} globalTournament={{ name: tournData.name }} embedded={true} />
                 </div>
               )}
@@ -3394,12 +3420,12 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament }) => {
             </div>
 
             {/* Sticky Fixed Modal Footer */}
-            <div className="bg-[#060a12] border-t border-slate-800/80 px-6 sm:px-8 py-4 flex items-center justify-between shrink-0 z-10">
+            <div className="bg-[#060a12] border-t border-slate-800/80 px-6 sm:px-8 py-3.5 sm:py-4 flex items-center justify-between shrink-0 z-20 shadow-xl">
               {step > 1 ? (
                 <button 
                   type="button"
                   onClick={() => setStep(step - 1)}
-                  className="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
+                  className="px-6 py-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700/80 text-slate-300 hover:text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-sm hover:scale-[1.02] active:scale-95"
                 >
                   Previous Step
                 </button>
@@ -3407,7 +3433,7 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament }) => {
                 <button 
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
+                  className="px-6 py-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700/80 text-slate-300 hover:text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-sm hover:scale-[1.02] active:scale-95"
                 >
                   Cancel
                 </button>
@@ -3437,9 +3463,10 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament }) => {
                       setStep(step + 1);
                     }
                   }}
-                  className="px-8 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-slate-950 font-black text-xs uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] hover:scale-105 active:scale-95 cursor-pointer"
+                  className="px-8 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-slate-950 font-black text-xs uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-2"
                 >
-                  Next Step
+                  <span>Next Step</span>
+                  <ChevronRight size={15} strokeWidth={2.5} />
                 </button>
               ) : (
                 <button 
@@ -3449,15 +3476,17 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament }) => {
                     setStep(1);
                     alert("Tournament creation finalized! Refresh the page to see it in the sidebar.");
                   }}
-                  className="px-8 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-slate-950 font-black text-xs uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] hover:scale-105 active:scale-95 cursor-pointer"
+                  className="px-8 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-slate-950 font-black text-xs uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-2"
                 >
-                  Submit & Finalize
+                  <span>Submit & Finalize</span>
+                  <Check size={15} strokeWidth={3} />
                 </button>
               )}
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

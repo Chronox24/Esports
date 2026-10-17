@@ -210,26 +210,27 @@ const Predictions = ({ globalGame, globalTournament }) => {
   };
 
   const loadUserPredictions = async () => {
-    // Check localStorage cache first
+    const storageKey = `predictions_${username}_${globalTournament || 'default'}`;
     let cached = [];
     try {
-      const local = localStorage.getItem(`predictions_${username}`);
+      const local = localStorage.getItem(storageKey);
       if (local) cached = JSON.parse(local);
     } catch (e) {
       console.warn('Failed parsing local predictions cache', e);
     }
-    if (cached.length > 0) {
-      setMyPredictions(cached);
-    }
+    setMyPredictions(cached);
+
+    if (!globalTournament) return;
 
     try {
-      const res = await apiFetch(`/api/predictions/user/${encodeURIComponent(username)}`);
+      const tourneyParam = encodeURIComponent(globalTournament.trim());
+      const res = await apiFetch(`/api/predictions/user/${encodeURIComponent(username)}?tournament=${tourneyParam}`);
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
           setMyPredictions(data);
           try {
-            localStorage.setItem(`predictions_${username}`, JSON.stringify(data));
+            localStorage.setItem(storageKey, JSON.stringify(data));
           } catch {}
         }
       }
@@ -240,25 +241,31 @@ const Predictions = ({ globalGame, globalTournament }) => {
 
   const fetchMatches = async () => {
     setLoading(true);
+    if (!globalTournament) {
+      setMatches([]);
+      setLoading(false);
+      return;
+    }
+
     try {
+      const tourneyParam = encodeURIComponent(globalTournament.trim());
+      const gameParam = encodeURIComponent(activeGame);
       const res = await apiFetch(
-        `/api/predictions/matches?tournament=${encodeURIComponent(globalTournament || 'Default')}`
+        `/api/predictions/matches?tournament=${tourneyParam}&game=${gameParam}`
       );
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setMatches(data);
           setLoading(false);
           return;
         }
       }
     } catch (err) {
-      console.warn('Matches API error or offline mode, loading tournament showcase:', err);
+      console.warn('Matches API error:', err);
     }
 
-    // High fidelity default fallback matches
-    const defaultData = isValorant ? DEFAULT_VALORANT_MATCHES : DEFAULT_CROSSFIRE_MATCHES;
-    setMatches(defaultData);
+    setMatches([]);
     setLoading(false);
   };
 
@@ -273,6 +280,7 @@ const Predictions = ({ globalGame, globalTournament }) => {
     const matchId = match.match_id;
     const teamId = team.team_id;
     const teamName = team.team_name;
+    const storageKey = `predictions_${username}_${globalTournament || 'default'}`;
 
     // Optimistic UI state update
     const newPrediction = {
@@ -287,7 +295,7 @@ const Predictions = ({ globalGame, globalTournament }) => {
       const filtered = prev.filter(p => p.match_id !== matchId);
       const updated = [...filtered, newPrediction];
       try {
-        localStorage.setItem(`predictions_${username}`, JSON.stringify(updated));
+        localStorage.setItem(storageKey, JSON.stringify(updated));
       } catch {}
       return updated;
     });
@@ -569,7 +577,7 @@ const Predictions = ({ globalGame, globalTournament }) => {
             <p className="text-xs text-slate-400 max-w-sm mt-1 mb-5">
               {searchQuery || filterMode !== 'all'
                 ? 'No matches match your current search or filter criteria.'
-                : 'There are no upcoming matches scheduled for this tournament.'}
+                : `There are no upcoming matches scheduled for "${globalTournament || 'this tournament'}".`}
             </p>
             {(searchQuery || filterMode !== 'all') && (
               <button
