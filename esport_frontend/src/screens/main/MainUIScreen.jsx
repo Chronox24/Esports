@@ -230,7 +230,7 @@ const MainUIScreen = ({ onLogout }) => {
     }
     switch (activeTab) {
       case 'Dashboard': return <ErrorBoundary><Dashboard globalGame={globalGame} globalTournament={globalTournament} /></ErrorBoundary>;
-      case 'Tournament': return <Tournament globalGame={globalGame} globalTournament={tournaments.find(t => t.name === globalTournament)} />;
+      case 'Tournament': return <Tournament globalGame={globalGame} globalTournament={tournaments.find(t => t.name === globalTournament) || (globalTournament ? { name: globalTournament, game: globalGame } : null)} setGlobalTournament={setGlobalTournament} />;
 
       case 'Tournament History': return <TournamentHistory setGlobalTournament={setGlobalTournament} setActiveTab={setActiveTab} />;
       case 'Predictions': return <Predictions globalGame={globalGame} globalTournament={globalTournament} />;

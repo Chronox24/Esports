@@ -477,7 +477,56 @@ app.post('/api/stats/player', async (req, res) => {
 app.get('/api/tournaments', async (req, res) => {
   const { data, error } = await supabase.from('tournaments').select('*').order('created_at', { ascending: false });
   if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
+  try {
+    const { data: results } = await supabase.from('bracket_results').select('tournament_name');
+    const completedSet = new Set((results || []).map(r => r.tournament_name));
+    const enriched = (data || []).map(t => ({
+      ...t,
+      is_finished: completedSet.has(t.name),
+      status: completedSet.has(t.name) ? 'COMPLETE' : 'ACTIVE'
+    }));
+    return res.json(enriched);
+  } catch(e) {
+    res.json(data || []);
+  }
+});
+app.post('/api/tournaments/toggle-complete', authenticateToken, isAdmin, async (req, res) => {
+  if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
+  try {
+    const { tournament_name, game_title, is_completed } = req.body;
+    if (!tournament_name) return res.status(400).json({ error: 'Tournament name required' });
+
+    if (is_completed) {
+      const { data: existing } = await supabase
+        .from('bracket_results')
+        .select('id')
+        .eq('tournament_name', tournament_name)
+        .limit(1);
+
+      if (!existing || existing.length === 0) {
+        await supabase.from('bracket_results').insert([{
+          tournament_name,
+          game_title: game_title || 'VALORANT',
+          format: 'Results',
+          team_name: 'Concluded',
+          placement_rank: 1,
+          logo_url: null
+        }]);
+      }
+      await logAudit('TOURNAMENT', `Marked tournament "${tournament_name}" as finished`, { tournament_name }, 'System');
+      return res.json({ message: `Tournament "${tournament_name}" marked as finished.`, status: 'COMPLETE', is_finished: true });
+    } else {
+      await supabase
+        .from('bracket_results')
+        .delete()
+        .eq('tournament_name', tournament_name);
+      await logAudit('TOURNAMENT', `Reopened tournament "${tournament_name}" as active`, { tournament_name }, 'System');
+      return res.json({ message: `Tournament "${tournament_name}" reopened as active.`, status: 'ACTIVE', is_finished: false });
+    }
+  } catch (err) {
+    console.error('Toggle complete tournament error:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 app.post('/api/tournaments', authenticateToken, isAdmin, async (req, res) => {
   if (!req.adminUser.is_super_admin && !req.adminUser.permissions?.manage_folders && !req.adminUser.permissions?.full && req.adminUser.role !== 'Super Admin') {
@@ -1342,12 +1391,14 @@ app.get('/api/tournaments-dashboard', async (req, res) => {
     if (tourns) {
       tourns.forEach(t => {
         if (!processedStates.has(t.name)) {
+          let status = 'PENDING';
+          if (completedSet.has(t.name)) status = 'COMPLETE';
           dashboardList.push({
             id: 't-' + t.id,
             name: t.name,
-            game_title: t.game_title,
+            game_title: t.game || t.game_title || 'VALORANT',
             format: 'Unspecified Format',
-            status: 'PENDING',
+            status: status,
             participant_count: 0,
             date: t.created_at
           });

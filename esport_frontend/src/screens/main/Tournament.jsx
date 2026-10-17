@@ -716,6 +716,10 @@ const MatchCard = ({ match, showCountdown, game, index = 0 }) => {
             <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             {match.countdown || getMatchCountdown(match)}
           </div>
+        ) : match.status === 'finished' ? (
+          <div className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider">
+            Concluded
+          </div>
         ) : null}
       </div>
 
@@ -729,7 +733,7 @@ const MatchCard = ({ match, showCountdown, game, index = 0 }) => {
           )}
           <span className="text-white font-semibold truncate max-w-[120px]">{match.team1}</span>
         </div>
-        <span className="text-xl text-white font-bold">{match.score?.split("–")[0]}</span>
+        <span className="text-xl text-white font-bold">{match.score?.split("–")[0] ?? match.score1 ?? 0}</span>
       </div>
 
       {/* VS Divider */}
@@ -748,148 +752,592 @@ const MatchCard = ({ match, showCountdown, game, index = 0 }) => {
           )}
           <span className="text-white font-semibold truncate max-w-[120px]">{match.team2}</span>
         </div>
-        <span className="text-xl text-white font-bold">{match.score?.split("–")[1]}</span>
+        <span className="text-xl text-white font-bold">{match.score?.split("–")[1] ?? match.score2 ?? 0}</span>
       </div>
     </div>
   );
 };
-const LiveUpcomingTab = ({ game, globalTournament, onOpenCreateModal }) => {
-  const [tournaments, setTournaments] = React.useState([]);
-  const [expandedTournament, setExpandedTournament] = React.useState(null);
-  const [matchesByTournament, setMatchesByTournament] = React.useState({});
-  const [showBracket, setShowBracket] = React.useState(false);
-  
-  React.useEffect(() => {
-    apiFetch('/api/tournaments')
-      .then(res => res.json())
-      .then(data => {
-        if (data && Array.isArray(data)) {
-          setTournaments(data.filter(t => (t.game || 'VALORANT').toUpperCase() === game.toUpperCase()));
-        }
-      })
-      .catch(e => console.error(e));
-  }, [game]);
+const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCreateModal }) => {
+  const currentTournamentName = typeof globalTournament === 'string'
+    ? globalTournament
+    : globalTournament?.name;
 
-  const toggleTournament = async (tName) => {
-    if (expandedTournament === tName) {
-      setExpandedTournament(null);
-      return;
+  const [liveTournaments, setLiveTournaments] = React.useState([]);
+  const [finishedTournaments, setFinishedTournaments] = React.useState([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  const [expandedLiveTournament, setExpandedLiveTournament] = React.useState(null);
+  const [expandedFinishedTournament, setExpandedFinishedTournament] = React.useState(null);
+
+  const [matchesByTournament, setMatchesByTournament] = React.useState({});
+  const [standingsByTournament, setStandingsByTournament] = React.useState({});
+
+  const [showLiveBracket, setShowLiveBracket] = React.useState(false);
+  const [showFinishedBracket, setShowFinishedBracket] = React.useState(false);
+  const [isTogglingStatus, setIsTogglingStatus] = React.useState(false);
+
+  const loadTournaments = React.useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [tRes, brRes, dashRes] = await Promise.all([
+        apiFetch('/api/tournaments').then(r => r.json()).catch(() => []),
+        apiFetch('/api/bracket-results').then(r => r.json()).catch(() => []),
+        apiFetch('/api/tournaments-dashboard').then(r => r.json()).catch(() => [])
+      ]);
+
+      const completedSet = new Set([
+        ...(Array.isArray(brRes) ? brRes.map(b => b.tournament_name) : []),
+        ...(Array.isArray(dashRes) ? dashRes.filter(d => d.status === 'COMPLETE').map(d => d.name) : [])
+      ]);
+
+      const allTourns = Array.isArray(tRes) ? tRes : [];
+      const gameTourns = allTourns.filter(
+        t => (t.game || 'VALORANT').toUpperCase() === game.toUpperCase()
+      );
+
+      const live = [];
+      const finished = [];
+
+      gameTourns.forEach(t => {
+        const isFinished = t.is_finished || completedSet.has(t.name) || t.status === 'COMPLETE';
+        if (isFinished) {
+          finished.push({ ...t, is_finished: true });
+        } else {
+          live.push({ ...t, is_finished: false });
+        }
+      });
+
+      // Include any completed tournaments from dashboard/results for this game that might not be in tournaments table
+      if (Array.isArray(dashRes)) {
+        dashRes.forEach(d => {
+          if (d.status === 'COMPLETE' && (d.game_title || 'VALORANT').toUpperCase() === game.toUpperCase()) {
+            if (!finished.some(f => f.name === d.name)) {
+              finished.push({
+                id: d.id,
+                name: d.name,
+                game: d.game_title || game,
+                is_finished: true
+              });
+            }
+          }
+        });
+      }
+
+      // CRITICAL: Ensure the current tournament that was clicked is present in LIVE & UPCOMING
+      if (currentTournamentName && currentTournamentName.trim()) {
+        const trimmedCurrent = currentTournamentName.trim();
+        const existingLiveIdx = live.findIndex(t => t.name.toLowerCase() === trimmedCurrent.toLowerCase());
+
+        if (existingLiveIdx > -1) {
+          // If already in live, move to index 0 so it's the very first card visible
+          const [curr] = live.splice(existingLiveIdx, 1);
+          live.unshift({ ...curr, is_current: true });
+        } else {
+          // If not in live (e.g. categorized as finished or from another list), add it to live at index 0
+          const inFinished = finished.find(t => t.name.toLowerCase() === trimmedCurrent.toLowerCase());
+          const inAll = allTourns.find(t => t.name.toLowerCase() === trimmedCurrent.toLowerCase());
+          const currentObj = inFinished || inAll || (typeof globalTournament === 'object' && globalTournament ? globalTournament : {
+            id: 'curr-' + trimmedCurrent,
+            name: trimmedCurrent,
+            game: game
+          });
+          live.unshift({ ...currentObj, is_current: true });
+        }
+      }
+
+      setLiveTournaments(live);
+      setFinishedTournaments(finished);
+    } catch (e) {
+      console.error('Failed to load tournaments:', e);
+    } finally {
+      setIsLoading(false);
     }
-    setExpandedTournament(tName);
-    setShowBracket(false);
+  }, [game, currentTournamentName, globalTournament]);
+
+  React.useEffect(() => {
+    loadTournaments();
+  }, [loadTournaments]);
+
+  // Automatically expand the current clicked tournament and load its match data
+  React.useEffect(() => {
+    if (currentTournamentName && currentTournamentName.trim()) {
+      const trimmed = currentTournamentName.trim();
+      setExpandedLiveTournament(trimmed);
+      fetchTournamentData(trimmed);
+    }
+  }, [currentTournamentName]);
+
+  const fetchTournamentData = async (tName) => {
     if (!matchesByTournament[tName]) {
       try {
-        const res = await apiFetch(`/api/matches?tournament=${tName}`);
+        const res = await apiFetch(`/api/matches?tournament=${encodeURIComponent(tName)}`);
         if (res.ok) {
           const data = await res.json();
-          const mapped = data.map(m => ({
-            id: m.id,
-            team1: m.team_a?.team_name || "TBD",
-            team1Logo: m.team_a?.logo_url || null,
-            team2: m.team_b?.team_name || "TBD",
-            team2Logo: m.team_b?.logo_url || null,
-            score1: m.score_a || 0,
-            score2: m.score_b || 0,
-            isLive: m.status === "in_progress",
-            day: m.match_day,
-            time: m.match_time
-          }));
+          const mapped = data.map(m => {
+            const s1 = m.team_a_score ?? m.score_a ?? 0;
+            const s2 = m.team_b_score ?? m.score_b ?? 0;
+            return {
+              id: m.id || m.match_id,
+              team1: m.team_a?.team_name || "TBD",
+              team1Logo: m.team_a?.logo_url || null,
+              team2: m.team_b?.team_name || "TBD",
+              team2Logo: m.team_b?.logo_url || null,
+              score1: s1,
+              score2: s2,
+              score: `${s1}–${s2}`,
+              isLive: m.status === "in_progress" || m.status === "live",
+              status: m.status,
+              day: m.match_day,
+              time: m.match_time
+            };
+          });
           mapped.sort((a, b) => {
-             if (a.isLive !== b.isLive) return a.isLive ? -1 : 1;
-             const dayA = a.day || 999;
-             const dayB = b.day || 999;
-             if (dayA !== dayB) return dayA - dayB;
-             return 0;
+            if (a.isLive !== b.isLive) return a.isLive ? -1 : 1;
+            const dayA = a.day || 999;
+            const dayB = b.day || 999;
+            if (dayA !== dayB) return dayA - dayB;
+            return 0;
           });
           setMatchesByTournament(prev => ({ ...prev, [tName]: mapped }));
         }
-      } catch(e) { console.error(e); }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    if (!standingsByTournament[tName]) {
+      try {
+        const res = await apiFetch(`/api/bracket-results?tournament_name=${encodeURIComponent(tName)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setStandingsByTournament(prev => ({ ...prev, [tName]: data }));
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
     }
   };
 
+  const toggleLiveTournament = (tName) => {
+    if (expandedLiveTournament === tName) {
+      setExpandedLiveTournament(null);
+      return;
+    }
+    setExpandedLiveTournament(tName);
+    setShowLiveBracket(false);
+    fetchTournamentData(tName);
+  };
+
+  const toggleFinishedTournament = (tName) => {
+    if (expandedFinishedTournament === tName) {
+      setExpandedFinishedTournament(null);
+      return;
+    }
+    setExpandedFinishedTournament(tName);
+    setShowFinishedBracket(false);
+    fetchTournamentData(tName);
+  };
+
+  const handleLiveCardClick = (tName) => {
+    toggleLiveTournament(tName);
+    if (setGlobalTournament) {
+      setGlobalTournament(tName);
+    }
+  };
+
+  const handleFinishedCardClick = (tName) => {
+    toggleFinishedTournament(tName);
+    if (setGlobalTournament) {
+      setGlobalTournament(tName);
+    }
+  };
+
+  const handleToggleCompletion = async (tName, currentIsFinished) => {
+    try {
+      setIsTogglingStatus(true);
+      await apiFetch('/api/tournaments/toggle-complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tournament_name: tName,
+          game_title: game,
+          is_completed: !currentIsFinished
+        })
+      });
+      setExpandedLiveTournament(null);
+      setExpandedFinishedTournament(null);
+      await loadTournaments();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsTogglingStatus(false);
+    }
+  };
+
+  const renderPodium = (tName) => {
+    const standings = standingsByTournament[tName];
+    if (!standings || standings.length === 0) return null;
+
+    const sorted = [...standings].sort((a, b) => (a.placement_rank || 99) - (b.placement_rank || 99));
+    const first = sorted.find(s => s.placement_rank === 1);
+    const second = sorted.find(s => s.placement_rank === 2);
+    const third = sorted.find(s => s.placement_rank === 3);
+
+    return (
+      <div className="mb-6 p-5 rounded-2xl bg-[#070b12] border border-amber-500/30 shadow-inner flex flex-col gap-4">
+        <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-amber-400">
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          </svg>
+          Official Final Standings
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {first && (
+            <div className="flex items-center gap-3 p-3.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-amber-600/10 border border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+              <div className="w-10 h-10 rounded-full bg-amber-500/30 border border-amber-400 flex items-center justify-center font-black text-amber-300 text-sm shrink-0">
+                🥇
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] font-black uppercase text-amber-400 tracking-wider block">Champion</span>
+                <span className="text-sm font-black text-white truncate block">{first.team_name}</span>
+              </div>
+            </div>
+          )}
+          {second && (
+            <div className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-900/80 border border-slate-700 shadow-sm">
+              <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center font-black text-slate-300 text-sm shrink-0">
+                🥈
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Runner-Up</span>
+                <span className="text-sm font-bold text-white truncate block">{second.team_name}</span>
+              </div>
+            </div>
+          )}
+          {third && (
+            <div className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-900/80 border border-amber-900/40 shadow-sm">
+              <div className="w-10 h-10 rounded-full bg-amber-950/40 border border-amber-800/60 flex items-center justify-center font-black text-amber-600 text-sm shrink-0">
+                🥉
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] font-black uppercase text-amber-600/90 tracking-wider block">3rd Place</span>
+                <span className="text-sm font-bold text-white truncate block">{third.team_name}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="flex flex-col gap-8 w-full animate-fade-in-up">
-      <div className="flex flex-col md:flex-row justify-between items-center bg-[#0d131c] rounded-3xl p-6 border border-slate-700/40 shadow-lg relative overflow-hidden gap-4">
-        <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-cyan-500/10 blur-[80px] rounded-full pointer-events-none translate-x-1/2 -translate-y-1/2" />
-        <h2 className="text-xl md:text-2xl font-black uppercase tracking-widest text-white relative z-10 flex items-center gap-3">
-          <IconCalendar /> Live & Upcoming Tournaments
-        </h2>
+    <div className="flex flex-col gap-10 w-full animate-fade-in-up pb-12">
+      {/* ========================================================================= */}
+      {/* LAYER 1: LIVE & UPCOMING TOURNAMENTS */}
+      {/* ========================================================================= */}
+      <div className="flex flex-col gap-6 w-full">
+        <div className="flex flex-col md:flex-row justify-between items-center bg-[#0d131c] rounded-3xl p-6 border border-slate-700/40 shadow-lg relative overflow-hidden gap-4">
+          <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-cyan-500/10 blur-[80px] rounded-full pointer-events-none translate-x-1/2 -translate-y-1/2" />
+          <h2 className="text-xl md:text-2xl font-black uppercase tracking-widest text-white relative z-10 flex items-center gap-3">
+            <IconCalendar /> Live & Upcoming Tournaments
+          </h2>
+          <div className="flex items-center gap-2 relative z-10">
+            <span className="text-xs font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 px-3.5 py-1.5 rounded-xl uppercase tracking-wider">
+              {liveTournaments.length} Active
+            </span>
+          </div>
+        </div>
+
+        {liveTournaments.length === 0 ? (
+          <div className="text-center py-14 text-slate-500 font-bold uppercase tracking-widest bg-[#0d131c] rounded-2xl border border-slate-800">
+            No live or upcoming tournaments found.
+          </div>
+        ) : (
+          <div className="flex flex-col gap-6 w-full">
+            {/* Scrollable Row of Live & Upcoming Tournament Cards */}
+            <div className="flex gap-4 overflow-x-auto pb-4 px-2 custom-scrollbar snap-x snap-mandatory">
+              {liveTournaments.map(t => {
+                const isCurrent = t.is_current || (currentTournamentName && t.name.toLowerCase() === currentTournamentName.toLowerCase());
+                const isExpanded = expandedLiveTournament === t.name;
+
+                return (
+                  <div
+                    key={t.id || t.name}
+                    className={`flex-1 min-w-[130px] max-w-[320px] h-[220px] md:min-w-[150px] md:h-[250px] shrink-0 snap-center rounded-2xl flex flex-col overflow-hidden cursor-pointer shadow-lg transition-all duration-300 group border-[3px] relative
+                      ${isCurrent
+                        ? 'border-cyan-400 bg-slate-800/90 shadow-[0_0_25px_rgba(6,182,212,0.5)] ring-2 ring-cyan-400/50'
+                        : isExpanded
+                          ? 'border-cyan-500 bg-slate-800 shadow-[0_0_25px_rgba(6,182,212,0.3)]'
+                          : 'border-slate-700 bg-[#0d131c] hover:border-cyan-400 hover:bg-slate-800/80 hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]'}`}
+                    onClick={() => handleLiveCardClick(t.name)}
+                  >
+                    <div className="flex-1 relative flex flex-col items-center justify-center p-4 md:p-5 text-center overflow-hidden">
+                      {isCurrent ? (
+                        <div className="mb-1 flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400 text-cyan-300 text-[10px] font-black uppercase tracking-wider shadow-[0_0_12px_rgba(6,182,212,0.4)] animate-pulse">
+                          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                          Selected
+                        </div>
+                      ) : null}
+                      <span className="text-xs md:text-sm font-semibold text-slate-400 drop-shadow-sm capitalize">
+                        {(t.game || game).toLowerCase()}
+                      </span>
+                      <h3 className="text-base md:text-xl font-black text-white uppercase leading-tight drop-shadow-md line-clamp-4 mt-1">
+                        {t.name}
+                      </h3>
+                    </div>
+
+                    <div
+                      className={`h-[45px] md:h-[55px] border-t-[3px] flex items-center justify-center transition-colors shrink-0
+                        ${isCurrent
+                          ? 'border-cyan-400 bg-cyan-950/60 text-cyan-300'
+                          : isExpanded
+                            ? 'border-cyan-500 bg-cyan-900/30 text-cyan-400'
+                            : 'border-slate-700 bg-[#0a0f16] group-hover:bg-slate-800 text-slate-400 group-hover:text-cyan-400'}`}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className={`w-6 h-6 md:w-8 md:h-8 transition-transform duration-300 ${isExpanded ? 'text-cyan-400 rotate-180' : ''}`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Expanded Live Tournament Container */}
+            {expandedLiveTournament && (
+              <div className="p-6 md:p-8 border-[3px] border-slate-700 bg-[#0a0f16] rounded-3xl shadow-2xl animate-fade-in-up relative mt-1">
+                <div className="absolute -top-[14px] left-[50px] w-6 h-6 bg-[#0a0f16] border-t-[3px] border-l-[3px] border-slate-700 rotate-45 hidden md:block" />
+
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                  <h3 className="text-xl md:text-2xl font-black text-white uppercase tracking-widest">
+                    {expandedLiveTournament} <span className="text-cyan-500">MATCHES</span>
+                  </h3>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <button
+                      onClick={() => handleToggleCompletion(expandedLiveTournament, false)}
+                      disabled={isTogglingStatus}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-bold uppercase tracking-wider text-xs transition-all cursor-pointer disabled:opacity-50"
+                      title="Move this tournament to Finished Tournaments"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                      </svg>
+                      {isTogglingStatus ? 'Updating...' : 'Mark as Finished'}
+                    </button>
+
+                    <button
+                      onClick={() => setShowLiveBracket(!showLiveBracket)}
+                      className={`flex items-center gap-2 px-5 py-2.5 rounded-xl border font-bold uppercase tracking-widest transition-colors shadow-inner text-xs md:text-sm cursor-pointer
+                        ${showLiveBracket ? 'bg-cyan-500 text-white border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.4)]' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-cyan-500 hover:text-cyan-400'}`}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        {showLiveBracket ? <path d="M18 15l-6-6-6 6" /> : <path d="M6 9l6 6 6-6" />}
+                      </svg>
+                      {showLiveBracket ? 'Hide Bracket' : 'View Bracket'}
+                    </button>
+                  </div>
+                </div>
+
+                {(!matchesByTournament[expandedLiveTournament] || matchesByTournament[expandedLiveTournament].length === 0) ? (
+                  <div className="text-center py-16 text-slate-500 font-bold tracking-widest uppercase">
+                    No upcoming matches for this tournament
+                  </div>
+                ) : (
+                  <div className="match-scroll-container snap-x snap-mandatory flex gap-4 md:gap-6 overflow-x-auto pb-4 md:pb-6 custom-scrollbar">
+                    {matchesByTournament[expandedLiveTournament].map((match, idx) => (
+                      <MatchCard
+                        key={match.id || idx}
+                        match={{ ...match, day: match.day || "TBD" }}
+                        showCountdown={false}
+                        game={game}
+                        index={idx}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {showLiveBracket && (
+                  <div className="w-full border border-slate-700/50 rounded-3xl overflow-hidden shadow-2xl mt-4 animate-fade-in-up">
+                    <Bracket globalGame={game} globalTournament={{ name: expandedLiveTournament }} isReadOnly={true} />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      <div className="flex flex-col gap-4">
-        {tournaments.length === 0 ? (
-           <div className="text-center py-20 text-slate-500 font-bold uppercase tracking-widest bg-[#0d131c] rounded-2xl border border-slate-800">No tournaments found. Create one to get started.</div>
+      {/* ========================================================================= */}
+      {/* LAYER 2: FINISHED TOURNAMENTS */}
+      {/* ========================================================================= */}
+      <div className="flex flex-col gap-6 w-full pt-4">
+        <div className="flex flex-col md:flex-row justify-between items-center bg-[#0d131c] rounded-3xl p-6 border border-slate-700/40 shadow-lg relative overflow-hidden gap-4">
+          <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-amber-500/10 blur-[80px] rounded-full pointer-events-none translate-x-1/2 -translate-y-1/2" />
+          <h2 className="text-xl md:text-2xl font-black uppercase tracking-widest text-white relative z-10 flex items-center gap-3">
+            <span className="text-amber-400">
+              <IconTrophy />
+            </span>
+            Finished Tournaments
+          </h2>
+          <div className="flex items-center gap-2 relative z-10">
+            <span className="text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-3.5 py-1.5 rounded-xl uppercase tracking-wider">
+              {finishedTournaments.length} Concluded
+            </span>
+          </div>
+        </div>
+
+        {finishedTournaments.length === 0 ? (
+          <div className="text-center py-14 text-slate-500 font-bold uppercase tracking-widest bg-[#0d131c] rounded-2xl border border-slate-800">
+            No completed tournaments found yet.
+          </div>
         ) : (
-           <div className="flex flex-col gap-8 w-full">
-             {/* Row of vertical cards */}
-             <div className="flex gap-4 overflow-x-auto pb-4 px-2 custom-scrollbar snap-x snap-mandatory">
-               {tournaments.map(t => {
-                  const isExpanded = expandedTournament === t.name;
-                  
-                  return (
-                  <div 
-                    key={t.id} 
-                    className={`flex-1 min-w-[130px] max-w-[320px] h-[220px] md:min-w-[150px] md:h-[250px] shrink-0 snap-center rounded-2xl flex flex-col overflow-hidden cursor-pointer shadow-lg hover:shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all duration-300 group border-[3px]
-                      ${isExpanded ? 'border-cyan-500 bg-slate-800 shadow-[0_0_25px_rgba(6,182,212,0.3)]' : 'border-slate-700 bg-[#0d131c] hover:border-cyan-400 hover:bg-slate-800/80'}`}
-                    onClick={() => toggleTournament(t.name)}
+          <div className="flex flex-col gap-6 w-full">
+            {/* Scrollable Row of Finished Tournament Cards */}
+            <div className="flex gap-4 overflow-x-auto pb-4 px-2 custom-scrollbar snap-x snap-mandatory">
+              {finishedTournaments.map(t => {
+                const isCurrent = t.is_current || (currentTournamentName && t.name.toLowerCase() === currentTournamentName.toLowerCase());
+                const isExpanded = expandedFinishedTournament === t.name;
+
+                return (
+                  <div
+                    key={t.id || t.name}
+                    className={`flex-1 min-w-[130px] max-w-[320px] h-[220px] md:min-w-[150px] md:h-[250px] shrink-0 snap-center rounded-2xl flex flex-col overflow-hidden cursor-pointer shadow-lg hover:shadow-[0_0_20px_rgba(245,158,11,0.35)] transition-all duration-300 group border-[3px]
+                      ${isCurrent
+                        ? 'border-amber-400 bg-slate-800/90 shadow-[0_0_25px_rgba(245,158,11,0.5)] ring-2 ring-amber-400/50'
+                        : isExpanded
+                          ? 'border-amber-400 bg-slate-800 shadow-[0_0_25px_rgba(245,158,11,0.35)]'
+                          : 'border-slate-700 bg-[#0d131c] hover:border-amber-400/80 hover:bg-slate-800/80'}`}
+                    onClick={() => handleFinishedCardClick(t.name)}
                   >
-                     <div className="flex-1 relative flex flex-col items-center justify-center p-4 md:p-5 text-center overflow-hidden">
-                         <span className="text-xs md:text-sm font-semibold text-slate-400 drop-shadow-sm capitalize">{(t.game || game).toLowerCase()}</span>
-                         <h3 className="text-base md:text-xl font-black text-white uppercase leading-tight drop-shadow-md line-clamp-4 mt-1">{t.name}</h3>
-                     </div>
-                     
-                     <div className={`h-[45px] md:h-[55px] border-t-[3px] flex items-center justify-center transition-colors shrink-0
-                        ${isExpanded ? 'border-cyan-500 bg-cyan-900/30' : 'border-slate-700 bg-[#0a0f16] group-hover:bg-slate-800'}`}>
-                        <svg xmlns="http://www.w3.org/2000/svg" className={`w-6 h-6 md:w-8 md:h-8 transition-transform duration-300 ${isExpanded ? 'text-cyan-400 rotate-180' : 'text-slate-400 group-hover:text-cyan-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
-                        </svg>
-                     </div>
-                  </div>
-                  );
-               })}
-             </div>
+                    <div className="flex-1 relative flex flex-col items-center justify-center p-4 md:p-5 text-center overflow-hidden">
+                      {isCurrent ? (
+                        <div className="mb-1 flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400 text-amber-300 text-[10px] font-black uppercase tracking-wider shadow-[0_0_12px_rgba(245,158,11,0.4)] animate-pulse">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                          Selected
+                        </div>
+                      ) : (
+                        <div className="mb-1 flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[10px] font-black uppercase tracking-wider shadow-sm">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                          </svg>
+                          Concluded
+                        </div>
+                      )}
+                      <span className="text-xs md:text-sm font-semibold text-slate-400 drop-shadow-sm capitalize">
+                        {(t.game || game).toLowerCase()}
+                      </span>
+                      <h3 className="text-base md:text-xl font-black text-white uppercase leading-tight drop-shadow-md line-clamp-4 mt-1">
+                        {t.name}
+                      </h3>
+                    </div>
 
-             {/* Expanded Matches Container (Appears below the row) */}
-             {expandedTournament && (
-               <div className="p-6 md:p-8 border-[3px] border-slate-700 bg-[#0a0f16] rounded-3xl shadow-2xl animate-fade-in-up relative mt-2">
-                  <div className="absolute -top-[14px] left-[50px] w-6 h-6 bg-[#0a0f16] border-t-[3px] border-l-[3px] border-slate-700 rotate-45 hidden md:block"></div>
-                  
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                    <h3 className="text-xl md:text-2xl font-black text-white uppercase tracking-widest">{expandedTournament} <span className="text-cyan-500">MATCHES</span></h3>
-                    <div className="flex items-center gap-3">
-                      <button 
-                        onClick={() => setShowBracket(!showBracket)}
-                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl border font-bold uppercase tracking-widest transition-colors shadow-inner text-xs md:text-sm cursor-pointer
-                           ${showBracket ? 'bg-cyan-500 text-white border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.4)]' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-cyan-500 hover:text-cyan-400'}`}
+                    <div
+                      className={`h-[45px] md:h-[55px] border-t-[3px] flex items-center justify-center transition-colors shrink-0
+                        ${isCurrent
+                          ? 'border-amber-400 bg-amber-950/60 text-amber-300'
+                          : isExpanded
+                            ? 'border-amber-400 bg-amber-950/40'
+                            : 'border-slate-700 bg-[#0a0f16] group-hover:bg-slate-800 text-slate-400 group-hover:text-amber-400'}`}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className={`w-6 h-6 md:w-8 md:h-8 transition-transform duration-300 ${isExpanded ? 'text-amber-400 rotate-180' : ''}`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                           {showBracket ? <><path d="M18 15l-6-6-6 6"/></> : <><path d="M6 9l6 6 6-6"/></>}
-                        </svg>
-                        {showBracket ? 'Hide Bracket' : 'View Bracket'}
-                      </button>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
+                      </svg>
                     </div>
                   </div>
+                );
+              })}
+            </div>
 
-                  {(!matchesByTournament[expandedTournament] || matchesByTournament[expandedTournament].length === 0) ? (
-                     <div className="text-center py-16 text-slate-500 font-bold tracking-widest uppercase">
-                       No upcoming matches for this tournament
-                     </div>
+            {/* Expanded Finished Tournament Container */}
+            {expandedFinishedTournament && (
+              <div className="p-6 md:p-8 border-[3px] border-amber-500/70 bg-[#0a0f16] rounded-3xl shadow-2xl animate-fade-in-up relative mt-1">
+                <div className="absolute -top-[14px] left-[50px] w-6 h-6 bg-[#0a0f16] border-t-[3px] border-l-[3px] border-amber-500/70 rotate-45 hidden md:block" />
+
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                  <div>
+                    <h3 className="text-xl md:text-2xl font-black text-white uppercase tracking-widest flex items-center gap-2">
+                      {expandedFinishedTournament} <span className="text-amber-400">RESULTS & BRACKET</span>
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-1 uppercase tracking-wider">
+                      Tournament finalized and recorded in archives
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <button
+                      onClick={() => handleToggleCompletion(expandedFinishedTournament, true)}
+                      disabled={isTogglingStatus}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-300 font-bold uppercase tracking-wider text-xs transition-all cursor-pointer disabled:opacity-50"
+                      title="Reopen tournament into Live & Upcoming"
+                    >
+                      <RefreshCw size={13} className={isTogglingStatus ? 'animate-spin' : ''} />
+                      {isTogglingStatus ? 'Updating...' : 'Reopen Tournament'}
+                    </button>
+
+                    <button
+                      onClick={() => setShowFinishedBracket(!showFinishedBracket)}
+                      className={`flex items-center gap-2 px-5 py-2.5 rounded-xl border font-bold uppercase tracking-widest transition-colors shadow-inner text-xs md:text-sm cursor-pointer
+                        ${showFinishedBracket ? 'bg-amber-500 text-slate-950 font-black border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.4)]' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-amber-400 hover:text-amber-400'}`}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        {showFinishedBracket ? <path d="M18 15l-6-6-6 6" /> : <path d="M6 9l6 6 6-6" />}
+                      </svg>
+                      {showFinishedBracket ? 'Hide Bracket' : 'View Bracket'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Final Standings / Podium */}
+                {renderPodium(expandedFinishedTournament)}
+
+                {/* Concluded Matches Section */}
+                <div className="flex flex-col gap-3">
+                  <h4 className="text-xs font-black uppercase text-slate-400 tracking-widest flex items-center gap-2 mb-2">
+                    <Clock size={14} className="text-amber-400" /> Concluded Match Records
+                  </h4>
+
+                  {(!matchesByTournament[expandedFinishedTournament] || matchesByTournament[expandedFinishedTournament].length === 0) ? (
+                    <div className="text-center py-12 text-slate-500 font-bold tracking-widest uppercase bg-slate-900/40 rounded-2xl border border-slate-800">
+                      No match scores recorded for this finished tournament
+                    </div>
                   ) : (
-                     <div className="match-scroll-container snap-x snap-mandatory flex gap-4 md:gap-6 overflow-x-auto pb-4 md:pb-6 custom-scrollbar">
-                       {matchesByTournament[expandedTournament].map((match, idx) => (
-                         <MatchCard key={match.id || idx} match={{...match, day: match.day || "TBD"}} showCountdown={false} game={game} index={idx} />
-                       ))}
-                     </div>
-                  )}
-
-                  {showBracket && (
-                    <div className="w-full border border-slate-700/50 rounded-3xl overflow-hidden shadow-2xl mt-4 animate-fade-in-up">
-                       <Bracket globalGame={game} globalTournament={{ name: expandedTournament }} isReadOnly={true} />
+                    <div className="match-scroll-container snap-x snap-mandatory flex gap-4 md:gap-6 overflow-x-auto pb-4 md:pb-6 custom-scrollbar">
+                      {matchesByTournament[expandedFinishedTournament].map((match, idx) => (
+                        <MatchCard
+                          key={match.id || idx}
+                          match={{ ...match, day: match.day || "Final", status: match.status || 'finished' }}
+                          showCountdown={false}
+                          game={game}
+                          index={idx}
+                        />
+                      ))}
                     </div>
                   )}
-               </div>
-             )}
-           </div>
+                </div>
+
+                {/* Read-Only Interactive Bracket */}
+                {showFinishedBracket && (
+                  <div className="w-full border border-amber-500/40 rounded-3xl overflow-hidden shadow-2xl mt-6 animate-fade-in-up">
+                    <Bracket globalGame={game} globalTournament={{ name: expandedFinishedTournament }} isReadOnly={true} />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>
@@ -2506,7 +2954,7 @@ const ScheduleTab = ({ game, globalTournament }) => {
     </div>
   );
 };
-const Tournament = ({ globalGame, globalTournament }) => {
+const Tournament = ({ globalGame, globalTournament, setGlobalTournament }) => {
   const activeGame = (globalGame || "VALORANT").toUpperCase();
   const [activeTab, setActiveTab] = useState("LIVE & UPCOMING");
 
@@ -2572,7 +3020,7 @@ const Tournament = ({ globalGame, globalTournament }) => {
   const renderTab = () => {
     switch (activeTab) {
       case "LIVE & UPCOMING":
-        return <LiveUpcomingTab game={activeGame} globalTournament={globalTournament} onOpenCreateModal={() => { setStep(1); setShowCreateModal(true); }} />;
+        return <LiveUpcomingTab game={activeGame} globalTournament={globalTournament} setGlobalTournament={setGlobalTournament} onOpenCreateModal={() => { setStep(1); setShowCreateModal(true); }} />;
       case "RESULT":
         return (
           <ResultTab game={activeGame} globalTournament={globalTournament} />
