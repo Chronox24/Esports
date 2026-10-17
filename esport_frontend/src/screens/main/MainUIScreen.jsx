@@ -25,7 +25,8 @@ import {
   Map, FileEdit, Users, BarChart2,
   ListOrdered, TrendingUp, Archive,
   ShieldCheck, ScrollText, Settings as SettingsIcon,
-  LogOut, Sun, FileSpreadsheet, Moon, PieChart, UserPlus, PanelLeftClose
+  LogOut, Sun, FileSpreadsheet, Moon, PieChart, UserPlus, PanelLeftClose,
+  Trash2
 } from 'lucide-react';
 
 const iconMap = {
@@ -57,6 +58,8 @@ const MainUIScreen = ({ onLogout }) => {
   const [tournaments, setTournaments] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [folderToDelete, setFolderToDelete] = useState(null);
+  const [isDeletingFolder, setIsDeletingFolder] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('themeBg', themeBg);
@@ -132,6 +135,32 @@ const MainUIScreen = ({ onLogout }) => {
   useEffect(() => {
     loadTournaments();
   }, [loadTournaments]);
+
+  const handleDeleteFolder = async () => {
+    if (!folderToDelete) return;
+    setIsDeletingFolder(true);
+    try {
+      const targetIdentifier = folderToDelete.id || folderToDelete.name;
+      const res = await apiFetch(`/api/tournaments/${encodeURIComponent(targetIdentifier)}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        if (globalTournament === folderToDelete.name) {
+          setGlobalTournament('');
+        }
+        await loadTournaments();
+        setFolderToDelete(null);
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        alert(errData.error || "Failed to delete tournament folder. Please check your permissions.");
+      }
+    } catch (err) {
+      console.error("Error deleting folder:", err);
+      alert("Error connecting to server while deleting folder.");
+    } finally {
+      setIsDeletingFolder(false);
+    }
+  };
   useEffect(() => {
     if (globalTournament && tournaments.length > 0) {
       const selected = tournaments.find(t => t.name === globalTournament);
@@ -194,18 +223,29 @@ const MainUIScreen = ({ onLogout }) => {
               <div
                 key={t.id}
                 onClick={() => setGlobalTournament(t.name)}
-                className="bg-slate-900/50 border border-slate-700/50 rounded-2xl p-6 cursor-pointer hover:border-cyan-400 hover:bg-slate-800/80 shadow-lg hover:shadow-[0_0_30px_rgba(6,182,212,0.35)] transition-all flex items-center gap-5 group"
+                className="bg-slate-900/50 border border-slate-700/50 rounded-2xl p-6 cursor-pointer hover:border-cyan-400 hover:bg-slate-800/80 shadow-lg hover:shadow-[0_0_30px_rgba(6,182,212,0.35)] transition-all flex items-center gap-5 group relative"
               >
-                <div className="w-16 h-16 rounded-xl bg-slate-950/80 border border-white/5 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform shadow-inner">
+                <div className="w-16 h-16 rounded-xl bg-slate-950/80 border border-white/5 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform shadow-inner shrink-0">
                   <svg className="w-8 h-8 opacity-80 group-hover:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
                 </div>
-                <div className="flex-1 overflow-hidden">
+                <div className="flex-1 overflow-hidden pr-8">
                   <h3 className="text-xl font-black text-theme-text-base truncate">{t.name}</h3>
                   <div className="flex items-center gap-2 mt-1.5">
                     <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
                     <p className="text-xs text-theme-text-muted font-bold uppercase tracking-widest">{t.game}</p>
                   </div>
                 </div>
+                <button
+                  type="button"
+                  title={`Delete folder: ${t.name}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFolderToDelete(t);
+                  }}
+                  className="absolute top-4 right-4 p-2 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-500/10 opacity-30 group-hover:opacity-100 hover:!opacity-100 transition-all duration-200 z-10"
+                >
+                  <Trash2 size={18} strokeWidth={2} />
+                </button>
               </div>
             ))}
             <div
@@ -502,6 +542,57 @@ const MainUIScreen = ({ onLogout }) => {
               className="px-6 py-2.5 rounded-xl bg-cyan-400 text-slate-950 font-bold text-sm hover:bg-white transition-colors"
             >
               Create Folder
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    {/* Delete Folder Modal */}
+    {folderToDelete && (
+      <div
+        className="fixed inset-0 z-[120] flex items-center justify-center modal-overlay-enter"
+        style={{ backgroundColor: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}
+        onClick={() => !isDeletingFolder && setFolderToDelete(null)}
+      >
+        <div
+          className="modal-content-enter bg-bg-300 border border-red-500/30 rounded-3xl w-full max-w-md mx-4 shadow-[0_25px_60px_rgba(0,0,0,0.6)] flex flex-col items-center relative overflow-hidden"
+          style={{ padding: '36px' }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent"></div>
+          <div className="rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 shrink-0 mb-5 w-16 h-16 shadow-[0_0_20px_rgba(239,68,68,0.2)]">
+            <Trash2 size={32} strokeWidth={2} />
+          </div>
+
+          <h3 className="font-black text-theme-text-base text-center tracking-widest uppercase text-xl mb-2">
+            Delete Folder?
+          </h3>
+
+          <p className="text-theme-text-muted text-center text-sm leading-relaxed mb-6">
+            Are you sure you want to permanently delete <span className="font-bold text-theme-text-base">"{folderToDelete.name}"</span>? This will remove the tournament folder from the system.
+          </p>
+
+          <div className="flex w-full gap-3">
+            <button
+              disabled={isDeletingFolder}
+              onClick={() => setFolderToDelete(null)}
+              className="flex-1 rounded-xl font-bold text-theme-text-base bg-slate-800/60 border border-slate-700/50 hover:bg-slate-700/60 transition-all duration-300 tracking-wider uppercase py-3 text-sm cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              disabled={isDeletingFolder}
+              onClick={handleDeleteFolder}
+              className="flex-1 rounded-xl font-bold text-white bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 shadow-[0_4px_20px_rgba(239,68,68,0.3)] hover:shadow-[0_6px_30px_rgba(239,68,68,0.5)] transition-all duration-300 tracking-wider uppercase active:scale-95 py-3 text-sm flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {isDeletingFolder ? (
+                <>
+                  <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                  <span>Deleting...</span>
+                </>
+              ) : (
+                'Delete Folder'
+              )}
             </button>
           </div>
         </div>

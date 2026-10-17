@@ -571,6 +571,41 @@ app.put('/api/tournaments', authenticateToken, isAdmin, async (req, res) => {
   await logAudit('SYSTEM', `Updated tournament game for ${name} to ${game}`, { name, game }, 'System');
   res.json({ message: 'Tournament updated successfully', data: data[0] });
 });
+app.delete('/api/tournaments/:id', authenticateToken, isAdmin, async (req, res) => {
+  if (!req.adminUser.is_super_admin && !req.adminUser.permissions?.manage_folders && !req.adminUser.permissions?.full && req.adminUser.role !== 'Super Admin') {
+    return res.status(403).json({ error: 'Access denied. You do not have permission to delete folders.' });
+  }
+  const { id } = req.params;
+  try {
+    let query = supabase.from('tournaments').select('*');
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    if (isUuid) {
+      query = query.eq('id', id);
+    } else {
+      query = query.eq('name', decodeURIComponent(id));
+    }
+    const { data: tourney, error: fetchErr } = await query.single();
+    if (fetchErr || !tourney) {
+      return res.status(404).json({ error: 'Tournament folder not found.' });
+    }
+    const tourneyName = tourney.name;
+
+    // Clean up associated bracket results
+    await supabase.from('bracket_results').delete().eq('tournament_name', tourneyName);
+
+    // Delete tournament record
+    const { error: delErr } = await supabase.from('tournaments').delete().eq('id', tourney.id);
+    if (delErr) {
+      return res.status(500).json({ error: delErr.message });
+    }
+
+    await logAudit('FOLDER_DELETED', `Deleted folder/tournament: ${tourneyName}`, { id: tourney.id, name: tourneyName }, req.adminUser?.username || 'Admin');
+    res.json({ message: `Tournament "${tourneyName}" deleted successfully.` });
+  } catch (err) {
+    console.error('Error deleting tournament folder:', err);
+    res.status(500).json({ error: 'Internal server error while deleting tournament folder.' });
+  }
+});
 app.get('/api/stats/crossfire', async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   try {
