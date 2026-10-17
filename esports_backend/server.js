@@ -707,7 +707,9 @@ app.get('/api/match_records', async (req, res) => {
   try {
     const { tournament, game, week, day, match, set_num } = req.query;
     let query = supabase.from('match_records').select('*');
-    if (tournament) query = query.eq('tournament_name', tournament);
+    if (tournament && tournament.toLowerCase() !== 'all') {
+      query = query.ilike('tournament_name', tournament.trim());
+    }
     if (game) query = query.eq('game', game);
     if (week) query = query.eq('week', week);
     if (day) query = query.eq('day', day);
@@ -906,7 +908,7 @@ app.get('/api/match-records', async (req, res) => {
     const tournamentName = req.query.tournament;
     let query = supabase.from('match_records').select('*');
     if (tournamentName && tournamentName.toLowerCase() !== 'all') {
-      query = query.eq('tournament_name', tournamentName);
+      query = query.ilike('tournament_name', tournamentName.trim());
     }
     query = query.order('created_at', { ascending: false });
     const { data, error } = await query;
@@ -1067,7 +1069,9 @@ app.get('/api/matches', async (req, res) => {
   try {
     const { tournament, status } = req.query;
     let query = supabase.from('matches').select('*, team_a:teams!matches_team_a_id_fkey(*), team_b:teams!matches_team_b_id_fkey(*)');
-    if (tournament) query = query.eq('tournament_name', tournament);
+    if (tournament && tournament.toLowerCase() !== 'all') {
+      query = query.ilike('tournament_name', tournament.trim());
+    }
     if (status) query = query.in('status', status.split(','));
     const { data, error } = await query;
     if (error) throw error;
@@ -1251,11 +1255,13 @@ app.get('/api/predictions/matches', cacheMiddleware, async (req, res) => {
       .not('match_schedule', 'is', null)
       .order('match_schedule', { ascending: true });
     if (error) throw error;
-    let filtered = (data || []).filter(m =>
-      (m.team_a && m.team_a.tournament_name === tournamentName) ||
-      (m.team_b && m.team_b.tournament_name === tournamentName) ||
-      true
-    );
+    let filtered = (data || []).filter(m => {
+      if (!tournamentName || tournamentName.toLowerCase() === 'all') return true;
+      const tA = m.team_a?.tournament_name;
+      const tB = m.team_b?.tournament_name;
+      return (tA && tA.toLowerCase() === tournamentName.toLowerCase()) ||
+             (tB && tB.toLowerCase() === tournamentName.toLowerCase());
+    });
     filtered = await Promise.all(filtered.map(async (match) => {
       const system_prediction = await generatePrediction(supabase, match.team_a, match.team_b);
       return { ...match, system_prediction };

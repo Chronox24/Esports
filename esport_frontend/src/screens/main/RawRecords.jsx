@@ -7,7 +7,7 @@ const RawRecords = ({ globalTournament }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [gameFilter, setGameFilter] = useState('All');
-  const [selectedTournament, setSelectedTournament] = useState('All');
+  const [selectedTournament, setSelectedTournament] = useState(globalTournament || 'All');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState('created_at');
   const [sortOrder, setSortOrder] = useState('desc');
@@ -33,23 +33,30 @@ const RawRecords = ({ globalTournament }) => {
   };
 
   useEffect(() => {
+    if (globalTournament) {
+      setSelectedTournament(globalTournament);
+    }
     fetchRecords();
-  }, []);
+  }, [globalTournament]);
 
   const fetchRecords = async () => {
     try {
       setLoading(true);
-      // Fetch all match records across tournaments without restricting parameter
-      const res = await apiFetch('/api/match_records');
+      const url = globalTournament 
+        ? `/api/match_records?tournament=${encodeURIComponent(globalTournament)}` 
+        : '/api/match_records';
+      const res = await apiFetch(url);
       if (!res.ok) throw new Error('Failed to fetch match records');
       const data = await res.json();
       setRecords(data || []);
       setError(null);
     } catch (err) {
       console.error('Error fetching match records:', err);
-      // Fallback try hyphen endpoint with tournament=all
       try {
-        const fallbackRes = await apiFetch('/api/match-records?tournament=all');
+        const fallbackUrl = globalTournament 
+          ? `/api/match-records?tournament=${encodeURIComponent(globalTournament)}` 
+          : '/api/match-records?tournament=all';
+        const fallbackRes = await apiFetch(fallbackUrl);
         if (fallbackRes.ok) {
           const fbData = await fallbackRes.json();
           setRecords(fbData || []);

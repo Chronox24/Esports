@@ -194,14 +194,14 @@ const DataEntry = ({ globalGame, globalTournament }) => {
     socket.emit('joinRoom', window.currentDataEntryRoom);
   }, [globalTournament]);
 
-  const [broadcast, setBroadcast] = useStickyState(false, "de_broadcast");
+  const safeFolder = (globalTournament || "default").replace(/\W+/g, "");
+  const [broadcast, setBroadcast] = useStickyState(false, `de_f${safeFolder}_broadcast`);
   const game = globalGame === "CROSSFIRE" ? "Crossfire" : "Valorant";
-  const [league, setLeague] = useStickyState("VCT Pacific", "de_league");
-  const [week, setWeek] = useStickyState("1", "de_week");
-  const [day, setDay] = useStickyState("1", "de_day");
-  const [match, setMatch] = useStickyState("1", "de_match");
-  const [setNum, setSetNum] = useStickyState("1", "de_setNum");
-  const safeFolder = (globalTournament || "").replace(/\W+/g, "");
+  const [league, setLeague] = useStickyState("VCT Pacific", `de_f${safeFolder}_league`);
+  const [week, setWeek] = useStickyState("1", `de_f${safeFolder}_week`);
+  const [day, setDay] = useStickyState("1", `de_f${safeFolder}_day`);
+  const [match, setMatch] = useStickyState("1", `de_f${safeFolder}_match`);
+  const [setNum, setSetNum] = useStickyState("1", `de_f${safeFolder}_setNum`);
   const matchScope = `de_f${safeFolder}_w${week}_d${day}_m${match}`;
   const setScope = `${matchScope}_s${setNum}`;
   const [teamA, setTeamA] = useStickyState(
@@ -285,32 +285,33 @@ const DataEntry = ({ globalGame, globalTournament }) => {
   useEffect(() => {
     const fetchRecords = async () => {
       try {
-        const queryParams = new URLSearchParams({
-          game: game
-        }).toString();
+        const params = { game };
+        if (globalTournament) {
+          params.tournament = globalTournament;
+        }
+        const queryParams = new URLSearchParams(params).toString();
         const res = await apiFetch(`/api/match_records?${queryParams}`);
         if (res.ok) {
           const data = await res.json();
-          // Sort chronologically (newest first) so recently submitted sets appear at the top
-          data.sort((a, b) => {
+          // Strictly isolate records to only this folder/tournament
+          const filtered = globalTournament 
+            ? (data || []).filter(r => (r.tournament_name || '').toLowerCase() === globalTournament.toLowerCase())
+            : (data || []);
+
+          filtered.sort((a, b) => {
             const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
             const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
-            // 1. Most recently sent first
             if (dateA !== dateB) return dateB - dateA;
-            // 1.5. If same time (e.g. null), sort by match number (highest/newest match first)
             const matchA = Number(a.match) || 0;
             const matchB = Number(b.match) || 0;
             if (matchA !== matchB) return matchB - matchA;
-            // 2. If same time and match, sort by set number (highest/newest set first)
             const setA = Number(a.set_num) || 0;
             const setB = Number(b.set_num) || 0;
             if (setA !== setB) return setB - setA;
-            // 3. Within the same set, keep Team 1 above Team 15
             if (a.team_name !== b.team_name) return (a.team_name || "").localeCompare(b.team_name || "");
-            // 4. Finally, sort by player name
             return (a.ign || '').localeCompare(b.ign || '');
           });
-          setSubmittedRecords(data);
+          setSubmittedRecords(filtered);
         }
       } catch (err) {
         console.error(err);
@@ -557,7 +558,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
   };
   useEffect(() => {
     if (game === "Crossfire") {
-      apiFetch("/api/stats/crossfire")
+      apiFetch(`/api/stats/crossfire?tournament=${encodeURIComponent(globalTournament || 'Default')}`)
         .then((res) => res.json())
         .then((data) => {
           const statsMap = {};
@@ -570,7 +571,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
         })
         .catch((err) => console.error("Error fetching Crossfire stats:", err));
     }
-  }, [game, submitSuccess]);
+  }, [game, submitSuccess, globalTournament]);
   const getCfTotal = (player, field) => {
     const history = lifetimeStats[player.ign] || {};
     let dbValue = 0;
@@ -2523,7 +2524,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                 className="text-xs font-bold text-slate-400 light:text-slate-500 uppercase"
                 style={{ letterSpacing: "0.2em" }}
               >
-                {game.toUpperCase()} | REGULAR SEASON | W{week} D{day} M{match} (ALL SETS)
+                {game.toUpperCase()} | {(globalTournament || 'REGULAR SEASON').toUpperCase()} | W{week} D{day} M{match} (ALL SETS)
               </span>
             </div>
             <div className="overflow-x-auto overflow-y-auto max-h-[600px] de-scroll">

@@ -5,7 +5,8 @@ const PlayerStatsTab = ({ globalGame, globalTournament }) => {
   const [stats, setStats] = useState([]);
   const [players, setPlayers] = useState([]);
   useEffect(() => {
-    apiFetch('/api/players')
+    const playersUrl = globalTournament ? `/api/players?tournament=${encodeURIComponent(globalTournament)}` : '/api/players';
+    apiFetch(playersUrl)
       .then(r => r.json())
       .then(data => {
         if (Array.isArray(data)) setPlayers(data);
@@ -20,21 +21,7 @@ const PlayerStatsTab = ({ globalGame, globalTournament }) => {
       .catch(console.error);
   }, [activeGame, globalTournament]);
   const mergedData = useMemo(() => {
-    let dataToUse = stats;
-    if (dataToUse.length === 0) {
-      if (activeGame === 'VALORANT') {
-        dataToUse = [
-          { ign: 'XIP Hotsauze', total_kills: 300, total_deaths: 150, total_assists: 50, total_acs: 250, total_econ: 500, total_rounds_played: 200, matches_played: 10, performance_score: 850 },
-          { ign: 'XIP Emman', total_kills: 250, total_deaths: 180, total_assists: 60, total_acs: 220, total_econ: 450, total_rounds_played: 200, matches_played: 10, performance_score: 750 },
-          { ign: 'GOAT Player 1', total_kills: 100, total_deaths: 200, total_assists: 30, total_acs: 150, total_econ: 300, total_rounds_played: 200, matches_played: 10, performance_score: 400 },
-        ];
-      } else {
-        dataToUse = [
-          { ign: 'CF_KING', total_kills: 450, total_deaths: 100, total_assists: 30, total_headshots: 200, total_rounds_played: 150, performance_score: 950 },
-          { ign: 'GHOST', total_kills: 300, total_deaths: 250, total_assists: 50, total_headshots: 100, total_rounds_played: 150, performance_score: 650 },
-        ];
-      }
-    }
+    const dataToUse = stats || [];
     return dataToUse.map(stat => {
       const playerInfo = players.find(p => p.player_name.toLowerCase() === stat.ign.toLowerCase());
       const role = playerInfo?.role_in_game || 'Unknown';

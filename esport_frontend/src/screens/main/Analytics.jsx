@@ -935,15 +935,6 @@ const Analytics = ({ globalGame, globalTournament }) => {
         );
         if (res.ok) {
           const data = await res.json();
-          // Fallback to all tournament records if specific tournament has no records
-          if ((!data || data.length === 0) && queryTournament !== "all") {
-            const fallbackRes = await apiFetch(`/api/match-records?tournament=all`);
-            if (fallbackRes.ok) {
-              const fallbackData = await fallbackRes.json();
-              setMatchRecords(fallbackData || []);
-              return;
-            }
-          }
           setMatchRecords(data || []);
         }
       } catch (e) {

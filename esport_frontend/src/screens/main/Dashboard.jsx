@@ -333,10 +333,12 @@ const Dashboard = ({ globalGame, globalTournament }) => {
   useEffect(() => {
     const fetchKpis = async () => {
       try {
+        const teamsUrl = globalTournament ? `/api/teams?tournament=${encodeURIComponent(globalTournament)}` : '/api/teams';
+        const playersUrl = globalTournament ? `/api/players?tournament=${encodeURIComponent(globalTournament)}` : '/api/players';
         const [tournamentsRes, teamsRes, playersRes] = await Promise.all([
           apiFetch('/api/tournaments'),
-          apiFetch('/api/teams'),
-          apiFetch('/api/players')
+          apiFetch(teamsUrl),
+          apiFetch(playersUrl)
         ]);
         const tournaments = await tournamentsRes.json();
         const teams = await teamsRes.json();
@@ -368,7 +370,7 @@ const Dashboard = ({ globalGame, globalTournament }) => {
       }
     };
     fetchKpis();
-  }, [activeGame]);
+  }, [activeGame, globalTournament]);
   useEffect(() => {
     const fetchStats = async () => {
       try {
