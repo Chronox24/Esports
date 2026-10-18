@@ -274,7 +274,7 @@ const MainUIScreen = ({ onLogout }) => {
 
       case 'Tournament History': return <TournamentHistory setGlobalTournament={setGlobalTournament} setActiveTab={setActiveTab} />;
       case 'Predictions': return <Predictions globalGame={globalGame} globalTournament={globalTournament} />;
-      case 'Map Vetoes': return <Mapping globalGame={globalGame} globalTournament={globalTournament} />;
+      case 'Map Vetoes': return <Mapping key={`mapping-${globalTournament}-${globalGame}`} globalGame={globalGame} globalTournament={globalTournament} />;
       case 'Data Entry': return <DataEntry key={`de-${globalTournament}`} globalGame={globalGame} globalTournament={globalTournament} />;
       case 'PRS Entry': return <PRSEntry key={`prs-${globalTournament}`} globalGame={globalGame} globalTournament={globalTournament} />;
       case 'Player Management': return <PlayerManagement globalGame={globalGame} globalTournament={globalTournament} />;
@@ -523,11 +523,8 @@ const MainUIScreen = ({ onLogout }) => {
                   if (res.ok) {
                     const result = await res.json();
                     await loadTournaments();
-                    if (result?.data?.id) {
-                      setGlobalTournament(result.data.id);
-                    } else if (Array.isArray(result) && result[0]?.id) {
-                      setGlobalTournament(result[0].id);
-                    }
+                    const folderName = result?.name || result?.data?.name || (Array.isArray(result) ? result[0]?.name : null) || trimmedName;
+                    setGlobalTournament(folderName);
                     setNewFolderName('');
                     setShowCreateFolderModal(false);
                   } else {

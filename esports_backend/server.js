@@ -1549,6 +1549,107 @@ app.delete('/api/bracket-state', authenticateToken, isAdmin, async (req, res) =>
 });
 
 // ----------------------------------------------------
+// MAP POOL CONFIGURATION (ISOLATED PER TOURNAMENT FOLDER)
+// ----------------------------------------------------
+app.get('/api/map-pool', async (req, res) => {
+  if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
+  try {
+    const tournamentName = req.query.tournament || req.query.tournament_name;
+    const gameTitle = req.query.game || req.query.game_title || 'VALORANT';
+
+    if (!tournamentName || !tournamentName.trim()) {
+      return res.json({ tournament_name: null, game_title: gameTitle, maps: null });
+    }
+
+    const tName = tournamentName.trim();
+    const gTitle = gameTitle.trim();
+
+    const { data, error } = await supabase
+      .from('bracket_states')
+      .select('*')
+      .ilike('tournament_name', tName)
+      .ilike('game_title', gTitle)
+      .eq('format', 'map_pool')
+      .order('updated_at', { ascending: false })
+      .limit(1);
+
+    if (error) throw error;
+
+    const row = data && data.length > 0 ? data[0] : null;
+
+    res.json({
+      tournament_name: tName,
+      game_title: gTitle,
+      maps: row?.bracket_data || null
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/map-pool', async (req, res) => {
+  if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
+  try {
+    const { tournament_name, game_title, maps } = req.body;
+    if (!tournament_name || !tournament_name.trim()) {
+      return res.status(400).json({ error: 'tournament_name is required' });
+    }
+    const tName = tournament_name.trim();
+    const gTitle = (game_title || 'VALORANT').trim();
+
+    // Check if map pool config already exists for this exact tournament & game
+    const { data: existing, error: findError } = await supabase
+      .from('bracket_states')
+      .select('id')
+      .ilike('tournament_name', tName)
+      .ilike('game_title', gTitle)
+      .eq('format', 'map_pool')
+      .order('updated_at', { ascending: false });
+
+    if (findError) throw findError;
+
+    let result;
+    if (existing && existing.length > 0) {
+      result = await supabase
+        .from('bracket_states')
+        .update({
+          bracket_data: maps,
+          updated_at: new Date()
+        })
+        .eq('id', existing[0].id)
+        .select();
+
+      // Clean up any extra duplicates from previous runs
+      if (existing.length > 1) {
+        const extraIds = existing.slice(1).map(r => r.id);
+        await supabase
+          .from('bracket_states')
+          .delete()
+          .in('id', extraIds);
+      }
+    } else {
+      result = await supabase
+        .from('bracket_states')
+        .insert([{
+          tournament_name: tName,
+          game_title: gTitle,
+          format: 'map_pool',
+          team_pool: [],
+          bracket_data: maps,
+          updated_at: new Date()
+        }])
+        .select();
+    }
+
+    if (result.error) throw result.error;
+    res.status(200).json({ success: true, data: result.data?.[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+// ----------------------------------------------------
 // BRACKET RESULTS
 // ----------------------------------------------------
 app.post('/api/bracket-results', authenticateToken, isAdmin, async (req, res) => {

@@ -83,7 +83,72 @@ const getStickyValue = (key, defaultVal) => {
   return defaultVal;
 };
 
+const getInitialValMaps = () => [
+  { id: "v1", name: "ABYSS", status: "none", byTeam: null, side: null, enabled: true, img: "/assets/Abyss1.png" },
+  { id: "v2", name: "ASCENT", status: "none", byTeam: null, side: null, enabled: true, img: "/assets/Ascent1.png" },
+  { id: "v3", name: "BIND", status: "none", byTeam: null, side: null, enabled: true, img: "/assets/Bind1.png" },
+  { id: "v4", name: "BREEZE", status: "none", byTeam: null, side: null, enabled: true, img: "/assets/Breeze1.png" },
+  { id: "v5", name: "CORRODE", status: "none", byTeam: null, side: null, enabled: true, img: "/assets/Corrode1.png" },
+  { id: "v6", name: "FRACTURE", status: "none", byTeam: null, side: null, enabled: true, img: "/assets/Fracture1.png" },
+  { id: "v7", name: "HAVEN", status: "none", byTeam: null, side: null, enabled: true, img: "/assets/Haven1.png" },
+  { id: "v8", name: "ICEBOX", status: "none", byTeam: null, side: null, enabled: true, img: "/assets/Icebox1.png" },
+  { id: "v9", name: "LOTUS", status: "none", byTeam: null, side: null, enabled: true, img: "/assets/Lotus1.png" },
+  { id: "v10", name: "PEARL", status: "none", byTeam: null, side: null, enabled: true, img: "/assets/Pearl1.png" },
+  { id: "v11", name: "SPLIT", status: "none", byTeam: null, side: null, enabled: true, img: "/assets/Split1.png" },
+  { id: "v12", name: "SUMMIT", status: "none", byTeam: null, side: null, enabled: true, img: "/assets/Summit1.png" },
+  { id: "v13", name: "SUNSET", status: "none", byTeam: null, side: null, enabled: true, img: "/assets/Sunset1.png" },
+];
+
+const getInitialCfMaps = () => [
+  { id: "c1", name: "ANKARA", status: "none", byTeam: null, side: null, enabled: true, img: "/assets/Ankara1.png" },
+  { id: "c2", name: "BLACK WIDOW", status: "none", byTeam: null, side: null, enabled: true, img: "/assets/Black_Widow1.png" },
+  { id: "c3", name: "COMPOUND", status: "none", byTeam: null, side: null, enabled: true, img: "/assets/Compound1.png" },
+  { id: "c4", name: "EAGLE EYE", status: "none", byTeam: null, side: null, enabled: true, img: "/assets/Eagle_Eye1.png" },
+  { id: "c5", name: "MEXICO", status: "none", byTeam: null, side: null, enabled: true, img: "/assets/Mexico1.png" },
+  { id: "c6", name: "PORT", status: "none", byTeam: null, side: null, enabled: true, img: "/assets/Port1.png" },
+  { id: "c7", name: "SUB BASE", status: "none", byTeam: null, side: null, enabled: true, img: "/assets/Sub_Base1.png" },
+];
+
+const applyMapPoolConfig = (baseMaps, savedConfig) => {
+  const cloned = baseMaps.map((m) => ({ ...m }));
+  if (!Array.isArray(savedConfig) || savedConfig.length === 0) return cloned;
+  const configMap = new Map();
+  savedConfig.forEach((item) => {
+    if (item && item.id) {
+      configMap.set(String(item.id), item.enabled !== false);
+    }
+    if (item && item.name) {
+      configMap.set(String(item.name).toUpperCase(), item.enabled !== false);
+    }
+  });
+  return cloned.map((m) => {
+    let isEnabled = m.enabled;
+    if (configMap.has(String(m.id))) {
+      isEnabled = configMap.get(String(m.id));
+    } else if (configMap.has(String(m.name).toUpperCase())) {
+      isEnabled = configMap.get(String(m.name).toUpperCase());
+    }
+    return { ...m, enabled: isEnabled };
+  });
+};
+
 const Mapping = ({ globalGame, globalTournament }) => {
+  const currentTournamentName = (
+    typeof globalTournament === 'string'
+      ? globalTournament
+      : globalTournament?.name
+  )?.trim() || "Default";
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [toastMessage, setToastMessage] = useState(null);
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage((prev) => (prev === msg ? null : prev));
+    }, 3200);
+  };
+
   const matchWeek = getStickyValue("de_week", "1");
   const matchDay = getStickyValue("de_day", "1");
   const matchNumber = getStickyValue("de_match", "1");
@@ -92,6 +157,7 @@ const Mapping = ({ globalGame, globalTournament }) => {
   const [teamA, setTeamA] = useState("Team A");
   const [teamB, setTeamB] = useState("Team B");
   const [dbTeams, setDbTeams] = useState([]);
+
   useEffect(() => {
     const tName = typeof globalTournament === 'string' ? globalTournament : (globalTournament?.name || "Default");
     apiFetch(`/api/teams?tournament=${encodeURIComponent(tName)}`)
@@ -112,6 +178,7 @@ const Mapping = ({ globalGame, globalTournament }) => {
         setDbTeams([{ team_name: "Team A" }, { team_name: "Team B" }]);
       });
   }, [globalTournament]);
+
   const [vetoFormat, setVetoFormat] = useState("BO3");
   const [vetoActive, setVetoActive] = useState(false);
   const [timeLeft, setTimeLeft] = useState(45);
@@ -124,194 +191,155 @@ const Mapping = ({ globalGame, globalTournament }) => {
     "BAN HISTORY",
     "ADMIN TOOLS",
   ];
-  const initialValMaps = [
-    {
-      id: "v1",
-      name: "ABYSS",
-      status: "none",
-      byTeam: null,
-      side: null,
-      enabled: true,
-      img: "/assets/Abyss1.png",
-    },
-    {
-      id: "v2",
-      name: "ASCENT",
-      status: "none",
-      byTeam: null,
-      side: null,
-      enabled: true,
-      img: "/assets/Ascent1.png",
-    },
-    {
-      id: "v3",
-      name: "BIND",
-      status: "none",
-      byTeam: null,
-      side: null,
-      enabled: true,
-      img: "/assets/Bind1.png",
-    },
-    {
-      id: "v4",
-      name: "BREEZE",
-      status: "none",
-      byTeam: null,
-      side: null,
-      enabled: true,
-      img: "/assets/Breeze1.png",
-    },
-    {
-      id: "v5",
-      name: "CORRODE",
-      status: "none",
-      byTeam: null,
-      side: null,
-      enabled: true,
-      img: "/assets/Corrode1.png",
-    },
-    {
-      id: "v6",
-      name: "FRACTURE",
-      status: "none",
-      byTeam: null,
-      side: null,
-      enabled: true,
-      img: "/assets/Fracture1.png",
-    },
-    {
-      id: "v7",
-      name: "HAVEN",
-      status: "none",
-      byTeam: null,
-      side: null,
-      enabled: true,
-      img: "/assets/Haven1.png",
-    },
-    {
-      id: "v8",
-      name: "ICEBOX",
-      status: "none",
-      byTeam: null,
-      side: null,
-      enabled: true,
-      img: "/assets/Icebox1.png",
-    },
-    {
-      id: "v9",
-      name: "LOTUS",
-      status: "none",
-      byTeam: null,
-      side: null,
-      enabled: true,
-      img: "/assets/Lotus1.png",
-    },
-    {
-      id: "v10",
-      name: "PEARL",
-      status: "none",
-      byTeam: null,
-      side: null,
-      enabled: true,
-      img: "/assets/Pearl1.png",
-    },
-    {
-      id: "v11",
-      name: "SPLIT",
-      status: "none",
-      byTeam: null,
-      side: null,
-      enabled: true,
-      img: "/assets/Split1.png",
-    },
-    {
-      id: "v12",
-      name: "SUMMIT",
-      status: "none",
-      byTeam: null,
-      side: null,
-      enabled: true,
-      img: "/assets/Summit1.png",
-    },
-    {
-      id: "v13",
-      name: "SUNSET",
-      status: "none",
-      byTeam: null,
-      side: null,
-      enabled: true,
-      img: "/assets/Sunset1.png",
-    },
-  ];
-  const initialCfMaps = [
-    {
-      id: "c1",
-      name: "ANKARA",
-      status: "none",
-      byTeam: null,
-      side: null,
-      enabled: true,
-      img: "/assets/Ankara1.png",
-    },
-    {
-      id: "c2",
-      name: "BLACK WIDOW",
-      status: "none",
-      byTeam: null,
-      side: null,
-      enabled: true,
-      img: "/assets/Black_Widow1.png",
-    },
-    {
-      id: "c3",
-      name: "COMPOUND",
-      status: "none",
-      byTeam: null,
-      side: null,
-      enabled: true,
-      img: "/assets/Compound1.png",
-    },
-    {
-      id: "c4",
-      name: "EAGLE EYE",
-      status: "none",
-      byTeam: null,
-      side: null,
-      enabled: true,
-      img: "/assets/Eagle_Eye1.png",
-    },
-    {
-      id: "c5",
-      name: "MEXICO",
-      status: "none",
-      byTeam: null,
-      side: null,
-      enabled: true,
-      img: "/assets/Mexico1.png",
-    },
-    {
-      id: "c6",
-      name: "PORT",
-      status: "none",
-      byTeam: null,
-      side: null,
-      enabled: true,
-      img: "/assets/Port1.png",
-    },
-    {
-      id: "c7",
-      name: "SUB BASE",
-      status: "none",
-      byTeam: null,
-      side: null,
-      enabled: true,
-      img: "/assets/Sub_Base1.png",
-    },
-  ];
-  const [valMaps, setValMaps] = useState(initialValMaps);
-  const [cfMaps, setCfMaps] = useState(initialCfMaps);
+
+  const [valMaps, setValMaps] = useState(() => {
+    const key = `map_pool_${currentTournamentName}_Valorant`;
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved) return applyMapPoolConfig(getInitialValMaps(), JSON.parse(saved));
+    } catch {}
+    return getInitialValMaps();
+  });
+
+  const [cfMaps, setCfMaps] = useState(() => {
+    const key = `map_pool_${currentTournamentName}_Crossfire`;
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved) return applyMapPoolConfig(getInitialCfMaps(), JSON.parse(saved));
+    } catch {}
+    return getInitialCfMaps();
+  });
+
   const currentMaps = game === "Valorant" ? valMaps : cfMaps;
   const setCurrentMaps = game === "Valorant" ? setValMaps : setCfMaps;
+
+  // Folder & Game specific map pool loading & synchronization
+  useEffect(() => {
+    let isMounted = true;
+    const baseMaps = game === "Valorant" ? getInitialValMaps() : getInitialCfMaps();
+    const key = `map_pool_${currentTournamentName}_${game}`;
+
+    // 1. Immediately apply local cache for this specific tournament folder if present
+    try {
+      const local = localStorage.getItem(key);
+      if (local) {
+        const parsed = JSON.parse(local);
+        const configured = applyMapPoolConfig(baseMaps, parsed);
+        if (game === "Valorant") setValMaps(configured);
+        else setCfMaps(configured);
+      } else {
+        if (game === "Valorant") setValMaps(baseMaps);
+        else setCfMaps(baseMaps);
+      }
+    } catch (e) {
+      console.warn("Failed reading local map pool cache:", e);
+    }
+
+    // 2. Fetch remote map pool configuration specifically for this tournament folder
+    const fetchRemoteMapPool = async () => {
+      if (!currentTournamentName || currentTournamentName === "Default") return;
+      try {
+        const tParam = encodeURIComponent(currentTournamentName);
+        const gParam = encodeURIComponent(game);
+        const res = await apiFetch(`/api/map-pool?tournament=${tParam}&game=${gParam}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted && data && Array.isArray(data.maps) && data.maps.length > 0) {
+            const configured = applyMapPoolConfig(baseMaps, data.maps);
+            if (game === "Valorant") setValMaps(configured);
+            else setCfMaps(configured);
+            try {
+              localStorage.setItem(key, JSON.stringify(data.maps));
+            } catch {}
+          }
+        }
+      } catch (err) {
+        console.warn("Could not fetch remote map pool configuration:", err);
+      }
+    };
+
+    fetchRemoteMapPool();
+
+    // Reset veto when folder or game changes
+    setVetoActive(false);
+    setPhaseIndex(0);
+    setTimeLeft(45);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentTournamentName, game]);
+
+  // Persist map pool for this specific folder both locally and to Supabase
+  const persistMapPool = async (mapsToSave) => {
+    if (!currentTournamentName || currentTournamentName === "Default") {
+      return false;
+    }
+    const configToPersist = mapsToSave.map((m) => ({
+      id: m.id,
+      name: m.name,
+      enabled: m.enabled !== false,
+    }));
+    const key = `map_pool_${currentTournamentName}_${game}`;
+
+    // Save locally for this specific folder
+    try {
+      localStorage.setItem(key, JSON.stringify(configToPersist));
+    } catch (e) {
+      console.warn("Failed saving map pool locally", e);
+    }
+
+    // Save to database specifically for this folder
+    try {
+      const res = await apiFetch("/api/map-pool", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tournament_name: currentTournamentName,
+          game_title: game,
+          maps: configToPersist,
+        }),
+      });
+      return res.ok;
+    } catch (err) {
+      console.warn("Failed saving map pool to server:", err);
+      return false;
+    }
+  };
+
+  // Toggle map availability in UI (does NOT auto-save; saves only on Save Configuration)
+  const toggleMapEnabled = (id) => {
+    setCurrentMaps((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, enabled: !m.enabled } : m))
+    );
+  };
+
+  // Select all maps in UI (does NOT auto-save)
+  const handleSelectAll = () => {
+    setCurrentMaps((prev) => prev.map((m) => ({ ...m, enabled: true })));
+  };
+
+  // Deselect all maps in UI (does NOT auto-save)
+  const handleDeselectAll = () => {
+    setCurrentMaps((prev) => prev.map((m) => ({ ...m, enabled: false })));
+  };
+
+  // Explicit Save Configuration: Only saves in this specific folder!
+  const handleSaveConfiguration = async () => {
+    if (!currentTournamentName || currentTournamentName === "Default") {
+      showToast("Please select a tournament folder first!");
+      return;
+    }
+    setIsSaving(true);
+    const success = await persistMapPool(currentMaps);
+    setIsSaving(false);
+    if (success) {
+      showToast(`Configuration saved for folder "${currentTournamentName}"!`);
+    } else {
+      showToast(`Saved locally for folder "${currentTournamentName}".`);
+    }
+  };
+
   const vetoSequenceBO3 = [
     { team: "A", action: "ban", label: "BAN 1" },
     { team: "B", action: "ban", label: "BAN 2" },
@@ -492,11 +520,15 @@ const Mapping = ({ globalGame, globalTournament }) => {
     setVetoActive(false);
     setPhaseIndex(0);
     setTimeLeft(45);
-    if (game === "Valorant") {
-      setValMaps(initialValMaps);
-    } else {
-      setCfMaps(initialCfMaps);
-    }
+    setCurrentMaps((prev) =>
+      prev.map((m) => ({
+        ...m,
+        status: "none",
+        byTeam: null,
+        side: null,
+        sideByTeam: null,
+      }))
+    );
   };
   const renderCurrentMatch = () => {
     const circleRadius = 36;
@@ -962,12 +994,6 @@ const Mapping = ({ globalGame, globalTournament }) => {
     );
   };
   const renderMapPoolSettings = () => {
-    const toggleMapEnabled = (id) => {
-      const updated = currentMaps.map((m) =>
-        m.id === id ? { ...m, enabled: !m.enabled } : m,
-      );
-      setCurrentMaps(updated);
-    };
     return (
       <div className="animate-[fadeInScale_0.3s_ease-out]" style={{ padding: "32px" }}>
         {" "}
@@ -975,20 +1001,20 @@ const Mapping = ({ globalGame, globalTournament }) => {
           {" "}
           <div>
             {" "}
-            <h2 className="text-2xl font-black tracking-widest uppercase">
-              Map Pool Settings
+            <h2 className="text-2xl font-black tracking-widest uppercase flex items-center gap-3">
+              <span>Map Pool Settings</span>
+              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-cyan-400/10 text-cyan-400 border border-cyan-400/30 uppercase tracking-widest">
+                {currentTournamentName}
+              </span>
             </h2>{" "}
             <p className="text-theme-text-muted text-sm mt-1">
-              Configure which maps are available for the veto process in {game}.
+              Configure which maps are available for the veto process in {game} for folder{" "}
+              <span className="text-cyan-400 font-semibold">"{currentTournamentName}"</span>.
             </p>{" "}
           </div>{" "}
           <div className="flex flex-wrap items-center" style={{ gap: "16px" }}>
             <button
-              onClick={() =>
-                setCurrentMaps(
-                  currentMaps.map((m) => ({ ...m, enabled: true })),
-                )
-              }
+              onClick={handleSelectAll}
               style={{
                 boxShadow: "0 4px 0 #1e293b, 0 6px 12px rgba(0,0,0,0.3)",
                 transform: "translateY(0)",
@@ -1015,11 +1041,7 @@ const Mapping = ({ globalGame, globalTournament }) => {
               Select All
             </button>
             <button
-              onClick={() =>
-                setCurrentMaps(
-                  currentMaps.map((m) => ({ ...m, enabled: false })),
-                )
-              }
+              onClick={handleDeselectAll}
               style={{
                 boxShadow: "0 4px 0 #1e293b, 0 6px 12px rgba(0,0,0,0.3)",
                 transform: "translateY(0)",
@@ -1046,6 +1068,8 @@ const Mapping = ({ globalGame, globalTournament }) => {
               Deselect All
             </button>
             <button
+              onClick={handleSaveConfiguration}
+              disabled={isSaving}
               style={{
                 boxShadow: "0 4px 0 #065f46, 0 6px 16px rgba(16,185,129,0.3)",
                 transform: "translateY(0)",
@@ -1067,9 +1091,13 @@ const Mapping = ({ globalGame, globalTournament }) => {
                 e.currentTarget.style.boxShadow =
                   "0 4px 0 #065f46, 0 6px 16px rgba(16,185,129,0.3)";
               }}
-              className="bg-cyan-400/15 text-cyan-400 text-xs font-bold tracking-wide transition-all cursor-pointer border border-cyan-400/40 hover:bg-cyan-400/25"
+              className={`text-xs font-bold tracking-wide transition-all cursor-pointer border ${
+                isSaving
+                  ? "bg-cyan-500/30 text-cyan-200 border-cyan-400/60 cursor-wait"
+                  : "bg-cyan-400/15 text-cyan-400 border-cyan-400/40 hover:bg-cyan-400/25"
+              }`}
             >
-              Save Configuration
+              {isSaving ? "Saving..." : "Save Configuration"}
             </button>
           </div>{" "}
         </div>{" "}
@@ -1240,6 +1268,14 @@ const Mapping = ({ globalGame, globalTournament }) => {
             {activeTab === "CURRENT MATCH" && renderCurrentMatch()}
             {activeTab === "MAP POOL SETTINGS" && renderMapPoolSettings()}
             {activeTab === "ADMIN TOOLS" && renderAdminTools()}
+          </div>
+        )}
+
+        {/* Floating Toast Notification */}
+        {toastMessage && (
+          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-5 py-3 rounded-xl bg-slate-900/95 border border-cyan-500/50 text-cyan-300 text-xs font-bold shadow-[0_8px_30px_rgba(0,0,0,0.7)] backdrop-blur-md animate-[fadeInScale_0.2s_ease-out]">
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+            <span>{toastMessage}</span>
           </div>
         )}
       </div>
