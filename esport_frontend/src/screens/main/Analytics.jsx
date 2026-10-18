@@ -769,6 +769,7 @@ const StrategyMap = ({
   };
   
   let mapNameForImage = selectedMap || (isValorant ? "Ascent" : "Ankara");
+  const [filterType, setFilterType] = useState("ALL");
   const [tooltip, setTooltip] = useState({
     visible: false,
     x: 0,
@@ -782,43 +783,66 @@ const StrategyMap = ({
     totalEvents > 0 ? Math.round((plants / totalEvents) * 100) : 0;
   const defusePct =
     totalEvents > 0 ? Math.round((defuses / totalEvents) * 100) : 0;
+
+  const filteredEvents = mapEvents
+    .filter((h) => {
+      if (filterType === "PLANT") return h.event_type === "Plant";
+      if (filterType === "DEFUSE") return h.event_type === "Defuse";
+      return true;
+    })
+    .sort((a, b) => {
+      const aIsDefuse = (a.event_type || "").toLowerCase() === "defuse" ? 1 : 0;
+      const bIsDefuse = (b.event_type || "").toLowerCase() === "defuse" ? 1 : 0;
+      return aIsDefuse - bIsDefuse;
+    });
+
   return (
     <div
-      className="relative w-full h-full flex flex-col items-center justify-center cursor-pointer group"
-      style={{ padding: "8px" }}
+      className="relative w-full h-full flex flex-col items-center justify-center cursor-pointer group p-2"
       onClick={() =>
         onSelect({
           type: "Heatmap",
           area: selectedMap || (isValorant ? "Ascent" : "Ankara"),
-          details: `${isValorant ? "Valorant" : "Crossfire"} strategy heatmap for ${selectedMap || "Map"}.`,
+          matchName: selectedMatch !== "All Matches" ? formatMatchName(selectedMatch) : "All Matches",
+          selectedMatch,
+          filterType,
+          events: filteredEvents,
+          plantPct,
+          defusePct,
+          details: selectedMatch !== "All Matches"
+            ? `${isValorant ? "Valorant" : "Crossfire"} strategy heatmap for ${selectedMap || "Map"} (${formatMatchName(selectedMatch)}).`
+            : `${isValorant ? "Valorant" : "Crossfire"} strategy heatmap for ${selectedMap || "Map"}.`,
         })
       }
     >
-      {availableMapsFromEvents && availableMapsFromEvents.length > 0 && (
-        <div
-          className="absolute top-2 left-4 z-20 flex gap-2"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="relative group cursor-pointer">
-            <select
-              value={selectedMap}
-              onChange={(e) => setSelectedMap(e.target.value)}
-              className="bg-bg-300 border border-[#2a3648] text-sm font-black text-theme-text-base tracking-widest drop-shadow-md outline-none rounded hover:border-blue-500 transition-colors cursor-pointer max-w-[150px] truncate"
-              style={{ padding: "4px 8px" }}
-            >
-              {availableMapsFromEvents.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
-          </div>
+      {/* Top Controls Ribbon */}
+      <div
+        className="w-full max-w-[1100px] flex flex-wrap items-center justify-between gap-3 mb-4 z-20"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Left: Map & Match Dropdowns */}
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {availableMapsFromEvents && availableMapsFromEvents.length > 0 && (
+            <div className="relative group cursor-pointer">
+              <select
+                value={selectedMap}
+                onChange={(e) => setSelectedMap(e.target.value)}
+                className="bg-bg-300 border border-[#2a3648] text-xs font-black text-theme-text-base tracking-wider drop-shadow-md outline-none rounded-xl hover:border-emerald-500 transition-colors cursor-pointer px-3.5 py-2"
+              >
+                {availableMapsFromEvents.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div className="relative group cursor-pointer">
             <select
               value={selectedMatch}
               onChange={(e) => setSelectedMatch(e.target.value)}
-              className="bg-bg-300 border border-[#2a3648] text-sm font-black text-theme-text-base tracking-widest drop-shadow-md outline-none rounded hover:border-blue-500 transition-colors cursor-pointer max-w-[250px] truncate"
-              style={{ padding: "4px 8px" }}
+              className="bg-bg-300 border border-[#2a3648] text-xs font-black text-theme-text-base tracking-wider drop-shadow-md outline-none rounded-xl hover:border-emerald-500 transition-colors cursor-pointer px-3.5 py-2 max-w-[280px] truncate"
             >
               <option value="All Matches">ALL MATCHES</option>
               {matchesForMap.map((m) => (
@@ -829,8 +853,55 @@ const StrategyMap = ({
             </select>
           </div>
         </div>
-      )}
-      <div className="relative w-full max-w-[800px] aspect-[4/3] bg-bg-100 rounded-xl border border-[#2a3648] overflow-hidden shadow-2xl flex items-center justify-center group-hover:border-blue-500 transition-all">
+
+        {/* Right: Event Filters & Click Hint */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center bg-bg-300/80 border border-[#2a3648] rounded-xl p-1 gap-1">
+            <button
+              type="button"
+              onClick={() => setFilterType("ALL")}
+              className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+                filterType === "ALL"
+                  ? "bg-white/10 text-theme-text-base shadow-sm"
+                  : "text-theme-text-muted hover:text-theme-text-base"
+              }`}
+            >
+              All ({totalEvents})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterType("PLANT")}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+                filterType === "PLANT"
+                  ? "bg-red-500/20 text-red-400 border border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.3)]"
+                  : "text-theme-text-muted hover:text-red-400"
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-red-500"></span>
+              Plants ({plants})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterType("DEFUSE")}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+                filterType === "DEFUSE"
+                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.3)]"
+                  : "text-theme-text-muted hover:text-emerald-400"
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              Defuse ({defuses})
+            </button>
+          </div>
+
+          <span className="hidden sm:inline-block text-[10px] font-bold text-theme-text-muted bg-white/5 border border-white/5 px-2.5 py-1.5 rounded-lg">
+            Click map to inspect
+          </span>
+        </div>
+      </div>
+
+      {/* Maxed-Out Map Canvas */}
+      <div className="relative w-full max-w-[1100px] aspect-[4/3] bg-bg-100 rounded-2xl border border-[#2a3648] overflow-hidden shadow-2xl flex items-center justify-center group-hover:border-emerald-500/50 transition-all">
         {selectedMatch && selectedMatch !== "No Data" ? (
           <>
             <img
@@ -839,75 +910,90 @@ const StrategyMap = ({
                 e.target.onerror = null;
                 e.target.style.display = 'none';
               }}
-              className="absolute inset-0 w-full h-full object-contain opacity-80"
+              className="absolute inset-0 w-full h-full object-contain opacity-85 select-none"
               alt="Map"
             />
-        {mapEvents.map((h) => (
-          <div
-            key={h.id}
-            className={`absolute w-4 h-4 -ml-2 -mt-2 rounded-full border-2 border-white animate-in zoom-in hover:scale-150 transition-transform cursor-help z-30 ${h.event_type === "Plant" ? "bg-red-500 shadow-[0_0_12px_#ef4444]" : "bg-blue-500 shadow-[0_0_12px_#3b82f6]"}`}
-            style={{ left: `${h.coord_x}%`, top: `${h.coord_y}%` }}
-            onMouseMove={(e) => {
-              e.stopPropagation();
-              const rect = e.target.closest('.relative').getBoundingClientRect();
-              setTooltip({
-                visible: true,
-                x: e.clientX - rect.left,
-                y: e.clientY - rect.top,
-                content: (
-                  <div className="flex flex-col gap-1 min-w-[80px]">
-                    <div
-                      className={`font-black uppercase tracking-widest text-xs border-b pb-1 ${h.event_type === "Plant" ? "text-red-400 border-red-900/50" : "text-blue-400 border-blue-900/50"}`}
-                    >
-                      {h.event_type === "Plant" ? "Plant Success" : h.event_type}
-                    </div>
-                    <div className="text-theme-text-base font-bold">
-                      Round <span className="text-theme-text-base">{h.round_number}</span>
-                    </div>
-                  </div>
-                ),
-              });
-            }}
-            onMouseLeave={() => setTooltip({ visible: false })}
-          ></div>
-        ))}
-        <Tooltip {...tooltip} />
+            {filteredEvents.map((h) => {
+              const isDefuse = (h.event_type || "").toLowerCase() === "defuse";
+              return (
+                <div
+                  key={h.id}
+                  className={`absolute w-4 h-4 -ml-2 -mt-2 rounded-full border-2 border-white animate-in zoom-in hover:scale-150 transition-transform cursor-help hover:!z-50 ${
+                    isDefuse
+                      ? "bg-emerald-500 shadow-[0_0_12px_#10b981] z-40"
+                      : "bg-red-500 shadow-[0_0_12px_#ef4444] z-30"
+                  }`}
+                  style={{
+                    left: `${h.coord_x}%`,
+                    top: `${h.coord_y}%`,
+                    zIndex: isDefuse ? 40 : 30,
+                  }}
+                  onMouseMove={(e) => {
+                    e.stopPropagation();
+                    const rect = e.target.closest('.relative').getBoundingClientRect();
+                    setTooltip({
+                      visible: true,
+                      x: e.clientX - rect.left,
+                      y: e.clientY - rect.top,
+                      content: (
+                        <div className="flex flex-col gap-1 min-w-[80px]">
+                          <div
+                            className={`font-black uppercase tracking-widest text-xs border-b pb-1 ${
+                              isDefuse
+                                ? "text-emerald-400 border-emerald-900/50"
+                                : "text-red-400 border-red-900/50"
+                            }`}
+                          >
+                            {isDefuse ? (h.event_type || "Defuse") : (h.event_type === "Plant" ? "Plant Success" : h.event_type)}
+                          </div>
+                          <div className="text-theme-text-base font-bold">
+                            Round <span className="text-theme-text-base">{h.round_number}</span>
+                          </div>
+                        </div>
+                      ),
+                    });
+                  }}
+                  onMouseLeave={() => setTooltip({ visible: false })}
+                ></div>
+              );
+            })}
+            <Tooltip {...tooltip} />
           </>
         ) : (
           <div className="flex flex-col items-center justify-center text-theme-text-muted gap-2">
             <span className="text-xs font-black uppercase tracking-widest">No Map Data</span>
           </div>
         )}
-      </div>
-      {}
-      <div
-        className="absolute bottom-4 right-4 bg-bg-100/90 rounded-lg border border-[#232f40] flex flex-col items-start backdrop-blur-md pointer-events-none shadow-xl min-w-[140px]"
-        style={{ padding: "12px" }}
-      >
-        <span className="text-[10px] font-bold text-theme-text-base mb-3 uppercase tracking-widest">
-          Legend
-        </span>
-        <div className="flex items-center justify-between w-full mb-2">
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444] border border-white shrink-0"></div>
-            <span className="text-[10px] font-bold text-theme-text-base uppercase">
-              Plant Success
+
+        {/* Floating Bottom-Right Legend */}
+        <div
+          className="absolute bottom-4 right-4 bg-bg-100/90 rounded-xl border border-[#232f40] flex flex-col items-start backdrop-blur-md pointer-events-none shadow-xl min-w-[150px] p-3.5 z-20"
+        >
+          <span className="text-[10px] font-black text-theme-text-base mb-2.5 uppercase tracking-widest">
+            Legend
+          </span>
+          <div className="flex items-center justify-between w-full mb-2">
+            <div className="flex items-center gap-2.5">
+              <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] border border-white shrink-0"></div>
+              <span className="text-[10px] font-bold text-theme-text-base uppercase">
+                Defuse
+              </span>
+            </div>
+            <span className="text-[10px] font-bold text-emerald-400 font-mono">
+              {defusePct}%
             </span>
           </div>
-          <span className="text-[10px] font-bold text-theme-text-muted">
-            {plantPct}%
-          </span>
-        </div>
-        <div className="flex items-center justify-between w-full">
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_8px_#3b82f6] border border-white shrink-0"></div>
-            <span className="text-[10px] font-bold text-theme-text-base uppercase">
-              Defuse
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-2.5">
+              <div className="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444] border border-white shrink-0"></div>
+              <span className="text-[10px] font-bold text-theme-text-base uppercase">
+                Plant Success
+              </span>
+            </div>
+            <span className="text-[10px] font-bold text-red-400 font-mono">
+              {plantPct}%
             </span>
           </div>
-          <span className="text-[10px] font-bold text-theme-text-muted">
-            {defusePct}%
-          </span>
         </div>
       </div>
     </div>
@@ -1373,7 +1459,7 @@ const Analytics = ({ globalGame, globalTournament }) => {
   };
   const openHeatmapOverview = (heatmap) => {
     setModalData({
-      title: `Heatmap: ${heatmap.area}`,
+      title: `Heatmap: ${heatmap.area}${heatmap.matchName && heatmap.matchName !== 'All Matches' ? ` — ${heatmap.matchName}` : ''}`,
       description: heatmap.details,
       data: heatmap,
     });
@@ -1502,8 +1588,8 @@ const Analytics = ({ globalGame, globalTournament }) => {
             </div>
           )}
 
-          {/* Heatmap — spans full width when Crossfire (no synergy card) */}
-          <div className={`a-fade a-d2 ${activeGame.toUpperCase() === "CROSSFIRE" ? "xl:col-span-2" : ""}`}>
+          {/* Heatmap — spans full width across all screens */}
+          <div className="a-fade a-d2 xl:col-span-2 w-full">
             <Card
               title={`${activeGame === "VALORANT" ? "Valorant" : "Crossfire"} — Round-Start Strategy Heatmap`}
               accent="#10b981"
@@ -1576,50 +1662,90 @@ const Analytics = ({ globalGame, globalTournament }) => {
                         e.target.onerror = null;
                         e.target.style.display = 'none';
                       }}
-                      className="absolute inset-0 w-full h-full object-contain opacity-90"
+                      className="absolute inset-0 w-full h-full object-contain opacity-90 select-none"
                       alt="Map Full"
                     />
-                    {heatmapEvents &&
-                      heatmapEvents
-                        .filter(
-                          (h) =>
-                            h.match_id &&
-                            h.match_id.includes(modalData.data.area) &&
-                            h.game &&
-                            h.game.toUpperCase() === activeGame.toUpperCase(),
-                        )
-                    .map((h) => (
-                      <div
-                        key={h.id}
-                        className={`absolute w-5 h-5 -ml-2.5 -mt-2.5 rounded-full border-[3px] border-white hover:scale-150 transition-transform cursor-help z-30 ${h.event_type === "Plant" ? "bg-red-500 shadow-[0_0_15px_#ef4444]" : "bg-blue-500 shadow-[0_0_15px_#3b82f6]"}`}
-                        style={{ left: `${h.coord_x}%`, top: `${h.coord_y}%` }}
-                        onMouseMove={(e) => {
-                          e.stopPropagation();
-                          const rect = e.target.closest('.relative').getBoundingClientRect();
-                          setModalTooltip({
-                            visible: true,
-                            x: e.clientX - rect.left,
-                            y: e.clientY - rect.top,
-                            content: (
-                              <div className="flex flex-col gap-1 min-w-[80px]">
-                                <div
-                                  className={`font-black uppercase tracking-widest text-xs border-b pb-1 ${h.event_type === "Plant" ? "text-red-400 border-red-900/50" : "text-blue-400 border-blue-900/50"}`}
-                                >
-                                  {h.event_type}
-                                </div>
-                                <div className="text-theme-text-base font-bold">
-                                  Round{" "}
-                                  <span className="text-theme-text-base">
-                                    {h.round_number}
-                                  </span>
-                                </div>
-                              </div>
-                            ),
-                          });
-                        }}
-                        onMouseLeave={() => setModalTooltip({ visible: false })}
-                      ></div>
-                    ))}
+                    {(() => {
+                      const modalEvents = modalData.data?.events
+                        ? [...modalData.data.events].sort((a, b) => {
+                            const aIsDefuse = (a.event_type || "").toLowerCase() === "defuse" ? 1 : 0;
+                            const bIsDefuse = (b.event_type || "").toLowerCase() === "defuse" ? 1 : 0;
+                            return aIsDefuse - bIsDefuse;
+                          })
+                        : (heatmapEvents || [])
+                            .filter((h) => {
+                              const hGame = (h.game || "").toUpperCase();
+                              const activeGameUpper = (activeGame || "VALORANT").toUpperCase();
+                              if (hGame && hGame !== activeGameUpper) return false;
+                              if (!h.match_id) return false;
+                              const matchLower = h.match_id.toLowerCase();
+                              const mapName = (modalData.data.area || "").toLowerCase();
+                              return matchLower.includes(mapName.replace(/ /g, '_')) || matchLower.includes(mapName);
+                            })
+                            .sort((a, b) => {
+                              const aIsDefuse = (a.event_type || "").toLowerCase() === "defuse" ? 1 : 0;
+                              const bIsDefuse = (b.event_type || "").toLowerCase() === "defuse" ? 1 : 0;
+                              return aIsDefuse - bIsDefuse;
+                            });
+
+                      if (modalEvents.length === 0) {
+                        return (
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <span className="text-xs font-black uppercase tracking-widest text-theme-text-muted bg-bg-100/80 px-4 py-2 rounded-xl border border-white/5 backdrop-blur-sm">
+                              No Events Plotted For This Selection
+                            </span>
+                          </div>
+                        );
+                      }
+
+                      return modalEvents.map((h) => {
+                        const isDefuse = (h.event_type || "").toLowerCase() === "defuse";
+                        return (
+                          <div
+                            key={h.id}
+                            className={`absolute w-5 h-5 -ml-2.5 -mt-2.5 rounded-full border-[3px] border-white hover:scale-150 transition-transform cursor-help hover:!z-50 ${
+                              isDefuse
+                                ? "bg-emerald-500 shadow-[0_0_15px_#10b981] z-40"
+                                : "bg-red-500 shadow-[0_0_15px_#ef4444] z-30"
+                            }`}
+                            style={{
+                              left: `${h.coord_x}%`,
+                              top: `${h.coord_y}%`,
+                              zIndex: isDefuse ? 40 : 30,
+                            }}
+                            onMouseMove={(e) => {
+                              e.stopPropagation();
+                              const rect = e.target.closest('.relative').getBoundingClientRect();
+                              setModalTooltip({
+                                visible: true,
+                                x: e.clientX - rect.left,
+                                y: e.clientY - rect.top,
+                                content: (
+                                  <div className="flex flex-col gap-1 min-w-[80px]">
+                                    <div
+                                      className={`font-black uppercase tracking-widest text-xs border-b pb-1 ${
+                                        isDefuse
+                                          ? "text-emerald-400 border-emerald-900/50"
+                                          : "text-red-400 border-red-900/50"
+                                      }`}
+                                    >
+                                      {isDefuse ? (h.event_type || "Defuse") : (h.event_type === "Plant" ? "Plant Success" : h.event_type)}
+                                    </div>
+                                    <div className="text-theme-text-base font-bold">
+                                      Round{" "}
+                                      <span className="text-theme-text-base">
+                                        {h.round_number}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ),
+                              });
+                            }}
+                            onMouseLeave={() => setModalTooltip({ visible: false })}
+                          ></div>
+                        );
+                      });
+                    })()}
                   </>
                 ) : (
                   <div className="flex flex-col items-center justify-center text-theme-text-muted gap-2">
@@ -1629,20 +1755,34 @@ const Analytics = ({ globalGame, globalTournament }) => {
                 <Tooltip {...modalTooltip} />
                 {}
                 <div className="absolute bottom-6 right-6 bg-bg-100/90 p-4 rounded-xl border border-[#232f40] flex flex-col items-start backdrop-blur-md shadow-2xl">
-                  <span className="text-xs font-black text-theme-text-base mb-4 uppercase tracking-widest">
+                  <span className="text-xs font-black text-theme-text-base mb-3 uppercase tracking-widest">
                     Legend
                   </span>
-                  <div className="flex items-center gap-4 mb-3">
-                    <div className="w-4 h-4 rounded-full bg-red-500 shadow-[0_0_10px_#ef4444] border-2 border-white shrink-0"></div>
-                    <span className="text-xs font-bold text-theme-text-base uppercase tracking-wider">
-                      Plant
-                    </span>
+                  <div className="flex items-center justify-between w-full gap-4 mb-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-4 h-4 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981] border-2 border-white shrink-0"></div>
+                      <span className="text-xs font-bold text-theme-text-base uppercase tracking-wider">
+                        Defuse
+                      </span>
+                    </div>
+                    {modalData.data?.defusePct !== undefined && (
+                      <span className="text-xs font-bold text-emerald-400 font-mono">
+                        {modalData.data.defusePct}%
+                      </span>
+                    )}
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="w-4 h-4 rounded-full bg-blue-500 shadow-[0_0_10px_#3b82f6] border-2 border-white shrink-0"></div>
-                    <span className="text-xs font-bold text-theme-text-base uppercase tracking-wider">
-                      Defuse
-                    </span>
+                  <div className="flex items-center justify-between w-full gap-4">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-4 h-4 rounded-full bg-red-500 shadow-[0_0_10px_#ef4444] border-2 border-white shrink-0"></div>
+                      <span className="text-xs font-bold text-theme-text-base uppercase tracking-wider">
+                        Plant Success
+                      </span>
+                    </div>
+                    {modalData.data?.plantPct !== undefined && (
+                      <span className="text-xs font-bold text-red-400 font-mono">
+                        {modalData.data.plantPct}%
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

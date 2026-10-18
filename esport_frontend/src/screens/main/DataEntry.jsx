@@ -2341,7 +2341,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                       <button
                         onClick={() => setSelectedAction("Defuse")}
                         className={`text-[9px] font-black uppercase tracking-widest transition-all px-3 py-1.5 sm:px-4 ${selectedAction === "Defuse"
-                          ? "bg-blue-500/20 text-blue-400 light:text-blue-600 shadow-[inset_0_0_12px_rgba(59,130,246,0.15)]"
+                          ? "bg-emerald-500/20 text-emerald-400 light:text-emerald-600 shadow-[inset_0_0_12px_rgba(16,185,129,0.25)] border border-emerald-500/30"
                           : "bg-transparent text-slate-500 hover:text-slate-300"}`}
                       >
                         ● Defuse
@@ -2384,10 +2384,10 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                             onClick={() => removeHeatmapEvent(h.id)}
                             className={`group/ev flex items-center rounded-full text-[8px] font-bold transition-all px-2 py-0.5 gap-1 ${h.type === "Plant"
                               ? "bg-red-500/15 text-red-400 border border-red-500/30"
-                              : "bg-blue-500/15 text-blue-400 border border-blue-500/30"}`}
+                              : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"}`}
                             title={`${h.type} at (${Math.round(h.x)}%, ${Math.round(h.y)}%) — click to remove`}
                           >
-                            <span className={`w-1.5 h-1.5 rounded-full ${h.type === "Plant" ? "bg-red-400" : "bg-blue-400"}`}></span>
+                            <span className={`w-1.5 h-1.5 rounded-full ${h.type === "Plant" ? "bg-red-400" : "bg-emerald-400"}`}></span>
                             {h.type[0]}
                             <span className="hidden group-hover/ev:inline text-red-400 ml-0.5">✕</span>
                           </button>
@@ -2423,13 +2423,31 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                       />
                       {heatmapData
                         .filter((h) => h.round === selectedRound)
-                        .map((h) => (
-                          <div
-                            key={h.id}
-                            className={`absolute w-4 h-4 -ml-2 -mt-2 rounded-full border-2 border-white animate-in zoom-in ${h.type === "Plant" ? "bg-red-500 shadow-[0_0_12px_#ef4444]" : "bg-blue-500 shadow-[0_0_12px_#3b82f6]"}`}
-                            style={{ left: `${h.x}%`, top: `${h.y}%` }}
-                          ></div>
-                        ))}
+                        .sort((a, b) => {
+                          const aType = (a.type || a.event_type || "").toLowerCase();
+                          const bType = (b.type || b.event_type || "").toLowerCase();
+                          const aIsDefuse = aType === "defuse" ? 1 : 0;
+                          const bIsDefuse = bType === "defuse" ? 1 : 0;
+                          return aIsDefuse - bIsDefuse;
+                        })
+                        .map((h) => {
+                          const isDefuse = (h.type || h.event_type || "").toLowerCase() === "defuse";
+                          return (
+                            <div
+                              key={h.id}
+                              className={`absolute w-4 h-4 -ml-2 -mt-2 rounded-full border-2 border-white animate-in zoom-in hover:scale-150 transition-transform cursor-pointer hover:!z-50 ${
+                                isDefuse
+                                  ? "bg-emerald-500 shadow-[0_0_12px_#10b981] z-40"
+                                  : "bg-red-500 shadow-[0_0_12px_#ef4444] z-30"
+                              }`}
+                              style={{
+                                left: `${h.x !== undefined ? h.x : h.coord_x}%`,
+                                top: `${h.y !== undefined ? h.y : h.coord_y}%`,
+                                zIndex: isDefuse ? 40 : 30,
+                              }}
+                            ></div>
+                          );
+                        })}
 
                       {/* Empty state overlay */}
                       {heatmapData.filter((h) => h.round === selectedRound).length === 0 && (

@@ -71,7 +71,7 @@ const Card = ({ title, children, className = "" }) => (
     <div className="absolute inset-0 bg-gradient-to-br from-blue-500/[0.01] light:from-blue-100/[0.1] to-transparent pointer-events-none z-0"></div>
     <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-blue-500/30 light:via-blue-300 to-transparent"></div>
     <div className="border-b border-[#1c2532] light:border-slate-200 bg-bg-300 light:bg-slate-50 relative z-10 flex justify-between items-center group-hover:bg-bg-300 light:group-hover:bg-slate-100 transition-colors" style={{ padding: "24px 32px" }}>
-      <h3 className="text-sm font-bold tracking-wider text-theme-text-base light:text-slate-700">
+      <h3 className="text-sm font-bold tracking-wider text-theme-text-base light:text-slate-700 flex items-center">
         {title}
       </h3>
     </div>
@@ -174,23 +174,62 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = "max-w-2xl" }) => 
 };
 
 const THEME_PRESETS = [
-  { id: 'discord', name: 'Discord Custom', bg: '#2b2d31', accent: '#5865F2', grad: 'linear-gradient(135deg, #1e1f22 30%, #5865F2 100%)' },
-  { id: 'cyan-dark', name: 'Default', bg: '#090e14', accent: '#06b6d4', grad: 'linear-gradient(135deg, #090e14 30%, #06b6d4 100%)' },
-  { id: 'gold-oled', name: 'Gold OLED', bg: '#050505', accent: '#eab308', grad: 'linear-gradient(135deg, #050505 30%, #eab308 100%)' },
-  { id: 'emerald', name: 'Emerald', bg: '#111827', accent: '#10b981', grad: 'linear-gradient(135deg, #111827 30%, #10b981 100%)' },
-  { id: 'crimson', name: 'Crimson', bg: '#0a0a0a', accent: '#ef4444', grad: 'linear-gradient(135deg, #0a0a0a 30%, #ef4444 100%)' },
-  { id: 'purple', name: 'Amethyst', bg: '#0f0a14', accent: '#a855f7', grad: 'linear-gradient(135deg, #0f0a14 30%, #a855f7 100%)' },
-  { id: 'blue', name: 'Ocean', bg: '#05111f', accent: '#3b82f6', grad: 'linear-gradient(135deg, #05111f 30%, #3b82f6 100%)' },
-  { id: 'pink', name: 'Neon Pink', bg: '#120a13', accent: '#ec4899', grad: 'linear-gradient(135deg, #120a13 30%, #ec4899 100%)' },
-  { id: 'orange', name: 'Sunset', bg: '#170e08', accent: '#f97316', grad: 'linear-gradient(135deg, #170e08 30%, #f97316 100%)' },
-  { id: 'rose', name: 'Midnight Rose', bg: '#1a0b16', accent: '#f43f5e', grad: 'linear-gradient(135deg, #1a0b16 30%, #f43f5e 100%)' },
-  { id: 'toxic', name: 'Toxic', bg: '#0d1a10', accent: '#84cc16', grad: 'linear-gradient(135deg, #0d1a10 30%, #84cc16 100%)' },
-  { id: 'indigo', name: 'Indigo Abyss', bg: '#030712', accent: '#6366f1', grad: 'linear-gradient(135deg, #030712 30%, #6366f1 100%)' },
-  { id: 'teal', name: 'Teal Mint', bg: '#0a1716', accent: '#14b8a6', grad: 'linear-gradient(135deg, #0a1716 30%, #14b8a6 100%)' },
-  { id: 'vaporwave', name: 'Vaporwave', bg: '#1a1025', accent: '#00f0ff', grad: 'linear-gradient(135deg, #1a1025 0%, #f000ff 50%, #00f0ff 100%)' },
-  { id: 'fire', name: 'Fire', bg: '#1f0404', accent: '#ff4500', grad: 'linear-gradient(135deg, #1f0404 0%, #ff4500 50%, #ffa500 100%)' },
-  { id: 'forest', name: 'Forest', bg: '#081a10', accent: '#22c55e', grad: 'linear-gradient(135deg, #081a10 0%, #22c55e 50%, #a3e635 100%)' },
-  { id: 'royal', name: 'Royal', bg: '#0f0b1a', accent: '#8b5cf6', grad: 'linear-gradient(135deg, #0f0b1a 0%, #8b5cf6 50%, #d946ef 100%)' },
+  { 
+    id: 'predator-2026', 
+    name: 'Predator 2026', 
+    bg: '#080d14', 
+    accent: '#00e5ff', 
+    badge: '/assets/predator_league_2026.png', 
+    isNew: true,
+    grad: 'linear-gradient(135deg, #080d14 0%, #0a2436 45%, #00e5ff 82%, #00ffa3 100%)' 
+  },
+  { 
+    id: 'predator-mint', 
+    name: 'Predator Mint', 
+    bg: '#050f0c', 
+    accent: '#00ffa3', 
+    badge: '/assets/predator_league_2026.png', 
+    isNew: true,
+    grad: 'linear-gradient(135deg, #050f0c 0%, #082d23 45%, #00ffa3 82%, #00e5ff 100%)' 
+  },
+  { 
+    id: 'predator-carbon', 
+    name: 'Predator Carbon', 
+    bg: '#06090e', 
+    accent: '#38bdf8', 
+    badge: '/assets/predator_league_2026.png', 
+    isNew: true,
+    grad: 'linear-gradient(135deg, #06090e 0%, #122133 45%, #38bdf8 82%, #00e5ff 100%)' 
+  },
+  { 
+    id: 'phoenix-blaze', 
+    name: 'Phoenix Blaze', 
+    bg: '#0c0705', 
+    accent: '#de3702', 
+    badge: '/assets/blaze_eagle.png', 
+    isNew: true,
+    grad: 'linear-gradient(135deg, #0c0705 0%, #290d05 45%, #de3702 82%, #ff7a00 100%)' 
+  },
+  { id: 'cyan-dark', name: 'Default Cyan', bg: '#090e14', accent: '#06b6d4', grad: 'linear-gradient(135deg, #090e14 20%, #083344 60%, #06b6d4 100%)' },
+  { id: 'discord', name: 'Discord', bg: '#2b2d31', accent: '#5865F2', grad: 'linear-gradient(135deg, #1e1f22 20%, #2b2d31 60%, #5865F2 100%)' },
+  { id: 'royal', name: 'Royal Purple', bg: '#0f0b1a', accent: '#8b5cf6', grad: 'linear-gradient(135deg, #0f0b1a 20%, #2e1065 60%, #8b5cf6 100%)' },
+  { id: 'emerald', name: 'Emerald', bg: '#111827', accent: '#10b981', grad: 'linear-gradient(135deg, #064e3b 20%, #065f46 60%, #10b981 100%)' },
+  { id: 'crimson', name: 'Crimson', bg: '#0a0a0a', accent: '#ef4444', grad: 'linear-gradient(135deg, #450a0a 20%, #7f1d1d 60%, #ef4444 100%)' },
+  { id: 'gold-oled', name: 'Gold OLED', bg: '#050505', accent: '#eab308', grad: 'linear-gradient(135deg, #050505 20%, #422006 60%, #eab308 100%)' },
+  { id: 'blue', name: 'Ocean Blue', bg: '#05111f', accent: '#3b82f6', grad: 'linear-gradient(135deg, #05111f 20%, #172554 60%, #3b82f6 100%)' },
+  { id: 'purple', name: 'Amethyst', bg: '#0f0a14', accent: '#a855f7', grad: 'linear-gradient(135deg, #0f0a14 20%, #3b0764 60%, #a855f7 100%)' },
+  { id: 'pink', name: 'Neon Pink', bg: '#120a13', accent: '#ec4899', grad: 'linear-gradient(135deg, #120a13 20%, #500724 60%, #ec4899 100%)' },
+  { id: 'rose', name: 'Midnight Rose', bg: '#1a0b16', accent: '#f43f5e', grad: 'linear-gradient(135deg, #1a0b16 20%, #4c0519 60%, #f43f5e 100%)' },
+  { id: 'toxic', name: 'Toxic Lime', bg: '#0d1a10', accent: '#84cc16', grad: 'linear-gradient(135deg, #0d1a10 20%, #1a2e05 60%, #84cc16 100%)' },
+  { id: 'indigo', name: 'Indigo Abyss', bg: '#030712', accent: '#6366f1', grad: 'linear-gradient(135deg, #030712 20%, #1e1b4b 60%, #6366f1 100%)' },
+  { id: 'teal', name: 'Teal Mint', bg: '#0a1716', accent: '#14b8a6', grad: 'linear-gradient(135deg, #0a1716 20%, #042f2e 60%, #14b8a6 100%)' },
+  { id: 'vaporwave', name: 'Vaporwave', bg: '#1a1025', accent: '#00f0ff', grad: 'linear-gradient(135deg, #1a1025 0%, #a21caf 50%, #00f0ff 100%)' },
+  { id: 'fire', name: 'Inferno', bg: '#1f0404', accent: '#ff4500', grad: 'linear-gradient(135deg, #1f0404 0%, #c2410c 50%, #f59e0b 100%)' },
+  { id: 'forest', name: 'Forest', bg: '#081a10', accent: '#22c55e', grad: 'linear-gradient(135deg, #081a10 0%, #15803d 50%, #a3e635 100%)' },
+  { id: 'cyberpunk', name: 'Cyberpunk', bg: '#0b0c10', accent: '#facc15', grad: 'linear-gradient(135deg, #0b0c10 0%, #0284c7 50%, #facc15 100%)' },
+  { id: 'rog-matrix', name: 'ROG Matrix', bg: '#0a0507', accent: '#ff0033', isNew: true, grad: 'linear-gradient(135deg, #0a0507 0%, #3d0714 50%, #ff0033 85%, #ff4d00 100%)' },
+  { id: 'razer-chroma', name: 'Chroma Green', bg: '#050a06', accent: '#00ff00', isNew: true, grad: 'linear-gradient(135deg, #050a06 0%, #073812 50%, #00ff00 90%, #00e5ff 100%)' },
+  { id: 'neon-tokyo', name: 'Neon Tokyo', bg: '#0d0614', accent: '#f43f5e', isNew: true, grad: 'linear-gradient(135deg, #0d0614 0%, #3b0764 45%, #f43f5e 80%, #38bdf8 100%)' },
 ];
 const Settings = ({ globalGame, themeBg, setThemeBg, themeAccent, setThemeAccent }) => {
   const activeGame = globalGame === "CROSSFIRE" ? "Crossfire" : "Valorant";
@@ -372,102 +411,227 @@ const Settings = ({ globalGame, themeBg, setThemeBg, themeAccent, setThemeAccent
           {}
           {}
           {}
-          <div className="grid grid-cols-1 xl:grid-cols-2" style={{ gap: "32px" }}>
-            <Card title="Appearance & Themes">
-              <div className="flex flex-col" style={{ gap: "24px" }}>
+          <div className="w-full flex flex-col" style={{ gap: "32px" }}>
+            <Card 
+              title={
+                <span className="inline-flex items-center gap-2.5">
+                  <span>Appearance & Themes</span>
+                  <a
+                    href="https://youtu.be/zYFGMocKLzA?si=8qCC67n_unLUZkbX"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
+                    title="Watch video"
+                  >
+                    <img
+                      src="/assets/appearance_easter_egg.png"
+                      alt="Thumbnail"
+                      className="w-5 h-5 rounded object-cover cursor-pointer hover:opacity-90 transition-all border border-white/10 hover:border-cyan-400 shadow-sm"
+                    />
+                  </a>
+                </span>
+              } 
+              className="w-full"
+            >
+              <div className="flex flex-col" style={{ gap: "36px" }}>
                 
-                {/* Theme Preset Grid */}
-                <div className="flex flex-col" style={{ gap: "16px" }}>
-                  <div className="flex justify-between items-end">
+                {/* Theme Preset Header & Grid */}
+                <div className="flex flex-col" style={{ gap: "20px" }}>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 border-b border-[#1c2532] light:border-slate-200" style={{ gap: "12px" }}>
                     <div>
-                      <h4 className="text-sm font-bold text-theme-text-base">Color Themes</h4>
-                      <p className="text-xs text-theme-text-muted mt-1">Select a color theme to personalize your experience.</p>
+                      <h4 className="text-base font-black tracking-wide text-theme-text-base">Color Themes</h4>
+                      <p className="text-xs text-theme-text-muted mt-1">Select a color theme to personalize your experience across all tournament dashboards.</p>
                     </div>
+                    {(() => {
+                      const activePreset = THEME_PRESETS.find(p => p.bg === localThemeBg && p.accent === localThemeAccent);
+                      return (
+                        <div className="flex items-center gap-2 self-start sm:self-auto px-3.5 py-1.5 rounded-xl bg-bg-400/50 light:bg-slate-100 border border-white/10 light:border-slate-300">
+                          <span className="w-2.5 h-2.5 rounded-full shadow-[0_0_8px_currentColor]" style={{ backgroundColor: localThemeAccent, color: localThemeAccent }}></span>
+                          <span className="text-xs font-bold text-theme-text-base">{activePreset ? activePreset.name : 'Custom Colors'}</span>
+                          <span className="text-[10px] font-mono text-cyan-400 font-bold ml-1">{localThemeAccent}</span>
+                        </div>
+                      );
+                    })()}
                   </div>
                   
-                  <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-4 bg-bg-400/30 light:bg-slate-100/50 p-4 rounded-xl border border-[#1c2532] light:border-slate-200">
+                  {/* Maxed-Out Spacious Preset Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 p-6 sm:p-8 bg-bg-400/30 light:bg-slate-100/50 rounded-2xl border border-[#1c2532] light:border-slate-200">
                     {THEME_PRESETS.map((preset) => {
                       const isActive = localThemeBg === preset.bg && localThemeAccent === preset.accent;
                       return (
-                        <div key={preset.id} className="flex flex-col items-center gap-2 group">
-                          <button
-                            onClick={() => {
-                              setThemeBg(preset.bg);
-                              setThemeAccent(preset.accent);
-                            }}
-                            className={`relative w-full aspect-square rounded-xl transition-all duration-200 overflow-hidden ${
-                              isActive 
-                                ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-bg-300 scale-95 shadow-[0_0_15px_rgba(59,130,246,0.5)]' 
-                                : 'hover:scale-105 hover:shadow-lg border border-white/10 hover:border-white/30'
-                            }`}
+                        <button
+                          key={preset.id}
+                          type="button"
+                          onClick={() => {
+                            setThemeBg(preset.bg);
+                            setThemeAccent(preset.accent);
+                          }}
+                          className={`group relative rounded-2xl p-3.5 transition-all duration-300 flex flex-col justify-between border text-left cursor-pointer overflow-hidden ${
+                            isActive 
+                              ? 'bg-bg-400/80 light:bg-white border-cyan-400 shadow-[0_0_25px_rgba(6,182,212,0.4)] scale-[1.03] ring-1 ring-cyan-400/60' 
+                              : 'bg-bg-400/30 light:bg-white/80 border-white/5 light:border-slate-300 hover:border-white/25 hover:bg-bg-400/60 hover:scale-[1.02] hover:shadow-lg'
+                          }`}
+                          style={{ minHeight: "148px" }}
+                          title={preset.name}
+                        >
+                          {/* Gradient Swatch Preview */}
+                          <div 
+                            className="w-full h-20 rounded-xl relative overflow-hidden shadow-inner border border-white/10 group-hover:shadow-[0_4px_16px_rgba(0,0,0,0.5)] transition-all flex items-center justify-center"
                             style={{ background: preset.grad }}
-                            title={preset.name}
                           >
+                            {/* Official League Badge Watermark */}
+                            {preset.badge && (
+                              <img 
+                                src={preset.badge} 
+                                alt={preset.name} 
+                                className="absolute h-14 w-auto object-contain opacity-75 drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)] pointer-events-none group-hover:scale-110 group-hover:opacity-95 transition-all duration-300"
+                              />
+                            )}
+
+                            {/* Accent Dot in Corner */}
+                            <div 
+                              className="absolute top-2.5 left-2.5 w-3.5 h-3.5 rounded-full border border-black/40 shadow-md z-10"
+                              style={{ backgroundColor: preset.accent }}
+                            />
+
+                            {/* Active Checkmark Pill */}
                             {isActive && (
-                              <div className="absolute top-1.5 right-1.5 bg-blue-500 text-white rounded-full p-0.5 shadow-sm">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                              <div className="absolute top-2 right-2 bg-cyan-400 text-slate-950 rounded-full p-1 shadow-[0_0_12px_rgba(6,182,212,0.9)] animate-fade-in z-10">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
                                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                 </svg>
                               </div>
                             )}
-                          </button>
-                        </div>
+                          </div>
+
+                          {/* Preset Name & Details */}
+                          <div className="mt-3 flex flex-col">
+                            <div className="flex items-center justify-between gap-1">
+                              <span className={`text-xs font-black tracking-wide truncate ${isActive ? 'text-cyan-400' : 'text-theme-text-base group-hover:text-cyan-300'}`}>
+                                {preset.name}
+                              </span>
+                              {preset.isNew && (
+                                <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 shrink-0">
+                                  New
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center justify-between mt-1.5 pt-1 border-t border-white/5 light:border-slate-200">
+                              <div className="flex items-center gap-1.5">
+                                <span className="w-2.5 h-2.5 rounded-full border border-white/20" style={{ backgroundColor: preset.bg }}></span>
+                                <span className="text-[10px] text-theme-text-muted font-mono">{preset.accent}</span>
+                              </div>
+                              {isActive && (
+                                <span className="text-[9px] font-black uppercase tracking-wider text-cyan-400">Active</span>
+                              )}
+                            </div>
+                          </div>
+                        </button>
                       );
                     })}
                   </div>
                 </div>
 
                 {/* Custom Colors Divider */}
-                <div className="flex items-center gap-4 py-2">
+                <div className="flex items-center gap-6 py-1">
                   <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#2a3648] to-transparent"></div>
-                  <span className="text-[10px] font-bold text-theme-text-muted uppercase tracking-widest">Or customize manually</span>
+                  <span className="text-xs font-black text-theme-text-muted uppercase tracking-[0.2em]">Or Customize Manually</span>
                   <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#2a3648] to-transparent"></div>
                 </div>
 
-                {/* Custom Color Pickers */}
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="flex flex-col" style={{ gap: "12px" }}>
-                    <div className="flex justify-between items-center">
-                      <label className="text-xs font-bold text-theme-text-muted uppercase tracking-widest">Background</label>
-                      <span className="text-cyan-400 font-bold font-mono text-xs">{localThemeBg}</span>
+                {/* Custom Color Pickers & Live Preview */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* 1. Background Color */}
+                  <div className="bg-bg-400/30 light:bg-slate-50 rounded-2xl p-6 border border-[#1c2532] light:border-slate-200 flex flex-col justify-between">
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="text-xs font-black text-theme-text-base uppercase tracking-widest">Background Canvas</label>
+                        <span className="text-cyan-400 font-black font-mono text-xs px-2.5 py-1 rounded-lg bg-cyan-400/10 border border-cyan-400/20">{localThemeBg}</span>
+                      </div>
+                      <p className="text-xs text-theme-text-muted mb-5 leading-relaxed">Sets the primary background tint across all windows and panels.</p>
                     </div>
-                    <div className="flex items-center gap-4 bg-theme-input rounded-lg p-2 border border-theme-input">
-                      <input 
-                        type="color" 
-                        value={localThemeBg}
-                        onChange={handleBgChange}
-                        className="w-10 h-10 rounded cursor-pointer border-0 p-0"
-                        style={{ backgroundColor: 'transparent' }}
-                      />
-                      <p className="text-[10px] text-theme-text-faint flex-1 leading-tight">Primary background tint.</p>
+
+                    <div className="flex items-center gap-4 bg-bg-300 light:bg-white rounded-xl p-3 border border-white/5 light:border-slate-200">
+                      <div className="relative w-12 h-12 rounded-xl overflow-hidden border-2 border-white/20 shadow-md shrink-0">
+                        <input 
+                          type="color" 
+                          value={localThemeBg}
+                          onChange={handleBgChange}
+                          className="absolute inset-0 w-[200%] h-[200%] -top-1/2 -left-1/2 cursor-pointer border-0 p-0"
+                          style={{ backgroundColor: 'transparent' }}
+                        />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-theme-text-base">Click to Pick Color</span>
+                        <span className="text-[11px] text-theme-text-muted font-mono">{localThemeBg}</span>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex flex-col" style={{ gap: "12px" }}>
-                    <div className="flex justify-between items-center">
-                      <label className="text-xs font-bold text-theme-text-muted uppercase tracking-widest">Accent</label>
-                      <span className="text-cyan-400 font-bold font-mono text-xs">{localThemeAccent}</span>
+                  {/* 2. Accent Color */}
+                  <div className="bg-bg-400/30 light:bg-slate-50 rounded-2xl p-6 border border-[#1c2532] light:border-slate-200 flex flex-col justify-between">
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="text-xs font-black text-theme-text-base uppercase tracking-widest">Interactive Accent</label>
+                        <span className="font-black font-mono text-xs px-2.5 py-1 rounded-lg" style={{ backgroundColor: `${localThemeAccent}20`, color: localThemeAccent, border: `1px solid ${localThemeAccent}40` }}>
+                          {localThemeAccent}
+                        </span>
+                      </div>
+                      <p className="text-xs text-theme-text-muted mb-5 leading-relaxed">Highlights primary buttons, active tabs, toggle switches, and neon glows.</p>
                     </div>
-                    <div className="flex items-center gap-4 bg-theme-input rounded-lg p-2 border border-theme-input">
-                      <input 
-                        type="color" 
-                        value={localThemeAccent}
-                        onChange={handleAccentChange}
-                        className="w-10 h-10 rounded cursor-pointer border-0 p-0"
-                        style={{ backgroundColor: 'transparent' }}
-                      />
-                      <p className="text-[10px] text-theme-text-faint flex-1 leading-tight">Interactive element tint.</p>
+
+                    <div className="flex items-center gap-4 bg-bg-300 light:bg-white rounded-xl p-3 border border-white/5 light:border-slate-200">
+                      <div className="relative w-12 h-12 rounded-xl overflow-hidden border-2 border-white/20 shadow-md shrink-0" style={{ boxShadow: `0 0 16px ${localThemeAccent}60` }}>
+                        <input 
+                          type="color" 
+                          value={localThemeAccent}
+                          onChange={handleAccentChange}
+                          className="absolute inset-0 w-[200%] h-[200%] -top-1/2 -left-1/2 cursor-pointer border-0 p-0"
+                          style={{ backgroundColor: 'transparent' }}
+                        />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-theme-text-base">Click to Pick Accent</span>
+                        <span className="text-[11px] text-theme-text-muted font-mono">{localThemeAccent}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 3. Live UI Component Preview */}
+                  <div className="bg-bg-400/30 light:bg-slate-50 rounded-2xl p-6 border border-[#1c2532] light:border-slate-200 flex flex-col justify-between">
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="text-xs font-black text-theme-text-base uppercase tracking-widest">Live Preview</label>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white/5 text-theme-text-muted uppercase tracking-wider">Real-time</span>
+                      </div>
+                      <p className="text-xs text-theme-text-muted mb-4">Sample how your custom colors interact together:</p>
+                    </div>
+
+                    <div className="p-4 rounded-xl border border-white/10 flex flex-col gap-3" style={{ backgroundColor: localThemeBg }}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold" style={{ color: localThemeAccent }}>Active Element</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: `${localThemeAccent}25`, color: localThemeAccent, border: `1px solid ${localThemeAccent}50` }}>
+                          Badge
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          className="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold text-slate-950 transition-all shadow-md"
+                          style={{ backgroundColor: localThemeAccent, boxShadow: `0 0 12px ${localThemeAccent}60` }}
+                        >
+                          Sample Button
+                        </button>
+                        <div className="w-10 h-5 rounded-full p-0.5 flex items-center" style={{ backgroundColor: localThemeAccent }}>
+                          <div className="w-4 h-4 rounded-full bg-white ml-auto shadow-sm"></div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
 
               </div>
             </Card>
-            {}
-            
-            {}
-
-            {}
           </div>
           {}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4">

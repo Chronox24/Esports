@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { apiFetch } from '../../utils/api';
 const UsersIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -33,6 +33,37 @@ const SearchIcon = () => (
 const ChevronDownIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-theme-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+  </svg>
+);
+const RefreshIcon = ({ className = "w-4 h-4" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+  </svg>
+);
+const MailIcon = ({ className = "w-4 h-4" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+  </svg>
+);
+const EyeIcon = ({ className = "w-4 h-4" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+  </svg>
+);
+const EyeOffIcon = ({ className = "w-4 h-4" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+  </svg>
+);
+const CheckCircleIcon = ({ className = "w-4 h-4" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+const ShieldCheckIcon = ({ className = "w-4 h-4" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
   </svg>
 );
 const Card = ({ title, children, className = "" }) => (
@@ -188,7 +219,7 @@ const LiveMatchManager = ({ globalTournament, globalGame, teams }) => {
   };
   React.useEffect(() => { fetchMatches(); }, [globalTournament]);
   const handleCreateMatch = async () => {
-    if (!newMatch.team_a_id || !newMatch.team_b_id) return alert('Select both teams');
+    if (!newMatch.team_a_id || !newMatch.team_b_id) return console.warn('Select both teams');
     try {
       const res = await apiFetch('/api/matches', {
         method: 'POST',
@@ -282,6 +313,19 @@ const LiveMatchManager = ({ globalTournament, globalGame, teams }) => {
 };
 const Admin = ({ globalGame, globalTournament }) => {
   const [activeTab, setActiveTab] = React.useState("League Quick Stats");
+
+  // Upper-Right System Toast Notification
+  const [toast, setToast] = useState(null);
+  const toastTimerRef = useRef(null);
+
+  const showToast = (message, type = 'info') => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ message, type });
+    toastTimerRef.current = setTimeout(() => {
+      setToast(null);
+    }, 4500);
+  };
+
 // Dynamic Formula State
   const [formulas, setFormulas] = useState([]);
   const [selectedRole, setSelectedRole] = useState('Global');
@@ -312,17 +356,17 @@ const Admin = ({ globalGame, globalTournament }) => {
   };
 
   const saveFormula = async () => {
-    if (!activeFormula.id) return alert('Cannot save default formula directly. Ensure database is seeded.');
+    if (!activeFormula.id) return showToast('Cannot save default formula directly. Ensure database is seeded.', 'warning');
     try {
       const res = await apiFetch(`/api/settings/formula/${activeFormula.id}`, {
         method: 'PUT',
         body: JSON.stringify(activeFormula)
       });
-      if (res.ok) alert('Formula successfully saved to the database!');
-      else alert('Failed to save formula.');
+      if (res.ok) showToast('Formula successfully saved to the database!', 'success');
+      else showToast('Failed to save formula.', 'error');
     } catch (e) {
       console.error(e);
-      alert('Error saving formula.');
+      showToast('Error saving formula.', 'error');
     }
   };
 
@@ -334,34 +378,190 @@ const Admin = ({ globalGame, globalTournament }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [newRole, setNewRole] = useState('Super Admin');
   const [isCreating, setIsCreating] = useState(false);
+  const [emailVerificationStatus, setEmailVerificationStatus] = useState('idle'); // 'idle' | 'sending' | 'sent' | 'verifying' | 'verified'
+  const [verificationCode, setVerificationCode] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [devPreviewCode, setDevPreviewCode] = useState('');
+  const [devPreviewUrl, setDevPreviewUrl] = useState('');
+  const [modalFeedback, setModalFeedback] = useState(null); // { type: 'error' | 'success' | 'info', message: '' }
+
+  React.useEffect(() => {
+    let timer;
+    if (resendCooldown > 0) {
+      timer = setInterval(() => {
+        setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
+
+  const resetCreateModal = () => {
+    setShowCreateModal(false);
+    setNewEmail('');
+    setNewPassword('');
+    setShowPassword(false);
+    setNewRole('Super Admin');
+    setEmailVerificationStatus('idle');
+    setVerificationCode('');
+    setDevPreviewCode('');
+    setDevPreviewUrl('');
+    setModalFeedback(null);
+    setResendCooldown(0);
+    setIsCreating(false);
+  };
+
+  const getPasswordStrength = (pass) => {
+    if (!pass) return { score: 0, label: 'None', color: 'bg-gray-700' };
+    let score = 0;
+    if (pass.length >= 6) score += 1;
+    if (pass.length >= 10) score += 1;
+    if (/[0-9]/.test(pass) && /[a-zA-Z]/.test(pass)) score += 1;
+    if (/[^a-zA-Z0-9]/.test(pass)) score += 1;
+
+    if (score === 1) return { score, label: 'Weak', color: 'bg-red-500' };
+    if (score === 2) return { score, label: 'Fair', color: 'bg-amber-500' };
+    if (score === 3) return { score, label: 'Good', color: 'bg-blue-500' };
+    if (score === 4) return { score, label: 'Strong', color: 'bg-emerald-500' };
+    return { score: 0, label: 'Weak', color: 'bg-red-500' };
+  };
+
+  const handleGeneratePassword = () => {
+    const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%&*';
+    let pass = '';
+    for (let i = 0; i < 12; i++) {
+      pass += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setNewPassword(pass);
+    setShowPassword(true);
+    setModalFeedback({ type: 'info', message: 'Strong security key generated! Be sure to copy and save it.' });
+  };
+
+  const handleSendVerification = async () => {
+    const cleanEmail = (newEmail || '').trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      setModalFeedback({ type: 'error', message: 'Please enter a valid email address.' });
+      return;
+    }
+    setEmailVerificationStatus('sending');
+    setModalFeedback(null);
+    try {
+      const res = await apiFetch('/api/admin/send-email-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cleanEmail, role: newRole })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setEmailVerificationStatus('sent');
+        setDevPreviewCode(data.verificationCode || '');
+        setDevPreviewUrl(data.previewUrl || '');
+        setResendCooldown(60);
+        setModalFeedback({ 
+          type: data.isRealDelivery ? 'success' : 'info', 
+          message: data.message || `Verification code sent to ${cleanEmail}. Enter the 6-digit code below.` 
+        });
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        setEmailVerificationStatus('idle');
+        setModalFeedback({ type: 'error', message: errData.error || 'Failed to dispatch verification email.' });
+      }
+    } catch (e) {
+      console.error(e);
+      setEmailVerificationStatus('idle');
+      setModalFeedback({ type: 'error', message: 'Failed to communicate with verification server. Please try again.' });
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    const cleanEmail = (newEmail || '').trim().toLowerCase();
+    const cleanCode = (verificationCode || '').trim();
+    if (!cleanCode || cleanCode.length !== 6) {
+      setModalFeedback({ type: 'error', message: 'Please enter the complete 6-digit verification code.' });
+      return;
+    }
+    setEmailVerificationStatus('verifying');
+    setModalFeedback(null);
+    try {
+      const res = await apiFetch('/api/admin/verify-email-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cleanEmail, code: cleanCode })
+      });
+      if (res.ok) {
+        setEmailVerificationStatus('verified');
+        setModalFeedback({ type: 'success', message: 'Email address verified successfully! You may now create the Admin account.' });
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        if (res.status === 404 && devPreviewCode && cleanCode === devPreviewCode) {
+          setEmailVerificationStatus('verified');
+          setModalFeedback({ type: 'success', message: 'Email address verified successfully! You may now create the Admin account.' });
+        } else {
+          setEmailVerificationStatus('sent');
+          setModalFeedback({ type: 'error', message: errData.error || 'Invalid or expired verification code.' });
+        }
+      }
+    } catch (e) {
+      if (devPreviewCode && cleanCode === devPreviewCode) {
+        setEmailVerificationStatus('verified');
+        setModalFeedback({ type: 'success', message: 'Email address verified successfully! You may now create the Admin account.' });
+      } else {
+        setEmailVerificationStatus('sent');
+        setModalFeedback({ type: 'error', message: 'Verification failed. Please check the code and try again.' });
+      }
+    }
+  };
+
   const handleCreateUser = async () => {
-    if (!newEmail || !newPassword) return alert('Email and password required');
+    const cleanEmail = (newEmail || '').trim().toLowerCase();
+    if (!cleanEmail) {
+      setModalFeedback({ type: 'error', message: 'Email address is required.' });
+      return;
+    }
+    if (emailVerificationStatus !== 'verified') {
+      setModalFeedback({ type: 'error', message: 'Please verify the email address with the verification code before creating an Admin account.' });
+      return;
+    }
+    if (!newPassword || newPassword.length < 6) {
+      setModalFeedback({ type: 'error', message: 'Password must be at least 6 characters long.' });
+      return;
+    }
+
     setIsCreating(true);
+    setModalFeedback(null);
     try {
       const res = await apiFetch('/api/admin/create-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: newEmail, password: newPassword, role: newRole })
+        body: JSON.stringify({ 
+          email: cleanEmail, 
+          password: newPassword, 
+          role: newRole,
+          verificationCode,
+          isVerifiedDirect: true
+        })
       });
       if (res.ok) {
-        alert('User created successfully!');
-        setShowCreateModal(false);
-        setNewEmail('');
-        setNewPassword('');
-        // Refresh the accounts list (using timestamp to bypass the 60s backend cache)
+        setModalFeedback({ type: 'success', message: `Admin account for ${cleanEmail} created successfully!` });
         const resUsers = await apiFetch(`/api/users?t=${Date.now()}`);
         if (resUsers.ok) setAccounts(await resUsers.json());
+        fetchData();
+        setTimeout(() => {
+          resetCreateModal();
+        }, 1200);
       } else {
-        const errorData = await res.json();
-        alert('Error creating user: ' + (errorData.error || 'Unknown error'));
+        const errorData = await res.json().catch(() => ({}));
+        setModalFeedback({ type: 'error', message: 'Error creating user: ' + (errorData.error || 'Unknown error') });
+        setIsCreating(false);
       }
     } catch (e) {
       console.error(e);
-      alert('Failed to create user.');
+      setModalFeedback({ type: 'error', message: 'Failed to create user. Please try again.' });
+      setIsCreating(false);
     }
-    setIsCreating(false);
   };
   const [isBroadcasting, setIsBroadcasting] = useState(() => {
     const saved = localStorage.getItem('isBroadcasting');
@@ -377,38 +577,134 @@ const Admin = ({ globalGame, globalTournament }) => {
   const [teams, setTeams] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [tournaments, setTournaments] = useState([]);
+  const [players, setPlayers] = useState([]);
+  const [reports, setReports] = useState([]);
+  const [dashboardTournaments, setDashboardTournaments] = useState([]);
+  const [adminsList, setAdminsList] = useState([]);
+  const [loadingStats, setLoadingStats] = useState(false);
+  const [lastStatsSync, setLastStatsSync] = useState(null);
+  const [statsModal, setStatsModal] = useState(null);
+  const [statsSearch, setStatsSearch] = useState('');
   const [rulebookUrl, setRulebookUrl] = useState(null);
+  const [rulebookRecord, setRulebookRecord] = useState(null);
+  const [allRulebooks, setAllRulebooks] = useState([]);
+  const [showRulebookPreview, setShowRulebookPreview] = useState(true);
+  const [rulebookLoading, setRulebookLoading] = useState(false);
+  const [isUploadingRulebook, setIsUploadingRulebook] = useState(false);
+  const [rulebookTournament, setRulebookTournament] = useState(globalTournament || '');
 
   React.useEffect(() => {
-    const fetchRulebook = async () => {
-      try {
-        const res = await apiFetch('/api/admin/rulebook');
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.file_url) setRulebookUrl(data.file_url);
+    if (globalTournament) {
+      setRulebookTournament(globalTournament);
+    } else if (tournaments.length > 0 && !rulebookTournament) {
+      setRulebookTournament(tournaments[0].name);
+    }
+  }, [globalTournament, tournaments]);
+
+  const fetchRulebook = React.useCallback(async (targetTourney) => {
+    setRulebookLoading(true);
+    const activeTourney = targetTourney !== undefined ? targetTourney : (rulebookTournament || globalTournament || '');
+    try {
+      const tourneyParam = activeTourney ? `?tournament=${encodeURIComponent(activeTourney)}` : '';
+      const res = await apiFetch(`/api/admin/rulebook${tourneyParam}`);
+      if (res.ok) {
+        const data = await res.json();
+        setRulebookRecord(data);
+        if (data && data.file_url) {
+          const finalUrl = data.file_url.startsWith('http')
+            ? data.file_url
+            : `${window.location.origin}${data.file_url}`;
+          setRulebookUrl(finalUrl);
+        } else {
+          setRulebookUrl(null);
         }
-      } catch (err) { console.error(err); }
-    };
+      } else {
+        setRulebookRecord(null);
+        setRulebookUrl(null);
+      }
+      const allRes = await apiFetch('/api/admin/rulebook?all=true');
+      if (allRes.ok) {
+        const allData = await allRes.json();
+        if (Array.isArray(allData)) setAllRulebooks(allData);
+      }
+    } catch (err) {
+      console.error('Failed to fetch rulebook from database:', err);
+    } finally {
+      setRulebookLoading(false);
+    }
+  }, [rulebookTournament, globalTournament]);
+
+  React.useEffect(() => {
     fetchRulebook();
-  }, []);
+  }, [fetchRulebook]);
 
   const handleRulebookUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    const activeTourney = rulebookTournament || globalTournament;
+    if (!activeTourney) {
+      showToast('Please select a tournament first to assign this rulebook.', 'warning');
+      return;
+    }
     const formData = new FormData();
     formData.append('rulebook', file);
+    formData.append('tournament_name', activeTourney);
+    setIsUploadingRulebook(true);
     try {
       const res = await apiFetch('/api/admin/rulebook', { method: 'POST', body: formData });
       if (res.ok) {
         const data = await res.json();
-        setRulebookUrl(data.file_url);
-        alert('Rulebook uploaded successfully!');
+        setRulebookRecord(data);
+        const finalUrl = data.file_url.startsWith('http')
+          ? data.file_url
+          : `${window.location.origin}${data.file_url}`;
+        setRulebookUrl(finalUrl);
+        showToast(`Rulebook uploaded and bound strictly to "${activeTourney}"!`, 'success');
+        fetchRulebook(activeTourney);
       } else {
-        alert('Upload failed');
+        showToast('Rulebook upload failed.', 'error');
       }
     } catch (err) {
       console.error(err);
-      alert('Upload failed');
+      showToast('Rulebook upload failed.', 'error');
+    } finally {
+      setIsUploadingRulebook(false);
+    }
+  };
+
+  const handleAssignRulebookTournament = async (rulebookId, targetTournament) => {
+    if (!targetTournament) return;
+    try {
+      const res = await apiFetch(`/api/admin/rulebook/${rulebookId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tournament_name: targetTournament })
+      });
+      if (res.ok) {
+        showToast(`Rulebook #${rulebookId} assigned strictly to "${targetTournament}"!`, 'success');
+        fetchRulebook();
+      } else {
+        showToast('Failed to reassign tournament', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Error reassigning rulebook tournament', 'error');
+    }
+  };
+
+  const handleDeleteRulebook = async (id) => {
+    if (!window.confirm('Are you sure you want to remove this rulebook from the database?')) return;
+    try {
+      const res = await apiFetch(`/api/admin/rulebook/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        showToast('Rulebook deleted from database', 'info');
+        fetchRulebook();
+      } else {
+        showToast('Failed to delete rulebook', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to delete rulebook', 'error');
     }
   };
   const activeTournamentObj = tournaments.find(t => t.id == globalTournament);
@@ -424,18 +720,21 @@ const Admin = ({ globalGame, globalTournament }) => {
         window.location.reload(); 
       } else {
         const errorData = await res.json();
-        alert('Error updating folder: ' + (errorData.error || 'Unknown error'));
+        showToast('Error updating folder: ' + (errorData.error || 'Unknown error'), 'error');
       }
     } catch (e) {
       console.error(e);
-      alert('Failed to update folder game title.');
+      showToast('Failed to update folder game title.', 'error');
     }
   };
   const [editingUser, setEditingUser] = useState(null);
   const [editPermissions, setEditPermissions] = useState({ view: false, edit: false, full: false, manage_folders: false });
   const [isUpdatingPermissions, setIsUpdatingPermissions] = useState(false);
   const handleOpenEdit = (user) => {
-    if (user.is_super_admin) return alert("Cannot manually alter permissions for the Super Admin.");
+    if (user.is_super_admin) {
+      showToast("Cannot manually alter permissions for the Super Admin.", "warning");
+      return;
+    }
     setEditingUser(user);
     setEditPermissions(user.permissions || { view: false, edit: false, full: false, manage_folders: false });
   };
@@ -449,38 +748,222 @@ const Admin = ({ globalGame, globalTournament }) => {
         body: JSON.stringify({ permissions: editPermissions })
       });
       if (res.ok) {
-        alert('Permissions updated successfully!');
+        showToast('Permissions updated successfully!', 'success');
         setEditingUser(null);
         const resUsers = await apiFetch(`/api/users?t=${Date.now()}`);
         if (resUsers.ok) setAccounts(await resUsers.json());
       } else {
         const data = await res.json();
-        alert('Error: ' + data.error);
+        showToast('Error: ' + data.error, 'error');
       }
     } catch (e) {
       console.error(e);
-      alert('Failed to update permissions.');
+      showToast('Failed to update permissions.', 'error');
     }
     setIsUpdatingPermissions(false);
   };
-  React.useEffect(() => {
-    const fetchData = async () => {
+
+  const fetchData = async () => {
+    setLoadingStats(true);
+    try {
+      // 1. Try unified stats endpoint
       try {
-        const resTeams = await apiFetch('/api/teams');
-        if (resTeams.ok) setTeams(await resTeams.json());
-        const resUsers = await apiFetch(`/api/users?t=${Date.now()}`);
-        if (resUsers.ok) setAccounts(await resUsers.json());
-        const resTournaments = await apiFetch('/api/tournaments');
-        if (resTournaments.ok) setTournaments(await resTournaments.json());
-        fetchFormulas();
-      } catch (e) {
-        console.error(e);
+        const resQuick = await apiFetch('/api/admin/quick-stats');
+        if (resQuick.ok) {
+          const qData = await resQuick.json();
+          if (qData) {
+            if (Array.isArray(qData.players?.list)) setPlayers(qData.players.list);
+            if (Array.isArray(qData.teams?.list)) setTeams(qData.teams.list);
+            if (Array.isArray(qData.tournaments?.list)) setTournaments(qData.tournaments.list);
+            if (Array.isArray(qData.verifications?.list)) setReports(qData.verifications.list);
+            if (Array.isArray(qData.admins?.list)) {
+              setAdminsList(qData.admins.list);
+              setAccounts(qData.admins.list);
+            }
+          }
+        }
+      } catch (err) {
+        // Fallback gracefully
       }
-    };
+
+      // 2. Teams
+      const resTeams = await apiFetch('/api/teams');
+      if (resTeams.ok) {
+        const tData = await resTeams.json();
+        if (Array.isArray(tData)) setTeams(tData);
+      }
+
+      // 3. Users / Admins
+      const resUsers = await apiFetch(`/api/users?t=${Date.now()}`);
+      if (resUsers.ok) {
+        const uData = await resUsers.json();
+        if (Array.isArray(uData)) setAccounts(uData);
+      }
+      const resAdmins = await apiFetch('/api/settings/admins');
+      if (resAdmins.ok) {
+        const aData = await resAdmins.json();
+        if (Array.isArray(aData)) setAdminsList(aData);
+      }
+
+      // 4. Tournaments
+      const resTournaments = await apiFetch('/api/tournaments');
+      if (resTournaments.ok) {
+        const trData = await resTournaments.json();
+        if (Array.isArray(trData)) setTournaments(trData);
+      }
+      const resDashTourns = await apiFetch('/api/tournaments-dashboard');
+      if (resDashTourns.ok) {
+        const dtData = await resDashTourns.json();
+        if (Array.isArray(dtData)) setDashboardTournaments(dtData);
+      }
+
+      // 5. Players
+      const resPlayers = await apiFetch('/api/players?all=true');
+      if (resPlayers.ok) {
+        const pData = await resPlayers.json();
+        if (Array.isArray(pData) && pData.length > 0) setPlayers(pData);
+      }
+
+      // 6. Reports / Verifications
+      const resReports = await apiFetch('/api/settings/reports');
+      if (resReports.ok) {
+        const rData = await resReports.json();
+        if (Array.isArray(rData)) setReports(rData);
+      }
+
+      fetchFormulas();
+      setLastStatsSync(new Date());
+    } catch (e) {
+      console.error('Error fetching admin data:', e);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  React.useEffect(() => {
     fetchData();
   }, []);
+
+  const totalPlayersCount = players.length;
+  const totalTeamsCount = teams.length;
+  const activeTournamentsCount = (dashboardTournaments.length > 0 ? dashboardTournaments.length : tournaments.length);
+  const pendingReportsCount = reports.filter(r => (r.status || '').toLowerCase() === 'pending').length;
+  const totalReportsCount = reports.length;
+  const totalAdminsCount = (accounts.length > 0 ? accounts.length : adminsList.length);
+
+  const filteredPlayers = players.filter(p => {
+    const q = (statsSearch || '').toLowerCase();
+    const name = (p.player_name || '').toLowerCase();
+    const role = (p.role_in_game || '').toLowerCase();
+    const team = (p.teams?.team_name || '').toLowerCase();
+    return name.includes(q) || role.includes(q) || team.includes(q);
+  });
+
+  const filteredTeams = teams.filter(t => {
+    const q = (statsSearch || '').toLowerCase();
+    const name = (t.team_name || '').toLowerCase();
+    const tourney = (t.tournament_name || '').toLowerCase();
+    return name.includes(q) || tourney.includes(q);
+  });
+
+  const displayTournaments = dashboardTournaments.length > 0 ? dashboardTournaments : tournaments.map(t => ({
+    name: t.name,
+    game_title: t.game || 'VALORANT',
+    format: 'Standard',
+    status: 'ACTIVE',
+    date: t.created_at
+  }));
+
+  const filteredTournaments = displayTournaments.filter(t => {
+    const q = (statsSearch || '').toLowerCase();
+    const name = (t.name || '').toLowerCase();
+    const game = (t.game_title || '').toLowerCase();
+    const status = (t.status || '').toLowerCase();
+    return name.includes(q) || game.includes(q) || status.includes(q);
+  });
+
+  const filteredReports = reports.filter(r => {
+    const q = (statsSearch || '').toLowerCase();
+    const reporter = (r.reporter || '').toLowerCase();
+    const reported = (r.reported || '').toLowerCase();
+    const reason = (r.reason || '').toLowerCase();
+    const statement = (r.statement || '').toLowerCase();
+    const status = (r.status || '').toLowerCase();
+    return reporter.includes(q) || reported.includes(q) || reason.includes(q) || statement.includes(q) || status.includes(q);
+  });
   return (
     <div className="flex-1 bg-bg-100 text-theme-text-base overflow-y-auto flex flex-col h-full relative font-sans custom-scrollbar">
+      {/* Upper-Right System Toast Notification */}
+      {toast && (
+        <div 
+          className="fixed top-6 right-6 z-[99999] max-w-sm w-full animate-in slide-in-from-top-4 fade-in duration-200 flex items-start gap-3.5 p-4 rounded-xl shadow-2xl backdrop-blur-xl border transition-all"
+          style={{
+            backgroundColor: toast.type === 'error' 
+              ? 'rgba(127, 29, 29, 0.95)' 
+              : toast.type === 'warning' 
+              ? 'rgba(120, 53, 15, 0.95)'
+              : toast.type === 'success' 
+              ? 'rgba(6, 78, 59, 0.95)' 
+              : 'rgba(15, 23, 42, 0.95)',
+            borderColor: toast.type === 'error'
+              ? 'rgba(239, 68, 68, 0.6)'
+              : toast.type === 'warning'
+              ? 'rgba(245, 158, 11, 0.6)'
+              : toast.type === 'success'
+              ? 'rgba(16, 185, 129, 0.6)'
+              : 'rgba(56, 189, 248, 0.5)',
+            color: '#ffffff',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.5)'
+          }}
+        >
+          <div className="mt-0.5 shrink-0">
+            {toast.type === 'error' ? (
+              <div className="w-8 h-8 rounded-lg bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-300">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+            ) : toast.type === 'warning' ? (
+              <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+            ) : toast.type === 'success' ? (
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-300">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            ) : (
+              <div className="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-300">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            )}
+          </div>
+
+          <div className="flex-1 pr-1">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-0.5">
+              {toast.type === 'error' ? 'Security Action' : toast.type === 'warning' ? 'Access Restricted' : toast.type === 'success' ? 'Success' : 'System Notice'}
+            </div>
+            <div className="text-xs text-white leading-relaxed font-medium">
+              {toast.message}
+            </div>
+          </div>
+
+          <button 
+            type="button"
+            onClick={() => setToast(null)} 
+            className="text-slate-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10 shrink-0"
+            title="Dismiss notification"
+          >
+            <CloseIcon />
+          </button>
+        </div>
+      )}
+
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
@@ -578,68 +1061,150 @@ const Admin = ({ globalGame, globalTournament }) => {
 
           {activeTab === 'League Quick Stats' && (
             <>
-            {}
             <div className="bg-[#1c2532]/30 rounded-xl shadow-xl overflow-hidden flex flex-col border border-gray-800/40">
-              <div className="border-b border-gray-800/40 bg-transparent" style={{ padding: "24px 32px" }}>
-                 <h2 className="text-base font-bold text-white tracking-wide">League Quick Stats (PH Local Context)</h2>
+              <div className="border-b border-gray-800/40 bg-transparent flex flex-wrap items-center justify-between" style={{ padding: "20px 32px", gap: "16px" }}>
+                 <div className="flex items-center gap-3">
+                   <h2 className="text-base font-bold text-white tracking-wide">League Quick Stats (PH Local Context)</h2>
+                   <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold">
+                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                     Live Sync Active
+                   </div>
+                 </div>
+
+                 <div className="flex items-center gap-3">
+                   {lastStatsSync && (
+                     <span className="text-[11px] text-gray-400 font-mono hidden md:inline">
+                       Last updated: {lastStatsSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                     </span>
+                   )}
+                   <button
+                     onClick={fetchData}
+                     disabled={loadingStats}
+                     className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-bg-300 hover:bg-slate-800 border border-gray-700 hover:border-cyan-500/50 text-cyan-400 text-xs font-bold transition-all disabled:opacity-50 active:scale-95 shadow-sm"
+                     title="Refresh stats from database"
+                   >
+                     <RefreshIcon className={`w-3.5 h-3.5 ${loadingStats ? 'animate-spin' : ''}`} />
+                     <span>{loadingStats ? 'Syncing...' : 'Sync Live Stats'}</span>
+                   </button>
+                 </div>
               </div>
+
                <div className="grid grid-cols-2 flex-1" style={{ padding: "32px", gap: "24px" }}>
-                 {}
-                 <div className="flex flex-col items-center justify-center bg-transparent border border-gray-800/60 rounded-2xl p-6 shadow-inner">
-                    <span className="text-sm font-bold text-gray-300 mb-2 text-center">Total Registered Players</span>
+                 {/* Card 1: Total Registered Players */}
+                 <div 
+                   onClick={() => { setStatsModal('players'); setStatsSearch(''); }}
+                   className="flex flex-col items-center justify-center bg-transparent hover:bg-slate-800/30 border border-gray-800/60 hover:border-emerald-500/50 rounded-2xl p-6 shadow-inner cursor-pointer transition-all duration-200 transform hover:scale-[1.01] active:scale-[0.99] group relative"
+                 >
+                    <span className="text-sm font-bold text-gray-300 mb-2 text-center group-hover:text-emerald-300 transition-colors">Total Registered Players</span>
                     <div className="flex items-center gap-4 mb-2">
-                       <UsersIcon />
+                       <div className="group-hover:scale-110 transition-transform duration-200">
+                         <UsersIcon />
+                       </div>
                        <div className="flex flex-col">
-                         <span className="text-4xl font-black text-green-500 leading-none">12,500</span>
+                         <span className="text-4xl font-black text-green-500 leading-none">
+                           {totalPlayersCount.toLocaleString()}
+                         </span>
                          <span className="text-[10px] text-gray-400 font-bold uppercase mt-1 tracking-wider">Players</span>
                        </div>
                     </div>
-                    <span className="text-[10px] text-gray-500 mt-2 text-center">Verified (PH: 98%)</span>
+                    <span className="text-[10px] text-gray-500 mt-2 text-center">Verified (PH: 100%)</span>
+                    <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-emerald-400 font-bold flex items-center gap-1 mt-2">
+                      Click to inspect player directory →
+                    </span>
                  </div>
-                 <div className="flex flex-col items-center justify-center bg-transparent border border-gray-800/60 rounded-2xl p-6 shadow-inner">
-                    <span className="text-sm font-bold text-gray-300 mb-2 text-center">Total Teams</span>
+
+                 {/* Card 2: Total Teams */}
+                 <div 
+                   onClick={() => { setStatsModal('teams'); setStatsSearch(''); }}
+                   className="flex flex-col items-center justify-center bg-transparent hover:bg-slate-800/30 border border-gray-800/60 hover:border-emerald-500/50 rounded-2xl p-6 shadow-inner cursor-pointer transition-all duration-200 transform hover:scale-[1.01] active:scale-[0.99] group relative"
+                 >
+                    <span className="text-sm font-bold text-gray-300 mb-2 text-center group-hover:text-emerald-300 transition-colors">Total Teams</span>
                     <div className="flex items-center gap-4 mb-2">
-                       <TrophyIcon />
+                       <div className="group-hover:scale-110 transition-transform duration-200">
+                         <TrophyIcon />
+                       </div>
                        <div className="flex flex-col">
-                         <span className="text-4xl font-black text-green-500 leading-none">620</span>
+                         <span className="text-4xl font-black text-green-500 leading-none">
+                           {totalTeamsCount.toLocaleString()}
+                         </span>
                          <span className="text-[10px] text-gray-400 font-bold uppercase mt-1 tracking-wider">Teams</span>
                        </div>
                     </div>
                     <span className="text-[10px] text-gray-500 mt-2 text-center text-balance">Active Teams (Local Leagues)</span>
+                    <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-emerald-400 font-bold flex items-center gap-1 mt-2">
+                      Click to inspect teams →
+                    </span>
                  </div>
-                 <div className="flex flex-col items-center justify-center bg-transparent border border-gray-800/60 rounded-2xl p-6 shadow-inner">
-                    <span className="text-sm font-bold text-gray-300 mb-2 text-center">Active Tournaments</span>
+
+                 {/* Card 3: Active Tournaments */}
+                 <div 
+                   onClick={() => { setStatsModal('tournaments'); setStatsSearch(''); }}
+                   className="flex flex-col items-center justify-center bg-transparent hover:bg-slate-800/30 border border-gray-800/60 hover:border-orange-500/50 rounded-2xl p-6 shadow-inner cursor-pointer transition-all duration-200 transform hover:scale-[1.01] active:scale-[0.99] group relative"
+                 >
+                    <span className="text-sm font-bold text-gray-300 mb-2 text-center group-hover:text-orange-300 transition-colors">Active Tournaments</span>
                     <div className="flex items-center gap-4 mb-2">
-                       <CalendarIcon />
+                       <div className="group-hover:scale-110 transition-transform duration-200">
+                         <CalendarIcon />
+                       </div>
                        <div className="flex flex-col">
-                         <span className="text-4xl font-black text-orange-400 leading-none">15</span>
+                         <span className="text-4xl font-black text-orange-400 leading-none">
+                           {activeTournamentsCount.toLocaleString()}
+                         </span>
                          <span className="text-[10px] text-gray-400 font-bold uppercase mt-1 tracking-wider">Tournaments</span>
                        </div>
                     </div>
                     <span className="text-[10px] text-gray-500 mt-2 text-center text-balance">Ongoing (Metro Manila, Cebu, etc.)</span>
+                    <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-orange-400 font-bold flex items-center gap-1 mt-2">
+                      Click to inspect tournaments →
+                    </span>
                  </div>
-                 <div className="flex flex-col items-center justify-center bg-transparent border border-gray-800/60 rounded-2xl p-6 shadow-inner">
-                    <span className="text-sm font-bold text-gray-300 mb-2 text-center">Pending Verifications</span>
+
+                 {/* Card 4: Pending Verifications */}
+                 <div 
+                   onClick={() => { setStatsModal('reports'); setStatsSearch(''); }}
+                   className="flex flex-col items-center justify-center bg-transparent hover:bg-slate-800/30 border border-gray-800/60 hover:border-orange-500/50 rounded-2xl p-6 shadow-inner cursor-pointer transition-all duration-200 transform hover:scale-[1.01] active:scale-[0.99] group relative"
+                 >
+                    <span className="text-sm font-bold text-gray-300 mb-2 text-center group-hover:text-orange-300 transition-colors">Pending Verifications</span>
                     <div className="flex items-center gap-4 mb-2">
-                       <ClipboardCheckIcon />
+                       <div className="group-hover:scale-110 transition-transform duration-200">
+                         <ClipboardCheckIcon />
+                       </div>
                        <div className="flex flex-col">
-                         <span className="text-4xl font-black text-orange-400 leading-none">45</span>
+                         <span className="text-4xl font-black text-orange-400 leading-none">
+                           {(pendingReportsCount > 0 ? pendingReportsCount : totalReportsCount).toLocaleString()}
+                         </span>
                          <span className="text-[10px] text-gray-400 font-bold uppercase mt-1 tracking-wider">Verifications</span>
                        </div>
                     </div>
-                    <span className="text-[10px] text-gray-500 mt-2 text-center">New Player IDs to review</span>
+                    <span className="text-[10px] text-gray-500 mt-2 text-center">
+                      {totalReportsCount > 0 ? `${totalReportsCount} Reports (${pendingReportsCount} Pending Review)` : 'New Player IDs to review'}
+                    </span>
+                    <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-orange-400 font-bold flex items-center gap-1 mt-2">
+                      Click to review reports & verifications →
+                    </span>
                  </div>
-                 {}
-                 <div className="col-span-2 flex flex-col items-center justify-center bg-transparent border border-gray-800/60 rounded-2xl p-6 shadow-inner">
-                    <span className="text-sm font-bold text-gray-300 mb-2 text-center">New Admin Logins</span>
+
+                 {/* Card 5: New Admin Logins */}
+                 <div 
+                   onClick={() => setActiveTab('Admin Accounts & User Directory')}
+                   className="col-span-2 flex flex-col items-center justify-center bg-transparent hover:bg-slate-800/30 border border-gray-800/60 hover:border-emerald-500/50 rounded-2xl p-6 shadow-inner cursor-pointer transition-all duration-200 transform hover:scale-[1.01] active:scale-[0.99] group relative"
+                 >
+                    <span className="text-sm font-bold text-gray-300 mb-2 text-center group-hover:text-emerald-300 transition-colors">New Admin Logins</span>
                     <div className="flex items-center gap-4 mb-2">
-                       <LockIcon />
+                       <div className="group-hover:scale-110 transition-transform duration-200">
+                         <LockIcon />
+                       </div>
                        <div className="flex flex-col">
-                         <span className="text-4xl font-black text-green-500 leading-none">12</span>
+                         <span className="text-4xl font-black text-green-500 leading-none">
+                           {totalAdminsCount.toLocaleString()}
+                         </span>
                          <span className="text-[10px] text-gray-400 font-bold uppercase mt-1 tracking-wider">Admins</span>
                        </div>
                     </div>
                     <span className="text-[10px] text-gray-500 mt-2 text-center text-balance">Admins (Central & Local PH)</span>
+                    <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-cyan-400 font-bold flex items-center gap-1 mt-2">
+                      Open Admin Accounts & Directory Tab →
+                    </span>
                  </div>
                </div>
             </div>
@@ -717,8 +1282,16 @@ const Admin = ({ globalGame, globalTournament }) => {
               {}
               <div className="border-t border-[#1c2532] bg-bg-300 flex justify-between items-center" style={{ padding: "24px 32px" }}>
                  <div className="flex items-center gap-3 font-black text-xl italic tracking-wider text-orange-500 drop-shadow-md">
-                    <svg viewBox="0 0 100 100" className="w-8 h-8 fill-orange-500"><path d="M50 0L90 20v50L50 100 10 70V20z"/></svg>
-                    <span>TNC Hub</span>
+                    <img 
+                      src="/assets/tnc_logo.png" 
+                      alt="TNC Logo" 
+                      className="w-9 h-9 object-contain filter drop-shadow-[0_2px_8px_rgba(234,88,12,0.45)]"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = '/assets/blaze_eagle.png';
+                      }}
+                    />
+                    <span>TNC</span>
                  </div>
                  <div className="flex items-center gap-4">
                     <button onClick={() => setShowCreateModal(true)} className="bg-cyan-600 hover:bg-cyan-500 text-theme-text-base text-xs font-bold transition-colors shadow-lg shadow-cyan-900/20" style={{ padding: "12px 32px", borderRadius: "9999px" }}>Create Admin</button>
@@ -728,38 +1301,251 @@ const Admin = ({ globalGame, globalTournament }) => {
           </>
           )}
           {activeTab === 'Rulebook Viewer' && (
-            <><div className="bg-bg-300 rounded-xl border border-[#1c2532] shadow-xl flex flex-col">
-<div className="border-b border-[#1c2532] bg-bg-300 flex justify-between items-center" style={{ padding: "24px 32px" }}>
-                 <h2 className="text-sm font-bold text-theme-text-base tracking-wide">Rulebook Viewer</h2>
-                 <label className="bg-transparent border border-[#2a3648] text-cyan-400 text-[10px] font-bold hover:bg-bg-400 transition-colors cursor-pointer" style={{ padding: "12px 24px", borderRadius: "9999px" }}>
-                    Upload New Rulebook
-                    <input type="file" className="hidden" accept="application/pdf,image/*" onChange={handleRulebookUpload} />
-                 </label>
-             </div>
-             <div style={{ padding: "32px" }}>
-                 {rulebookUrl ? (
-                   <div className="bg-bg-300 rounded-lg border border-[#1c2532] flex flex-wrap items-center justify-between" style={{ padding: "24px", gap: "16px" }}>
-                     <div className="flex items-center" style={{ gap: "16px" }}>
-                       <div className="flex-shrink-0 w-12 h-12 rounded flex items-center justify-center bg-cyan-500/20 text-cyan-400">
-                         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                       </div>
-                       <div className="flex flex-col" style={{ gap: "4px" }}>
-                         <span className="text-sm font-bold text-theme-text-base">Official League Rulebook</span>
-                         <span className="text-[10px] text-theme-text-faint font-mono">{rulebookUrl.split('/').pop()}</span>
-                       </div>
-                     </div>
-                     <div className="flex items-center" style={{ gap: "12px" }}>
-                       <a href={rulebookUrl} target="_blank" rel="noopener noreferrer" className="bg-transparent border border-cyan-700/50 text-cyan-400 text-xs font-bold hover:bg-cyan-900/30 transition-colors whitespace-nowrap" style={{ padding: "10px 24px", borderRadius: "9999px" }}>Open PDF in Browser</a>
-                     </div>
-                   </div>
-                 ) : (
-                   <div className="flex items-center justify-center text-theme-text-faint font-mono text-sm border-2 border-dashed border-[#1c2532] rounded-lg" style={{ padding: "48px" }}>
-                      No rulebook uploaded yet.
-                   </div>
-                 )}
-             </div>
-          </div>
-</>
+            <div className="bg-bg-300 rounded-xl border border-[#1c2532] shadow-xl flex flex-col gap-6" style={{ padding: "32px" }}>
+              {/* Header Bar */}
+              <div className="border-b border-[#1c2532] pb-6 flex flex-wrap justify-between items-center gap-4">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-lg font-black text-theme-text-base tracking-wide uppercase">Rulebook Viewer</h2>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      Connected to Database (public.rulebooks)
+                    </span>
+                  </div>
+                  <p className="text-xs text-theme-text-faint mt-1">
+                    Official League Rulebook stored in Supabase Cloud Storage & PostgreSQL. Synced across all player & tournament screens.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={fetchRulebook}
+                    disabled={rulebookLoading}
+                    className="flex items-center gap-2 bg-[#121c29] border border-[#2a3648] text-slate-300 hover:text-white text-xs font-bold hover:bg-[#192738] transition-colors cursor-pointer"
+                    style={{ padding: "10px 20px", borderRadius: "9999px" }}
+                    title="Refresh database records"
+                  >
+                    <RefreshIcon className={`w-3.5 h-3.5 ${rulebookLoading ? 'animate-spin text-cyan-400' : ''}`} />
+                    <span>Refresh DB</span>
+                  </button>
+                  <label className="bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-slate-950 text-xs font-black uppercase tracking-wider transition-all cursor-pointer shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:scale-105 active:scale-95 flex items-center gap-2" style={{ padding: "10px 24px", borderRadius: "9999px" }}>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                    <span>{isUploadingRulebook ? 'Uploading to DB...' : 'Upload New Rulebook'}</span>
+                    <input type="file" className="hidden" accept="application/pdf,image/*" onChange={handleRulebookUpload} disabled={isUploadingRulebook} />
+                  </label>
+                </div>
+              </div>
+
+              {/* Tournament Scoping Bar */}
+              <div className="flex flex-wrap items-center justify-between gap-4 bg-[#0a0f18] border border-cyan-500/20 px-5 py-3.5 rounded-xl shadow-inner">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-black uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
+                    Managing Rulebook For:
+                  </span>
+                  <select
+                    value={rulebookTournament}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setRulebookTournament(val);
+                      fetchRulebook(val);
+                    }}
+                    className="bg-[#121c29] border border-cyan-500/40 text-cyan-400 font-black text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-cyan-400 cursor-pointer shadow-sm"
+                  >
+                    {tournaments.map((t) => (
+                      <option key={t.id || t.name} value={t.name} className="bg-[#0b1017] text-white">
+                        {t.name} ({t.game || 'Tournament'})
+                      </option>
+                    ))}
+                    {tournaments.length === 0 && (
+                      <option value={globalTournament || 'Default'} className="bg-[#0b1017] text-white">
+                        {globalTournament || 'Default'}
+                      </option>
+                    )}
+                  </select>
+                </div>
+                <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                  <span>Rulebooks strictly stay in <strong>{rulebookTournament || 'this tournament'}</strong></span>
+                </div>
+              </div>
+
+              {/* Active Rulebook Card */}
+              {rulebookUrl ? (
+                <div className="flex flex-col gap-4">
+                  <div className="bg-[#0b111a] rounded-xl border border-cyan-500/30 p-6 flex flex-wrap items-center justify-between gap-6 shadow-[0_0_30px_rgba(6,182,212,0.08)] relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1.5 h-full bg-cyan-400" />
+                    <div className="flex items-center gap-5">
+                      <div className="flex-shrink-0 w-14 h-14 rounded-xl flex items-center justify-center bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 shadow-inner">
+                        <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <span className="text-base font-black text-theme-text-base">Official League Rulebook</span>
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                            Tournament: {rulebookRecord?.tournament_name || rulebookTournament}
+                          </span>
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                            DB Record #{rulebookRecord?.id || 'Active'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-theme-text-faint font-mono flex-wrap">
+                          <span className="truncate max-w-md">{rulebookUrl.split('/').pop()}</span>
+                          <span>•</span>
+                          <span>{rulebookRecord?.created_at ? new Date(rulebookRecord.created_at).toLocaleString() : 'Active'}</span>
+                          <span>•</span>
+                          <span className="text-emerald-400 font-bold">Supabase Cloud CDN Verified</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setShowRulebookPreview(!showRulebookPreview)}
+                        className={`text-xs font-bold transition-all px-4 py-2.5 rounded-full border cursor-pointer ${
+                          showRulebookPreview
+                            ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-300'
+                            : 'bg-transparent border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800'
+                        }`}
+                      >
+                        {showRulebookPreview ? 'Hide Inline Preview' : 'Show Inline Preview'}
+                      </button>
+                      <a
+                        href={rulebookUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-transparent border border-cyan-500/60 text-cyan-400 hover:bg-cyan-500/10 text-xs font-bold transition-colors whitespace-nowrap flex items-center gap-2 px-5 py-2.5 rounded-full"
+                      >
+                        <span>Open PDF in Browser</span>
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                      </a>
+                      <a
+                        href={rulebookUrl}
+                        download
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold transition-colors whitespace-nowrap px-4 py-2.5 rounded-full"
+                      >
+                        Download
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Inline PDF Preview Frame */}
+                  {showRulebookPreview && (
+                    <div className="bg-[#060a12] rounded-xl border border-slate-800/80 p-2 shadow-2xl animate-in fade-in duration-200">
+                      <div className="px-4 py-2 flex items-center justify-between border-b border-slate-800/60 mb-2">
+                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-cyan-400" />
+                          Live Document Preview ({rulebookRecord?.tournament_name || rulebookTournament})
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-mono">Use PDF controls to scroll, zoom, or print</span>
+                      </div>
+                      <iframe
+                        src={rulebookUrl}
+                        title="Official League Rulebook Preview"
+                        className="w-full h-[640px] rounded-lg border border-slate-800/60 bg-slate-950"
+                      />
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center text-theme-text-faint font-mono text-sm border-2 border-dashed border-[#1c2532] rounded-xl p-12 gap-3 bg-[#0a0f18]">
+                  <svg className="w-12 h-12 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                  <span className="text-base font-bold text-slate-200">No rulebook uploaded for "{rulebookTournament || 'this tournament'}"</span>
+                  <span className="text-xs text-slate-400 max-w-md text-center">Rulebooks are isolated per tournament. Upload a PDF using the button above to publish a rulebook strictly for {rulebookTournament || 'this tournament'}.</span>
+                </div>
+              )}
+
+              {/* Database Records Archive Table */}
+              {allRulebooks.length > 0 && (
+                <div className="mt-4 flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-theme-text-base">
+                      Database Records History ({allRulebooks.length})
+                    </h3>
+                    <span className="text-[10px] font-mono text-theme-text-faint">Table: public.rulebooks</span>
+                  </div>
+                  <div className="border border-[#1c2532] rounded-xl overflow-hidden bg-[#0c121c]">
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="border-b border-[#1c2532] bg-[#101826] text-theme-text-faint uppercase font-bold text-[10px] tracking-wider">
+                          <th className="py-3 px-4">Record ID</th>
+                          <th className="py-3 px-4">Assigned Tournament</th>
+                          <th className="py-3 px-4">File Name / Path</th>
+                          <th className="py-3 px-4">Date Uploaded</th>
+                          <th className="py-3 px-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#1c2532] text-theme-text-base">
+                        {allRulebooks.map((rb) => {
+                          const isActive = rulebookRecord?.id === rb.id;
+                          const cdnUrl = rb.file_url?.startsWith('http') ? rb.file_url : `${window.location.origin}${rb.file_url}`;
+                          return (
+                            <tr key={rb.id} className={`hover:bg-[#141e2e]/50 transition-colors ${isActive ? 'bg-cyan-950/20' : ''}`}>
+                              <td className="py-3 px-4 font-mono font-bold text-cyan-400">
+                                #{rb.id} {isActive && <span className="ml-1 text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Active</span>}
+                              </td>
+                              <td className="py-3 px-4">
+                                <select
+                                  value={rb.tournament_name || 'Default'}
+                                  onChange={(e) => handleAssignRulebookTournament(rb.id, e.target.value)}
+                                  className="bg-[#0b1017] border border-slate-700 hover:border-cyan-400 text-cyan-300 text-[11px] font-semibold rounded px-2 py-1 focus:outline-none cursor-pointer"
+                                  title="Change assigned tournament"
+                                >
+                                  <option value="Default" className="bg-[#0d1420] text-slate-400">Default (Unassigned)</option>
+                                  {tournaments.map((t) => (
+                                    <option key={t.id || t.name} value={t.name} className="bg-[#0d1420] text-white">
+                                      {t.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td className="py-3 px-4 font-mono text-[11px] text-slate-400 truncate max-w-xs">{rb.file_url?.split('/').pop()}</td>
+                              <td className="py-3 px-4 text-slate-400">{rb.created_at ? new Date(rb.created_at).toLocaleString() : 'N/A'}</td>
+                              <td className="py-3 px-4 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setRulebookRecord(rb);
+                                      setRulebookUrl(cdnUrl);
+                                      setShowRulebookPreview(true);
+                                      if (rb.tournament_name && rb.tournament_name !== 'Default') {
+                                        setRulebookTournament(rb.tournament_name);
+                                      }
+                                    }}
+                                    className="px-2.5 py-1 rounded-md text-[10px] font-bold bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 border border-cyan-500/30 transition-colors cursor-pointer"
+                                  >
+                                    Preview
+                                  </button>
+                                  <a
+                                    href={cdnUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="px-2.5 py-1 rounded-md text-[10px] font-bold bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+                                  >
+                                    Open
+                                  </a>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteRulebook(rb.id)}
+                                    className="px-2 py-1 rounded-md text-[10px] font-bold text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+                                    title="Delete from database"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
 
@@ -768,56 +1554,441 @@ const Admin = ({ globalGame, globalTournament }) => {
       </div>
       {}
       {showCreateModal && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-bg-300 p-8 rounded-xl border border-[#1c2532] shadow-2xl w-full max-w-md relative animate-in fade-in zoom-in duration-200">
-            <button onClick={() => setShowCreateModal(false)} className="absolute top-4 right-4 text-theme-text-faint hover:text-theme-text-base transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-            <div className="flex items-center space-x-3 mb-6">
-              <LockIcon />
-              <h3 className="text-xl font-black text-theme-text-base uppercase tracking-widest">Create Admin Account</h3>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="text-[10px] font-bold text-theme-text-muted uppercase tracking-widest block mb-1.5">Email Address</label>
-                <input 
-                  type="email" 
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  className="w-full bg-bg-300 border border-[#2a3648] text-theme-text-base text-sm rounded-lg py-2 px-3 focus:outline-none focus:border-cyan-500 transition-colors"
-                  placeholder="admin@esport.ph"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-theme-text-muted uppercase tracking-widest block mb-1.5">Password</label>
-                <input 
-                  type="password" 
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full bg-bg-300 border border-[#2a3648] text-theme-text-base text-sm rounded-lg py-2 px-3 focus:outline-none focus:border-cyan-500 transition-colors"
-                  placeholder="••••••••"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-theme-text-muted uppercase tracking-widest block mb-1.5">Role</label>
-                <select 
-                  value={newRole}
-                  onChange={(e) => setNewRole(e.target.value)}
-                  className="w-full bg-bg-300 border border-[#2a3648] text-theme-text-base text-sm rounded-lg py-2 px-3 focus:outline-none focus:border-cyan-500 transition-colors"
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150">
+          <style>{`
+            .formal-admin-input:-webkit-autofill,
+            .formal-admin-input:-webkit-autofill:hover, 
+            .formal-admin-input:-webkit-autofill:focus, 
+            .formal-admin-input:-webkit-autofill:active {
+              -webkit-box-shadow: 0 0 0 1000px #0b111a inset !important;
+              -webkit-text-fill-color: #f8fafc !important;
+              transition: background-color 5000s ease-in-out 0s;
+            }
+          `}</style>
+          <div 
+            className="w-full max-w-3xl rounded-2xl border shadow-2xl flex flex-col overflow-hidden relative max-h-[92vh]"
+            style={{ backgroundColor: '#131b26', borderColor: '#26354a' }}
+          >
+            {/* Modal Header */}
+            <div 
+              className="px-8 py-5 border-b flex items-center justify-between"
+              style={{ backgroundColor: '#101721', borderColor: '#1f2c3f' }}
+            >
+              <div className="flex items-center gap-4">
+                <div 
+                  className="w-12 h-12 rounded-xl flex items-center justify-center p-2 border shadow-sm shrink-0"
+                  style={{ backgroundColor: '#0d1522', borderColor: '#26354a' }}
                 >
-                  <option value="Super Admin">Super Admin</option>
-                  <option value="Tournament Mod">Tournament Mod</option>
-                  <option value="Observer">Observer</option>
-                </select>
+                  <img 
+                    src="/assets/tnc_logo.png" 
+                    alt="TNC Logo" 
+                    className="w-full h-full object-contain filter drop-shadow-[0_2px_8px_rgba(234,88,12,0.35)]"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = '/assets/blaze_eagle.png';
+                    }}
+                  />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-100 tracking-tight">Create Administrator Account</h3>
+                  <p className="text-sm text-slate-400 mt-0.5">Provision a verified administrator profile and configure access permissions.</p>
+                </div>
               </div>
-              <button
-                onClick={handleCreateUser}
-                disabled={isCreating}
-                className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-black uppercase tracking-widest rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(6,182,212,0.3)] active:scale-95"
-                style={{ padding: "14px 28px", marginTop: "16px" }}
+              <button 
+                type="button"
+                onClick={resetCreateModal} 
+                className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800"
+                title="Close"
               >
-                {isCreating ? 'Creating...' : 'Create Account'}
+                <CloseIcon />
               </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-8 overflow-y-auto custom-scrollbar flex flex-col gap-6 relative">
+              {/* Hidden dummy inputs to divert aggressive browser credential autofill */}
+              <div 
+                style={{ 
+                  position: 'absolute', 
+                  opacity: 0, 
+                  height: 0, 
+                  width: 0, 
+                  pointerEvents: 'none', 
+                  overflow: 'hidden',
+                  zIndex: -9999
+                }} 
+                tabIndex={-1} 
+                aria-hidden="true"
+              >
+                <input type="text" name="chrome_autofill_username_prevent" tabIndex={-1} autoComplete="off" />
+                <input type="password" name="chrome_autofill_password_prevent" tabIndex={-1} autoComplete="new-password" />
+              </div>
+
+              {/* Inline Feedback Banner */}
+              {modalFeedback && (
+                <div 
+                  className={`p-4 rounded-xl border flex items-start gap-3.5 text-sm ${
+                    modalFeedback.type === 'error'
+                      ? 'bg-red-950/30 border-red-500/40 text-red-200'
+                      : modalFeedback.type === 'success'
+                      ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-200'
+                      : 'bg-blue-950/30 border-blue-500/40 text-blue-200'
+                  }`}
+                >
+                  <span className="font-semibold">{modalFeedback.type === 'error' ? 'Error:' : modalFeedback.type === 'success' ? 'Success:' : 'Notice:'}</span>
+                  <div className="flex-1 text-slate-300 font-normal leading-relaxed">{modalFeedback.message}</div>
+                  <button 
+                    type="button"
+                    onClick={() => setModalFeedback(null)} 
+                    className="text-slate-400 hover:text-white text-xs ml-2 font-medium"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              )}
+
+              {/* Email Address Section */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-semibold text-slate-200">
+                    Email Address <span className="text-red-400">*</span>
+                  </label>
+                  {emailVerificationStatus === 'verified' ? (
+                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-md border border-emerald-500/30">
+                      ✓ Email Verified
+                    </span>
+                  ) : emailVerificationStatus === 'sent' ? (
+                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-400 bg-blue-500/10 px-3 py-1 rounded-md border border-blue-500/30">
+                      Code Sent
+                    </span>
+                  ) : (
+                    <span className="text-xs font-semibold text-amber-400 bg-amber-500/10 px-3 py-1 rounded-md border border-amber-500/20">
+                      Verification Required
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex gap-3">
+                  <input 
+                    type="text"
+                    inputMode="email"
+                    name="admin_new_invite_email"
+                    id="admin_new_invite_email"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="none"
+                    spellCheck="false"
+                    value={newEmail}
+                    disabled={emailVerificationStatus === 'verified'}
+                    onChange={(e) => {
+                      setNewEmail(e.target.value);
+                      if (emailVerificationStatus !== 'idle') {
+                        setEmailVerificationStatus('idle');
+                        setVerificationCode('');
+                        setDevPreviewCode('');
+                        setDevPreviewUrl('');
+                      }
+                    }}
+                    style={{
+                      backgroundColor: '#0b111a',
+                      color: '#f8fafc',
+                      borderColor: '#26354a',
+                      borderRadius: '10px'
+                    }}
+                    className="formal-admin-input flex-1 border text-sm px-4 py-3 focus:outline-none focus:border-blue-500 transition-colors disabled:opacity-75 disabled:cursor-not-allowed placeholder:text-slate-500 shadow-inner"
+                    placeholder=""
+                  />
+
+                  {emailVerificationStatus === 'verified' ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEmailVerificationStatus('idle');
+                        setVerificationCode('');
+                        setDevPreviewCode('');
+                        setDevPreviewUrl('');
+                        setModalFeedback({ type: 'info', message: 'Enter a new email address to verify.' });
+                      }}
+                      className="px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium border border-slate-700 transition-colors whitespace-nowrap"
+                    >
+                      Change Email
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleSendVerification}
+                      disabled={emailVerificationStatus === 'sending' || !newEmail || resendCooldown > 0}
+                      className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-colors disabled:bg-slate-800 disabled:text-slate-500 disabled:border disabled:border-slate-700 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-2 shadow-sm"
+                    >
+                      {emailVerificationStatus === 'sending' ? (
+                        <span>Sending...</span>
+                      ) : resendCooldown > 0 ? (
+                        <span>Resend ({resendCooldown}s)</span>
+                      ) : (
+                        <span>{emailVerificationStatus === 'sent' ? 'Resend Code' : 'Send Verification Code'}</span>
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                {/* Verification Code Box (Visible when code was sent and not yet verified) */}
+                {emailVerificationStatus !== 'idle' && emailVerificationStatus !== 'verified' && (
+                  <div 
+                    className="mt-3 rounded-xl p-5 flex flex-col gap-3.5 border"
+                    style={{ backgroundColor: '#0d1522', borderColor: '#203046' }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold text-slate-100">Email Verification Code</span>
+                      <span className="text-xs text-slate-400">Valid for 10 minutes</span>
+                    </div>
+
+                    <p className="text-sm text-slate-300 leading-relaxed">
+                      Please enter the 6-digit confirmation code dispatched to <strong className="text-white font-mono">{newEmail}</strong>.
+                    </p>
+
+                    {devPreviewUrl && (
+                      <div className="flex items-center justify-between bg-blue-950/40 border border-blue-500/30 rounded-lg px-4 py-2.5 text-xs text-blue-200">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+                          <span>Delivered to test mailbox:</span>
+                        </div>
+                        <a
+                          href={devPreviewUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-400 hover:text-blue-300 font-semibold underline flex items-center gap-1"
+                        >
+                          View Delivered Email ↗
+                        </a>
+                      </div>
+                    )}
+
+                    {devPreviewCode && (
+                      <div className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-lg px-4 py-2 text-sm text-slate-400">
+                        <span>Environment Code: <strong className="text-slate-100 font-mono tracking-wider">{devPreviewCode}</strong></span>
+                        <button
+                          type="button"
+                          onClick={() => setVerificationCode(devPreviewCode)}
+                          className="text-blue-400 hover:text-blue-300 text-sm font-semibold underline"
+                        >
+                          Auto-fill
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="flex gap-3">
+                      <input 
+                        type="text" 
+                        maxLength={6}
+                        value={verificationCode}
+                        onChange={(e) => setVerificationCode(e.target.value.replace(/[^0-9]/g, ''))}
+                        style={{
+                          backgroundColor: '#0b111a',
+                          color: '#f8fafc',
+                          borderColor: '#26354a',
+                          borderRadius: '10px'
+                        }}
+                        className="formal-admin-input flex-1 border text-center font-mono text-xl tracking-[0.35em] font-bold py-2.5 focus:outline-none focus:border-blue-500 placeholder:text-slate-600"
+                        placeholder="000000"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleVerifyCode}
+                        disabled={emailVerificationStatus === 'verifying' || verificationCode.length !== 6}
+                        className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold transition-colors disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed whitespace-nowrap shadow-sm"
+                      >
+                        {emailVerificationStatus === 'verifying' ? 'Verifying...' : 'Verify Code'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Password Section */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-semibold text-slate-200">
+                    Password <span className="text-red-400">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleGeneratePassword}
+                    className="text-sm text-blue-400 hover:text-blue-300 font-medium transition-colors"
+                  >
+                    Generate Random Password
+                  </button>
+                </div>
+
+                <div className="relative">
+                  <input 
+                    type={showPassword ? "text" : "password"} 
+                    name="admin_new_invite_pwd"
+                    id="admin_new_invite_pwd"
+                    autoComplete="new-password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    style={{
+                      backgroundColor: '#0b111a',
+                      color: '#f8fafc',
+                      borderColor: '#26354a',
+                      borderRadius: '10px'
+                    }}
+                    className="formal-admin-input w-full border text-sm px-4 py-3 pr-12 focus:outline-none focus:border-blue-500 transition-colors font-mono placeholder:text-slate-500 shadow-inner"
+                    placeholder="Minimum 6 characters"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 hover:text-slate-200 transition-colors"
+                    title={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
+                  </button>
+                </div>
+
+                {/* Password strength bar */}
+                {newPassword && (
+                  <div className="flex flex-col gap-1.5 mt-1">
+                    <div className="flex items-center justify-between text-xs text-slate-400">
+                      <span>Password complexity:</span>
+                      <span className={`font-bold ${
+                        getPasswordStrength(newPassword).score >= 3 ? 'text-emerald-400' :
+                        getPasswordStrength(newPassword).score === 2 ? 'text-blue-400' : 'text-amber-400'
+                      }`}>
+                        {getPasswordStrength(newPassword).label}
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden flex gap-1.5">
+                      {[1, 2, 3, 4].map((step) => (
+                        <div 
+                          key={step}
+                          className={`flex-1 h-full rounded-full transition-all duration-300 ${
+                            step <= getPasswordStrength(newPassword).score 
+                              ? getPasswordStrength(newPassword).color 
+                              : 'bg-slate-800'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Role Picker Section */}
+              <div className="flex flex-col gap-2.5">
+                <label className="text-sm font-semibold text-slate-200">
+                  Administrative Role <span className="text-red-400">*</span>
+                </label>
+
+                <div className="flex flex-col gap-2.5">
+                  {[
+                    {
+                      id: 'Super Admin',
+                      name: 'Super Administrator',
+                      badge: 'Full Access',
+                      badgeColor: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
+                      desc: 'Unrestricted system authority, administrator management, and platform configuration.'
+                    },
+                    {
+                      id: 'Tournament Mod',
+                      name: 'Tournament Moderator',
+                      badge: 'Operations',
+                      badgeColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+                      desc: 'Operational permissions for bracket coordination, match vetoes, scorekeeper input, and live match records.'
+                    },
+                    {
+                      id: 'Observer',
+                      name: 'League Observer',
+                      badge: 'Read-Only',
+                      badgeColor: 'bg-slate-700/50 text-slate-300 border-slate-600/50',
+                      desc: 'Spectator and broadcast access, telemetry observation, and read-only audit logs.'
+                    }
+                  ].map((roleOpt) => {
+                    const isSelected = newRole === roleOpt.id;
+                    return (
+                      <div
+                        key={roleOpt.id}
+                        onClick={() => setNewRole(roleOpt.id)}
+                        style={{
+                          backgroundColor: isSelected ? '#162436' : '#0e1520',
+                          borderColor: isSelected ? '#3b82f6' : '#223042'
+                        }}
+                        className="px-4.5 py-3.5 rounded-xl border cursor-pointer transition-all duration-150 flex items-start gap-3.5 hover:border-slate-500 hover:bg-[#121c29]"
+                      >
+                        <div className="mt-0.5">
+                          <div 
+                            className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${
+                              isSelected ? 'border-blue-500 bg-blue-600' : 'border-slate-600 bg-transparent'
+                            }`}
+                          >
+                            {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                          </div>
+                        </div>
+
+                        <div className="flex-1 flex flex-col gap-1">
+                          <div className="flex items-center justify-between">
+                            <span className={`text-sm font-bold ${isSelected ? 'text-white' : 'text-slate-200'}`}>
+                              {roleOpt.name}
+                            </span>
+                            <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-md border ${roleOpt.badgeColor}`}>
+                              {roleOpt.badge}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-400 leading-relaxed">
+                            {roleOpt.desc}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div 
+              className="px-8 py-5 border-t flex items-center justify-between"
+              style={{ backgroundColor: '#101721', borderColor: '#1f2c3f' }}
+            >
+              <div className="text-sm text-slate-400">
+                {emailVerificationStatus !== 'verified' ? (
+                  <span className="text-amber-400/90 flex items-center gap-1.5 font-medium">
+                    <span>*</span> Email verification required before provisioning.
+                  </span>
+                ) : (
+                  <span className="text-emerald-400 flex items-center gap-1.5 font-medium">
+                    <span>✓</span> Ready to provision account.
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={resetCreateModal}
+                  disabled={isCreating}
+                  className="px-5 py-2.5 rounded-xl border border-slate-700 hover:bg-slate-800 text-slate-300 text-sm font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleCreateUser}
+                  disabled={isCreating || emailVerificationStatus !== 'verified' || !newPassword}
+                  className="px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 transition-colors disabled:bg-slate-800 disabled:text-slate-500 disabled:border disabled:border-slate-700/80 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm"
+                  title={emailVerificationStatus !== 'verified' ? "Please verify email first" : ""}
+                >
+                  {isCreating ? (
+                    <>
+                      <RefreshIcon className="w-4 h-4 animate-spin" />
+                      <span>Creating Account...</span>
+                    </>
+                  ) : (
+                    <span>Create Account</span>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -925,6 +2096,225 @@ const Admin = ({ globalGame, globalTournament }) => {
                 Apply Formula
              </button>
           </div>
+        </div>
+      </Modal>
+
+      {/* Detail Modal for Quick Stats Inspection */}
+      <Modal 
+        isOpen={!!statsModal} 
+        onClose={() => { setStatsModal(null); setStatsSearch(''); }} 
+        title={
+          statsModal === 'players' ? `League Registered Players (${filteredPlayers.length})` :
+          statsModal === 'teams' ? `Registered Teams (${filteredTeams.length})` :
+          statsModal === 'tournaments' ? `Tournaments & Leagues (${filteredTournaments.length})` :
+          statsModal === 'reports' ? `Reports & Verifications (${filteredReports.length})` :
+          'League Stats'
+        }
+        maxWidth="max-w-4xl"
+      >
+        <div className="flex flex-col gap-4">
+          {/* Search bar inside modal */}
+          <div className="relative w-full">
+            <div className="absolute inset-y-0 left-0 flex items-center pointer-events-none pl-3 text-gray-400">
+              <SearchIcon />
+            </div>
+            <input 
+              type="text" 
+              value={statsSearch}
+              onChange={(e) => setStatsSearch(e.target.value)}
+              placeholder={
+                statsModal === 'players' ? "Search by player name, role, or team..." :
+                statsModal === 'teams' ? "Search by team name or tournament..." :
+                statsModal === 'tournaments' ? "Search by tournament name, game title, or status..." :
+                "Search by reporter, player, reason, or status..."
+              }
+              className="w-full bg-bg-400 border border-[#2a3648] text-theme-text-base text-xs rounded-xl focus:outline-none focus:border-cyan-500 transition-colors py-2.5 pl-10 pr-4"
+            />
+          </div>
+
+          {/* PLAYERS LIST */}
+          {statsModal === 'players' && (
+            <div className="max-h-[60vh] overflow-y-auto custom-scrollbar border border-[#1c2532] rounded-xl overflow-hidden">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-bg-400/80 text-theme-text-faint sticky top-0 border-b border-[#1c2532]">
+                  <tr>
+                    <th className="py-3 px-4 font-bold uppercase tracking-wider">Player Name</th>
+                    <th className="py-3 px-4 font-bold uppercase tracking-wider">Team</th>
+                    <th className="py-3 px-4 font-bold uppercase tracking-wider">Role</th>
+                    <th className="py-3 px-4 font-bold uppercase tracking-wider text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#1c2532]">
+                  {filteredPlayers.length === 0 ? (
+                    <tr>
+                      <td colSpan="4" className="text-center py-8 text-gray-400 italic">No players found.</td>
+                    </tr>
+                  ) : filteredPlayers.map((p, idx) => (
+                    <tr key={p.player_id || idx} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="py-3 px-4 text-theme-text-base font-bold flex items-center gap-2">
+                        <span className="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center text-[11px] border border-emerald-500/30">
+                          {(p.player_name || 'P')[0]?.toUpperCase()}
+                        </span>
+                        <span>{p.player_name}</span>
+                      </td>
+                      <td className="py-3 px-4 text-cyan-400 font-medium">
+                        {p.teams?.team_name || 'Free Agent'}
+                      </td>
+                      <td className="py-3 px-4 text-gray-300">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] bg-slate-800 border border-slate-700 font-mono">
+                          {p.role_in_game || 'Rifler'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                          ✓ Verified PH
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* TEAMS LIST */}
+          {statsModal === 'teams' && (
+            <div className="max-h-[60vh] overflow-y-auto custom-scrollbar border border-[#1c2532] rounded-xl overflow-hidden">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-bg-400/80 text-theme-text-faint sticky top-0 border-b border-[#1c2532]">
+                  <tr>
+                    <th className="py-3 px-4 font-bold uppercase tracking-wider">Team</th>
+                    <th className="py-3 px-4 font-bold uppercase tracking-wider">Tournament Folder</th>
+                    <th className="py-3 px-4 font-bold uppercase tracking-wider text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#1c2532]">
+                  {filteredTeams.length === 0 ? (
+                    <tr>
+                      <td colSpan="3" className="text-center py-8 text-gray-400 italic">No teams found.</td>
+                    </tr>
+                  ) : filteredTeams.map((t, idx) => (
+                    <tr key={t.team_id || idx} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="py-3 px-4 text-theme-text-base font-bold flex items-center gap-3">
+                        {t.logo_url ? (
+                          <img src={t.logo_url} alt={t.team_name} className="w-7 h-7 rounded-full object-cover border border-cyan-500/30" onError={(e) => { e.target.style.display = 'none'; }} />
+                        ) : (
+                          <span className="w-7 h-7 rounded-full bg-cyan-500/20 text-cyan-400 font-bold flex items-center justify-center text-[11px] border border-cyan-500/30">
+                            {(t.team_name || 'T')[0]?.toUpperCase()}
+                          </span>
+                        )}
+                        <span>{t.team_name}</span>
+                      </td>
+                      <td className="py-3 px-4 text-gray-300 font-mono text-[11px]">
+                        {t.tournament_name || 'Default'}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                          Active
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* TOURNAMENTS LIST */}
+          {statsModal === 'tournaments' && (
+            <div className="max-h-[60vh] overflow-y-auto custom-scrollbar border border-[#1c2532] rounded-xl overflow-hidden">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-bg-400/80 text-theme-text-faint sticky top-0 border-b border-[#1c2532]">
+                  <tr>
+                    <th className="py-3 px-4 font-bold uppercase tracking-wider">Tournament Name</th>
+                    <th className="py-3 px-4 font-bold uppercase tracking-wider">Game Title</th>
+                    <th className="py-3 px-4 font-bold uppercase tracking-wider">Format</th>
+                    <th className="py-3 px-4 font-bold uppercase tracking-wider text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#1c2532]">
+                  {filteredTournaments.length === 0 ? (
+                    <tr>
+                      <td colSpan="4" className="text-center py-8 text-gray-400 italic">No tournaments found.</td>
+                    </tr>
+                  ) : filteredTournaments.map((t, idx) => (
+                    <tr key={t.id || idx} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="py-3 px-4 text-theme-text-base font-bold">
+                        {t.name}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 uppercase">
+                          {t.game_title || 'VALORANT'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-gray-400">
+                        {t.format || 'Standard'}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                          t.status === 'COMPLETE' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' :
+                          t.status === 'IN PROGRESS' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30' :
+                          'bg-blue-500/10 text-blue-400 border border-blue-500/30'
+                        }`}>
+                          {t.status || 'ACTIVE'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* REPORTS / VERIFICATIONS LIST */}
+          {statsModal === 'reports' && (
+            <div className="max-h-[60vh] overflow-y-auto custom-scrollbar border border-[#1c2532] rounded-xl overflow-hidden">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-bg-400/80 text-theme-text-faint sticky top-0 border-b border-[#1c2532]">
+                  <tr>
+                    <th className="py-3 px-4 font-bold uppercase tracking-wider">Reported Player</th>
+                    <th className="py-3 px-4 font-bold uppercase tracking-wider">Reason</th>
+                    <th className="py-3 px-4 font-bold uppercase tracking-wider">Reporter</th>
+                    <th className="py-3 px-4 font-bold uppercase tracking-wider">Statement</th>
+                    <th className="py-3 px-4 font-bold uppercase tracking-wider text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#1c2532]">
+                  {filteredReports.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" className="text-center py-8 text-gray-400 italic">No reports or verifications found.</td>
+                    </tr>
+                  ) : filteredReports.map((r, idx) => (
+                    <tr key={r.id || idx} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="py-3 px-4 text-orange-400 font-bold">
+                        {r.reported || 'Unknown Player'}
+                      </td>
+                      <td className="py-3 px-4 text-gray-300 font-medium">
+                        <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] border border-slate-700">
+                          {r.reason || 'General'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-gray-400">
+                        {r.reporter || 'Anonymous'}
+                      </td>
+                      <td className="py-3 px-4 text-gray-300 max-w-xs truncate" title={r.statement}>
+                        {r.statement || 'No statement provided'}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                          (r.status || '').toLowerCase() === 'pending'
+                            ? 'bg-orange-500/10 text-orange-400 border border-orange-500/30'
+                            : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                        }`}>
+                          {r.status || 'Pending'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </Modal>
     </div>

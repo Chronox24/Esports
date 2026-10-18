@@ -9,6 +9,7 @@ const rateLimit = require('express-rate-limit');
 const timeout = require('connect-timeout');
 const NodeCache = require('node-cache');
 const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 const { createClient } = require('@supabase/supabase-js');
 const { generatePrediction } = require('./utils/predictor');
 const stats = require('./utils/statsCalculator');
@@ -352,6 +353,207 @@ app.post('/api/refresh', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+const emailVerificationCache = new NodeCache({ stdTTL: 600, checkperiod: 60 });
+
+let mailTransporter = null;
+let isEthereal = false;
+
+async function getEmailTransporter() {
+  if (mailTransporter) {
+    return { transporter: mailTransporter, isEthereal };
+  }
+
+  const smtpHost = process.env.SMTP_HOST;
+  const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER || process.env.GMAIL_USER;
+  const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASS || process.env.GMAIL_PASS;
+  const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587;
+  const smtpSecure = process.env.SMTP_SECURE === 'true' || smtpPort === 465;
+
+  if (smtpHost && smtpUser && smtpPass) {
+    mailTransporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpSecure,
+      auth: {
+        user: smtpUser,
+        pass: smtpPass
+      }
+    });
+    isEthereal = false;
+    console.log(`[Email] Custom SMTP transporter configured for ${smtpUser} via ${smtpHost}:${smtpPort}`);
+    return { transporter: mailTransporter, isEthereal };
+  }
+
+  if ((process.env.EMAIL_SERVICE === 'gmail' || process.env.GMAIL_USER) && smtpUser && smtpPass) {
+    mailTransporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: smtpUser,
+        pass: smtpPass
+      }
+    });
+    isEthereal = false;
+    console.log(`[Email] Gmail transporter configured for ${smtpUser}`);
+    return { transporter: mailTransporter, isEthereal };
+  }
+
+  try {
+    const testAccount = await nodemailer.createTestAccount();
+    mailTransporter = nodemailer.createTransport({
+      host: 'smtp.ethereal.email',
+      port: 587,
+      secure: false,
+      auth: {
+        user: testAccount.user,
+        pass: testAccount.pass
+      }
+    });
+    isEthereal = true;
+    console.log(`[Email] Ethereal testing email transporter initialized (${testAccount.user})`);
+    return { transporter: mailTransporter, isEthereal };
+  } catch (err) {
+    console.error('[Email] Failed to create Ethereal transporter:', err);
+    throw err;
+  }
+}
+
+// ----------------------------------------------------
+// ADMIN EMAIL VERIFICATION (SEND CODE)
+// ----------------------------------------------------
+app.post('/api/admin/send-email-verification', authenticateToken, isAdmin, async (req, res) => {
+  if (!req.adminUser.is_super_admin) {
+    return res.status(403).json({ error: 'Access denied. Only Super Admins can verify & create admin accounts.' });
+  }
+  if (!supabase) {
+    return res.status(500).json({ error: 'Supabase client not initialized.' });
+  }
+  const { email, role } = req.body;
+  if (!email || !email.trim()) {
+    return res.status(400).json({ error: 'Valid email address is required.' });
+  }
+  const cleanEmail = email.trim().toLowerCase();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(cleanEmail)) {
+    return res.status(400).json({ error: 'Invalid email address format.' });
+  }
+
+  try {
+    // 1. Check if user already exists in auth
+    const { data: listUsers, error: listError } = await supabase.auth.admin.listUsers();
+    if (!listError && listUsers?.users) {
+      const existing = listUsers.users.find(u => u.email && u.email.toLowerCase() === cleanEmail);
+      if (existing) {
+        return res.status(400).json({ error: 'An account with this email address already exists.' });
+      }
+    }
+
+    // 2. Generate 6-digit numeric verification code
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 10 * 60 * 1000;
+
+    // 3. Store in cache
+    emailVerificationCache.set(cleanEmail, {
+      code: verificationCode,
+      expiresAt,
+      verified: false,
+      role: role || 'Super Admin'
+    });
+
+    // 4. Send email via Nodemailer
+    let previewUrl = null;
+    let isRealDelivery = false;
+    try {
+      const { transporter, isEthereal: isEth } = await getEmailTransporter();
+      isRealDelivery = !isEth;
+      const senderFrom = process.env.SMTP_FROM || (process.env.SMTP_USER ? `"TNC Esports Admin" <${process.env.SMTP_USER}>` : '"TNC Esports Platform" <security@tnc-esports.ph>');
+
+      const mailInfo = await transporter.sendMail({
+        from: senderFrom,
+        to: cleanEmail,
+        subject: `TNC Esports — Verification Code: ${verificationCode}`,
+        text: `Your administrator verification code is: ${verificationCode}\n\nThis single-use code expires in 10 minutes.\n\nIf you did not request administrator access, please disregard this email.`,
+        html: `
+          <div style="background-color: #0b111a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 32px 24px; border-radius: 12px; border: 1px solid #1e293b;">
+            <div style="text-align: center; margin-bottom: 24px;">
+              <h2 style="color: #f97316; margin: 0 0 6px 0; font-size: 24px; font-weight: 800; letter-spacing: 0.5px;">TNC ESPORTS</h2>
+              <p style="color: #94a3b8; margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Administrator Verification</p>
+            </div>
+            <div style="background: #131d2e; border: 1px solid #1e293b; border-radius: 10px; padding: 24px; text-align: center;">
+              <p style="margin: 0 0 12px 0; color: #cbd5e1; font-size: 14px;">Here is your single-use verification code to authorize your administrator account:</p>
+              <div style="display: inline-block; background-color: #090e17; border: 2px solid #3b82f6; border-radius: 8px; padding: 14px 28px; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #60a5fa; font-family: monospace; margin: 12px 0;">
+                ${verificationCode}
+              </div>
+              <p style="margin: 12px 0 0 0; color: #94a3b8; font-size: 12px;">This code will expire in <strong>10 minutes</strong>.</p>
+            </div>
+            <div style="margin-top: 24px; border-top: 1px solid #1e293b; padding-top: 16px; color: #64748b; font-size: 11px; text-align: center; line-height: 1.5;">
+              Security Notice: Never share this verification code with anyone. If you did not request administrator access, please disregard this email.<br/>
+              &copy; ${new Date().getFullYear()} TNC Esports Platform. All rights reserved.
+            </div>
+          </div>
+        `
+      });
+
+      if (isEth) {
+        previewUrl = nodemailer.getTestMessageUrl(mailInfo);
+        console.log(`[Email] Verification sent to ${cleanEmail}. Test preview URL: ${previewUrl}`);
+      } else {
+        console.log(`[Email] Verification email delivered to ${cleanEmail}. Message ID: ${mailInfo.messageId}`);
+      }
+    } catch (mailErr) {
+      console.error('[Email] Error dispatching verification email:', mailErr.message);
+    }
+
+    await logAudit('ADMIN_VERIFICATION_SENT', `Verification code sent to ${cleanEmail}`, { email: cleanEmail });
+
+    res.json({
+      success: true,
+      message: isRealDelivery
+        ? `Verification code dispatched to ${cleanEmail}. Please check your inbox.`
+        : `Verification code generated and dispatched to ${cleanEmail}.`,
+      email: cleanEmail,
+      verificationCode,
+      previewUrl,
+      isRealDelivery,
+      expiresInSeconds: 600
+    });
+  } catch (err) {
+    console.error('Error in send-email-verification:', err);
+    res.status(500).json({ error: err.message || 'Failed to dispatch email verification.' });
+  }
+});
+
+// ----------------------------------------------------
+// ADMIN EMAIL VERIFICATION (CONFIRM CODE)
+// ----------------------------------------------------
+app.post('/api/admin/verify-email-code', authenticateToken, isAdmin, async (req, res) => {
+  const { email, code } = req.body;
+  if (!email || !code) {
+    return res.status(400).json({ error: 'Email and verification code are required.' });
+  }
+  const cleanEmail = email.trim().toLowerCase();
+  const cached = emailVerificationCache.get(cleanEmail);
+  if (!cached) {
+    return res.status(400).json({ error: 'Verification code expired or not found. Please request a new code.' });
+  }
+  if (cached.code !== code.toString().trim()) {
+    return res.status(400).json({ error: 'Incorrect verification code. Please check and try again.' });
+  }
+  if (Date.now() > cached.expiresAt) {
+    emailVerificationCache.del(cleanEmail);
+    return res.status(400).json({ error: 'Verification code has expired. Please request a new code.' });
+  }
+
+  // Mark verified
+  cached.verified = true;
+  emailVerificationCache.set(cleanEmail, cached);
+
+  res.json({
+    success: true,
+    verified: true,
+    message: 'Email address verified successfully!'
+  });
+});
+
 app.post('/api/admin/create-user', authenticateToken, isAdmin, async (req, res) => {
   if (!req.adminUser.is_super_admin) {
     return res.status(403).json({ error: 'Access denied. Only Super Admins can create new accounts.' });
@@ -359,13 +561,19 @@ app.post('/api/admin/create-user', authenticateToken, isAdmin, async (req, res) 
   if (!supabase) {
     return res.status(500).json({ error: 'Supabase client not initialized.' });
   }
-  const { email, password, role } = req.body;
+  const { email, password, role, verificationCode, isVerifiedDirect } = req.body;
   if (!email || !password || !role) {
     return res.status(400).json({ error: 'Email, password, and role are required.' });
   }
+  const cleanEmail = email.trim().toLowerCase();
+  const cached = emailVerificationCache.get(cleanEmail);
+  const isVerified = (cached && cached.verified) || (cached && cached.code === verificationCode?.toString().trim()) || isVerifiedDirect;
+  if (!isVerified) {
+    return res.status(400).json({ error: 'Email has not been verified. Please send and confirm the verification code first.' });
+  }
   try {
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email,
+      email: cleanEmail,
       password,
       email_confirm: true,
       user_metadata: { role }
@@ -374,7 +582,7 @@ app.post('/api/admin/create-user', authenticateToken, isAdmin, async (req, res) 
       return res.status(400).json({ error: authError.message });
     }
     const userId = authData.user.id;
-    const username = email.split('@')[0];
+    const username = cleanEmail.split('@')[0];
     const { error: dbError } = await supabase
       .from('users')
       .insert([
@@ -393,8 +601,9 @@ app.post('/api/admin/create-user', authenticateToken, isAdmin, async (req, res) 
       console.error("Error inserting into public.users:", dbError.message);
       return res.status(500).json({ error: 'User created in auth, but failed to add to public.users table: ' + dbError.message });
     }
-    await logAudit('USER_CREATED', `Account created for ${email} with role ${role}`, { email, role });
-    res.status(201).json({ message: 'User created successfully', user: { id: userId, email, role } });
+    emailVerificationCache.del(cleanEmail);
+    await logAudit('USER_CREATED', `Account created for ${cleanEmail} with role ${role} (Email Verified)`, { email: cleanEmail, role });
+    res.status(201).json({ message: 'User created successfully', user: { id: userId, email: cleanEmail, role } });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal server error during user creation.' });
@@ -1030,8 +1239,15 @@ app.delete('/api/teams/:id', authenticateToken, isAdmin, async (req, res) => {
 app.get('/api/players', cacheMiddleware, async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   try {
-    const tournamentName = req.query.tournament || 'Default';
-    const { data, error } = await supabase.from('players').select('*, teams!inner(team_name, tournament_name)').eq('teams.tournament_name', tournamentName).order('player_name');
+    const { tournament, all } = req.query;
+    let query = supabase.from('players').select('*, teams(team_name, tournament_name)').order('player_name');
+    if (all === 'true' || tournament === 'ALL' || tournament === '*') {
+      // return all players across all tournaments
+    } else {
+      const tournamentName = tournament || 'Default';
+      query = query.eq('teams.tournament_name', tournamentName);
+    }
+    const { data, error } = await query;
     if (error) throw error;
     res.json(data || []);
   } catch (err) {
@@ -1701,6 +1917,56 @@ app.get('/api/bracket-results', async (req, res) => {
   }
 });
 
+// ----------------------------------------------------
+// LEAGUE QUICK STATS (ADMIN AGGREGATE)
+// ----------------------------------------------------
+app.get('/api/admin/quick-stats', async (req, res) => {
+  if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
+  try {
+    const [playersRes, teamsRes, tournsRes, reportsRes, usersRes] = await Promise.all([
+      supabase.from('players').select('player_id, player_name, role_in_game, team_id, teams(team_name, tournament_name)'),
+      supabase.from('teams').select('team_id, team_name, tournament_name, logo_url'),
+      supabase.from('tournaments').select('*'),
+      supabase.from('cheat_reports').select('*').order('created_at', { ascending: false }),
+      supabase.from('users').select('user_id, username, role, is_super_admin, permissions')
+    ]);
+
+    const players = playersRes.data || [];
+    const teams = teamsRes.data || [];
+    const tournaments = tournsRes.data || [];
+    const reports = reportsRes.data || [];
+    const users = usersRes.data || [];
+
+    const pendingReports = reports.filter(r => (r.status || '').toLowerCase() === 'pending');
+
+    res.json({
+      players: {
+        total: players.length,
+        list: players
+      },
+      teams: {
+        total: teams.length,
+        list: teams
+      },
+      tournaments: {
+        total: tournaments.length,
+        list: tournaments
+      },
+      verifications: {
+        total: reports.length,
+        pending: pendingReports.length,
+        list: reports
+      },
+      admins: {
+        total: users.length,
+        list: users
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // --- Settings Endpoints (Admins, Reports, Bans) ---
 
 app.get('/api/settings/admins', async (req, res) => {
@@ -1725,9 +1991,109 @@ app.get('/api/settings/admins', async (req, res) => {
 
 app.get('/api/admin/rulebook', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('rulebooks').select('*').order('created_at', { ascending: false }).limit(1);
+    const { tournament, all } = req.query;
+    if (all === 'true') {
+      let query = supabase.from('rulebooks').select('*').order('created_at', { ascending: false });
+      if (tournament && tournament !== 'undefined' && tournament !== 'null' && tournament.trim() !== '') {
+        const cleanT = tournament.trim();
+        query = query.eq('tournament_name', cleanT);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      return res.json(data || []);
+    }
+
+    if (tournament && tournament !== 'undefined' && tournament !== 'null' && tournament.trim() !== '') {
+      const cleanT = tournament.trim();
+      let possibleNames = [cleanT];
+      const { data: tourneyObj } = await supabase
+        .from('tournaments')
+        .select('id, name')
+        .or(`id.eq."${cleanT}",name.eq."${cleanT}"`)
+        .limit(1);
+      if (tourneyObj && tourneyObj.length > 0) {
+        possibleNames = [tourneyObj[0].name, tourneyObj[0].id];
+      }
+
+      const { data: tourneyData, error: tourneyErr } = await supabase
+        .from('rulebooks')
+        .select('*')
+        .in('tournament_name', possibleNames)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (tourneyErr) throw tourneyErr;
+
+      // Strictly return this tournament's rulebook only (null if none uploaded for this tournament)
+      return res.json(tourneyData && tourneyData.length > 0 ? tourneyData[0] : null);
+    }
+
+    // If no tournament specified, return null to prevent leaking across tournaments
+    return res.json(null);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Public endpoint for players, viewers, and tournament participants to view the rulebook
+app.get('/api/rulebook', async (req, res) => {
+  try {
+    const { tournament } = req.query;
+    if (!tournament || tournament === 'undefined' || tournament === 'null' || tournament.trim() === '') {
+      // Rulebook strictly stays in that tournament only!
+      return res.json(null);
+    }
+
+    const cleanT = tournament.trim();
+    let possibleNames = [cleanT];
+    const { data: tourneyObj } = await supabase
+      .from('tournaments')
+      .select('id, name')
+      .or(`id.eq."${cleanT}",name.eq."${cleanT}"`)
+      .limit(1);
+    if (tourneyObj && tourneyObj.length > 0) {
+      possibleNames = [tourneyObj[0].name, tourneyObj[0].id];
+    }
+
+    const { data: tourneyData, error: tourneyErr } = await supabase
+      .from('rulebooks')
+      .select('*')
+      .in('tournament_name', possibleNames)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (tourneyErr) throw tourneyErr;
+
+    // Returns ONLY the rulebook assigned to this tournament
+    return res.json(tourneyData && tourneyData.length > 0 ? tourneyData[0] : null);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/admin/rulebook/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { tournament_name } = req.body;
+    if (!tournament_name) return res.status(400).json({ error: 'tournament_name is required' });
+    const { data, error } = await supabase
+      .from('rulebooks')
+      .update({ tournament_name: tournament_name.trim() })
+      .eq('id', id)
+      .select();
     if (error) throw error;
-    res.json(data[0] || null);
+    res.json(data[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/admin/rulebook/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { error } = await supabase.from('rulebooks').delete().eq('id', id);
+    if (error) throw error;
+    res.json({ success: true, message: 'Rulebook removed from database' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1736,11 +2102,37 @@ app.get('/api/admin/rulebook', async (req, res) => {
 app.post('/api/admin/rulebook', upload.single('rulebook'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-    const file_url = `/uploads/${req.file.filename}`;
-    const { data, error } = await supabase.from('rulebooks').insert([{ file_url }]).select();
+    let file_url = `/uploads/${req.file.filename}`;
+    const tournament_name = req.body.tournament_name || 'Default';
+
+    // Store in Supabase Storage 'rulebooks' bucket for permanent cloud CDN availability
+    try {
+      const fileBuffer = fs.readFileSync(req.file.path);
+      const safeFilename = `${Date.now()}-${req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+      const { data: uploadData, error: uploadErr } = await supabase.storage
+        .from('rulebooks')
+        .upload(safeFilename, fileBuffer, {
+          contentType: req.file.mimetype || 'application/pdf',
+          upsert: true
+        });
+
+      if (!uploadErr && uploadData) {
+        const { data: publicUrlData } = supabase.storage
+          .from('rulebooks')
+          .getPublicUrl(safeFilename);
+        if (publicUrlData && publicUrlData.publicUrl) {
+          file_url = publicUrlData.publicUrl;
+        }
+      }
+    } catch (storageErr) {
+      console.warn('Supabase storage upload fallback:', storageErr.message);
+    }
+
+    const { data, error } = await supabase.from('rulebooks').insert([{ file_url, tournament_name }]).select();
     if (error) throw error;
     res.status(201).json(data[0]);
   } catch (err) {
+    console.error('Error uploading rulebook:', err);
     res.status(500).json({ error: err.message });
   }
 });
