@@ -11,6 +11,8 @@ export const AGENT_IMAGE_MAP = {
   'fade': 'fade agent.png',
   'gekko': 'gekko agent.png',
   'harbor': 'harbor agent.png',
+  'hush': 'Hush agent.png',
+  'hushagent': 'Hush agent.png',
   'iso': 'iso agent.png',
   'jett': 'jett agent.png',
   'kayo': 'kayo agent.png',
@@ -41,7 +43,7 @@ export const getAgentImagePath = (agentName) => {
 
 export const getAgentRoleStyle = (agentName) => {
   const agent = String(agentName || '').toLowerCase().trim().replace(/[\/\-_.\s]/g, '');
-  if (['jett', 'reyna', 'raze', 'phoenix', 'yoru', 'neon', 'iso', 'waylay'].includes(agent)) {
+  if (['jett', 'reyna', 'raze', 'phoenix', 'yoru', 'neon', 'iso', 'waylay', 'hush'].includes(agent)) {
     return { role: 'Duelist', icon: '🎯', badge: 'bg-rose-500/15 text-rose-300 border-rose-500/30' };
   }
   if (['sova', 'breach', 'skye', 'kayo', 'fade', 'gekko', 'tejo'].includes(agent)) {

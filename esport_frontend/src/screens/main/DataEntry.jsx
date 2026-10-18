@@ -327,6 +327,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
   const [selectedRound, setSelectedRound] = useState(1);
   const [selectedAction, setSelectedAction] = useState("Plant");
   const [manualX, setManualX] = useState("");
+  const [manualY, setManualY] = useState("");
   const [heatmapNotif, setHeatmapNotif] = useState(null);
   const [plantColor, setPlantColor] = useState(() => localStorage.getItem('plantColor') || '#ef4444');
   const [defuseColor, setDefuseColor] = useState(() => localStorage.getItem('defuseColor') || '#10b981');
@@ -660,6 +661,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
     "Veto",
     "Waylay",
     "Miks",
+    "Hush",
   ];
   const valorantMaps = [
     "Abyss",

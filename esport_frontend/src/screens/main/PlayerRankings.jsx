@@ -132,6 +132,19 @@ const PodiumCard = ({ player, accent, maxKills, maxAp }) => {
 
 /* ──────────── Category Ranking Card ──────────── */
 const CategoryCard = ({ title, icon, data, valueKey, valueLabel, accent, accentBg }) => {
+  // Always display at least 5 rows with clean placeholders if there are fewer or no records
+  const displayRows = [...(data || [])];
+  const minRows = 5;
+  while (displayRows.length < minRows) {
+    displayRows.push({
+      rank: displayRows.length + 1,
+      ign: "—",
+      team: "—",
+      [valueKey]: "—",
+      isPlaceholder: true,
+    });
+  }
+
   return (
     <div className="rounded-2xl border border-slate-700/40 bg-bg-200 overflow-hidden hover:border-slate-600/60 transition-all duration-300 group">
       {/* Top accent line */}
@@ -157,19 +170,33 @@ const CategoryCard = ({ title, icon, data, valueKey, valueLabel, accent, accentB
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/50">
-            {data && data.map((p, i) => (
-              <tr key={i} className="hover:bg-slate-800/30 transition-colors">
+            {displayRows.map((p, i) => (
+              <tr key={i} className={`hover:bg-slate-800/30 transition-colors ${p.isPlaceholder ? "opacity-75" : ""}`}>
                 <td className="text-center" style={{ padding: "10px 8px" }}>
                   <RankBadge rank={p.rank} size="sm" />
                 </td>
-                <td className="text-left font-bold text-theme-text-base truncate max-w-[100px]" style={{ padding: "10px 8px" }} title={p.ign}>{p.ign}</td>
-                <td className="text-left text-theme-text-muted text-[9px] truncate max-w-[80px]" style={{ padding: "10px 8px" }} title={p.team}>{p.team}</td>
-                <td className="text-center font-black" style={{ padding: "10px 8px", color: accent }}>{p[valueKey]}</td>
+                <td
+                  className={`text-left font-bold truncate max-w-[100px] ${p.isPlaceholder ? "text-theme-text-muted/50" : "text-theme-text-base"}`}
+                  style={{ padding: "10px 8px" }}
+                  title={p.ign}
+                >
+                  {p.ign}
+                </td>
+                <td
+                  className={`text-left text-[9px] truncate max-w-[80px] ${p.isPlaceholder ? "text-theme-text-muted/40" : "text-theme-text-muted"}`}
+                  style={{ padding: "10px 8px" }}
+                  title={p.team}
+                >
+                  {p.team}
+                </td>
+                <td
+                  className={`text-center font-black ${p.isPlaceholder ? "text-theme-text-muted/40" : ""}`}
+                  style={{ padding: "10px 8px", color: p.isPlaceholder ? undefined : accent }}
+                >
+                  {p[valueKey]}
+                </td>
               </tr>
             ))}
-            {(!data || data.length === 0) && (
-              <tr><td colSpan="4" className="py-8 text-center text-theme-text-muted text-xs">No data</td></tr>
-            )}
           </tbody>
         </table>
       </div>
@@ -195,19 +222,20 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
   const [showAllRows, setShowAllRows] = useState(false);
 
   useEffect(() => {
+    setMatchRecords([]);
     apiFetch(`/api/stats/valorant?tournament=${encodeURIComponent(globalTournament || 'Default')}`)
       .then((r) => r.json())
-      .then((data) => { if (Array.isArray(data)) setDbValorantStats(data); })
+      .then((data) => { if (Array.isArray(data)) setDbValorantStats(data); else setDbValorantStats([]); })
       .catch(console.error);
 
     apiFetch(`/api/stats/crossfire?tournament=${encodeURIComponent(globalTournament || 'Default')}`)
       .then((r) => r.json())
-      .then((data) => { if (Array.isArray(data)) setDbCrossfireStats(data); })
+      .then((data) => { if (Array.isArray(data)) setDbCrossfireStats(data); else setDbCrossfireStats([]); })
       .catch(console.error);
 
     apiFetch(`/api/match-records?tournament=${encodeURIComponent(globalTournament || 'Default')}`)
       .then((r) => r.json())
-      .then((data) => { if (Array.isArray(data)) setMatchRecords(data); })
+      .then((data) => { if (Array.isArray(data)) setMatchRecords(data); else setMatchRecords([]); })
       .catch(console.error);
   }, [globalTournament]);
 
@@ -243,7 +271,7 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
   // ── Derive available weeks and days for the selector ──
   const { availableWeeks, availableDaysPerWeek } = useMemo(() => {
     if (!matchRecords || matchRecords.length === 0) return { availableWeeks: [], availableDaysPerWeek: {} };
-    const gameRecords = matchRecords.filter((r) => r.game.toUpperCase() === activeGame);
+    const gameRecords = matchRecords.filter((r) => !r.game || (r.game || "").toUpperCase() === activeGame);
     const weeksSet = new Set();
     const daysMap = {};
     gameRecords.forEach((r) => {
@@ -281,7 +309,7 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
 
   const { displayDailyPlayers, displayWeeklyPlayers } = useMemo(() => {
     if (!matchRecords || matchRecords.length === 0) return { displayDailyPlayers: [], displayWeeklyPlayers: [] };
-    const gameRecords = matchRecords.filter((r) => r.game.toUpperCase() === activeGame);
+    const gameRecords = matchRecords.filter((r) => !r.game || (r.game || "").toUpperCase() === activeGame);
     if (gameRecords.length === 0) return { displayDailyPlayers: [], displayWeeklyPlayers: [] };
     if (!effectiveWeek) return { displayDailyPlayers: [], displayWeeklyPlayers: [] };
     const weeklyRecords = gameRecords.filter((r) => String(r.week) === effectiveWeek);
@@ -292,15 +320,22 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
     };
   }, [matchRecords, activeGame, effectiveWeek, effectiveDay]);
 
-  const valorantRankings = useMemo(() => {
-    if (!matchRecords || matchRecords.length === 0 || activeGame !== "VALORANT") return null;
-    const vRecords = matchRecords.filter(r => r.game.toUpperCase() === "VALORANT");
-    if (vRecords.length === 0) return null;
+  const categoryRankings = useMemo(() => {
+    const emptyResult = {
+      topKills: [],
+      leastDeaths: [],
+      topAssists: [],
+      topKda: [],
+      topAcs: [],
+    };
+    if (!matchRecords || matchRecords.length === 0) return emptyResult;
+    const vRecords = matchRecords.filter(r => !r.game || (r.game || "").toUpperCase() === activeGame);
+    if (vRecords.length === 0) return emptyResult;
     const stats = {};
     vRecords.forEach(r => {
       const ign = r.ign;
       if (!ign) return;
-      if (!stats[ign]) stats[ign] = { ign, team: r.team_name, kills: 0, deaths: 0, assists: 0, acs: 0, matchCount: 0 };
+      if (!stats[ign]) stats[ign] = { ign, team: r.team_name || "—", kills: 0, deaths: 0, assists: 0, acs: 0, matchCount: 0 };
       stats[ign].kills += Number(r.kills) || 0;
       stats[ign].deaths += Number(r.deaths) || 0;
       stats[ign].assists += Number(r.assists) || 0;
@@ -316,7 +351,7 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
       topKills: [...players].sort((a, b) => b.kills - a.kills).map((p, i) => ({ ...p, rank: i + 1 })),
       leastDeaths: [...players].sort((a, b) => a.deaths - b.deaths).map((p, i) => ({ ...p, rank: i + 1 })),
       topAssists: [...players].sort((a, b) => b.assists - a.assists).map((p, i) => ({ ...p, rank: i + 1 })),
-      topKda: [...players].sort((a, b) => b.kda - a.kda).map((p, i) => ({ ...p, rank: i + 1 })),
+      topKda: [...players].sort((a, b) => Number(b.kda) - Number(a.kda)).map((p, i) => ({ ...p, rank: i + 1 })),
       topAcs: [...players].sort((a, b) => b.avgAcs - a.avgAcs).map((p, i) => ({ ...p, rank: i + 1 })),
     };
   }, [matchRecords, activeGame]);
@@ -797,8 +832,8 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
           </div>
         </div>
 
-        {/* ═══════════ VALORANT CATEGORY RANKINGS ═══════════ */}
-        {activeGame === "VALORANT" && valorantRankings && (
+        {/* ═══════════ CATEGORY LEADERS ═══════════ */}
+        {categoryRankings && (
           <div className="anim-fade" style={{ animationDelay: "0.4s" }}>
             {/* Section title */}
             <div className="flex items-center gap-3" style={{ marginBottom: "20px" }}>
@@ -813,7 +848,7 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
               <CategoryCard
                 title="Total Kills"
                 icon={<CrosshairIcon />}
-                data={valorantRankings.topKills}
+                data={categoryRankings.topKills}
                 valueKey="kills"
                 valueLabel="Kills"
                 accent="#ef4444"
@@ -822,7 +857,7 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
               <CategoryCard
                 title="Least Deaths"
                 icon={<SkullIcon />}
-                data={valorantRankings.leastDeaths}
+                data={categoryRankings.leastDeaths}
                 valueKey="deaths"
                 valueLabel="Deaths"
                 accent="#10b981"
@@ -831,7 +866,7 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
               <CategoryCard
                 title="Top Assists"
                 icon={<HandshakeIcon />}
-                data={valorantRankings.topAssists}
+                data={categoryRankings.topAssists}
                 valueKey="assists"
                 valueLabel="Assists"
                 accent="#3b82f6"
@@ -840,7 +875,7 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
               <CategoryCard
                 title="Best KDA"
                 icon={<ChartIcon />}
-                data={valorantRankings.topKda}
+                data={categoryRankings.topKda}
                 valueKey="kda"
                 valueLabel="KDA"
                 accent="#a855f7"
@@ -849,7 +884,7 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
               <CategoryCard
                 title="Highest ACS"
                 icon={<TrophyIcon />}
-                data={valorantRankings.topAcs}
+                data={categoryRankings.topAcs}
                 valueKey="avgAcs"
                 valueLabel="ACS"
                 accent="#f97316"
