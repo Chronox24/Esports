@@ -244,6 +244,35 @@ const DataEntry = ({ globalGame, globalTournament }) => {
     `${setScope}_deadRoundRowLogs`,
   );
   const [matchWin, setMatchWin] = useStickyState("B", `${setScope}_matchWin`);
+
+  const otOffset = game === "Valorant" ? 24 : 18;
+  const maxOvertime = game === "Valorant" ? 16 : 22;
+
+  const maxDataOt = useMemo(() => {
+    return Math.max(
+      0,
+      ...roundLogsA.slice(otOffset).map((v, i) => (v ? i + 1 : 0)),
+      ...roundLogsB.slice(otOffset).map((v, i) => (v ? i + 1 : 0))
+    );
+  }, [roundLogsA, roundLogsB, otOffset]);
+
+  const [otCount, setOtCount] = useStickyState(0, `${setScope}_otCount`);
+  const [otOpenA, setOtOpenA] = useStickyState(null, `${setScope}_otOpenA`);
+  const [otOpenB, setOtOpenB] = useStickyState(null, `${setScope}_otOpenB`);
+
+  const visibleOtCount = Math.min(maxOvertime, Math.max(otCount, maxDataOt));
+  const isOtExpandedA = otOpenA !== null ? otOpenA : (maxDataOt > 0);
+  const isOtExpandedB = otOpenB !== null ? otOpenB : (maxDataOt > 0);
+
+  const handleAddOtRound = () => {
+    setOtOpenA(true);
+    setOtOpenB(true);
+    setOtCount((prev) => Math.min(maxOvertime, Math.max(prev, maxDataOt) + 1));
+  };
+
+  const handleRemoveOtRound = () => {
+    setOtCount((prev) => Math.max(maxDataOt, Math.max(prev, maxDataOt) - 1));
+  };
   const [playersA, setPlayersA] = useStickyState(() => {
     return Array(5).fill(null).map(() => ({
       ign: "",
@@ -1522,27 +1551,194 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                   </div>
 
                   {/* Row 2: Overtime */}
-                  {[{ label: game === 'Valorant' ? 'Overtime - Rounds 25+' : 'Overtime - Rounds 19+', count: game === 'Valorant' ? 16 : 22, offset: game === 'Valorant' ? 24 : 18, size: 36 }].map(({ label, count, offset, size }) => (
-                    <div key={label}>
-                      <div style={{ fontSize: '9px', fontWeight: 700, color: 'rgba(148,163,184,0.5)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>{label}</div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                        {Array.from({ length: count }, (_, j) => {
-                          const i = offset + j;
+                  <div style={{ marginTop: '14px', borderTop: '1px solid rgba(148,163,184,0.15)', paddingTop: '12px' }}>
+                    {/* Collapsible Header */}
+                    <div
+                      onClick={() => setOtOpenA(!isOtExpandedA)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '7px 12px',
+                        borderRadius: '8px',
+                        background: isOtExpandedA ? 'rgba(56,189,248,0.08)' : 'rgba(30,41,59,0.5)',
+                        border: `1px solid ${isOtExpandedA ? 'rgba(56,189,248,0.25)' : 'rgba(51,65,85,0.4)'}`,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        userSelect: 'none',
+                        marginBottom: isOtExpandedA ? '12px' : '0',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          style={{
+                            transform: isOtExpandedA ? 'rotate(90deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.2s ease',
+                            color: isOtExpandedA ? '#38bdf8' : 'rgba(148,163,184,0.6)',
+                          }}
+                        >
+                          <polyline points="9 18 15 12 9 6" />
+                        </svg>
+                        <span style={{ fontSize: '9px', fontWeight: 800, color: isOtExpandedA ? '#7dd3fc' : 'rgba(148,163,184,0.7)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+                          {game === 'Valorant' ? 'Overtime - Rounds 25+' : 'Overtime - Rounds 19+'}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '9px',
+                            fontWeight: 700,
+                            padding: '1px 7px',
+                            borderRadius: '999px',
+                            background: visibleOtCount > 0 ? 'rgba(56,189,248,0.15)' : 'rgba(100,116,139,0.15)',
+                            color: visibleOtCount > 0 ? '#38bdf8' : 'rgba(148,163,184,0.5)',
+                            border: `1px solid ${visibleOtCount > 0 ? 'rgba(56,189,248,0.3)' : 'rgba(100,116,139,0.2)'}`,
+                          }}
+                        >
+                          {visibleOtCount > 0 ? `${visibleOtCount} round${visibleOtCount > 1 ? 's' : ''}` : 'Collapsed'}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }} onClick={(e) => e.stopPropagation()}>
+                        {visibleOtCount < maxOvertime && (
+                          <button
+                            type="button"
+                            onClick={handleAddOtRound}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '3px',
+                              background: 'rgba(56,189,248,0.15)',
+                              border: '1px solid rgba(56,189,248,0.4)',
+                              color: '#38bdf8',
+                              fontSize: '9px',
+                              fontWeight: 800,
+                              borderRadius: '6px',
+                              padding: '2px 8px',
+                              cursor: 'pointer',
+                              letterSpacing: '0.05em',
+                              textTransform: 'uppercase',
+                              transition: 'all 0.15s',
+                            }}
+                            title={`Add Round R${otOffset + visibleOtCount + 1}`}
+                          >
+                            <span>+</span>
+                            <span>R{otOffset + visibleOtCount + 1}</span>
+                          </button>
+                        )}
+
+                        {visibleOtCount > maxDataOt && visibleOtCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={handleRemoveOtRound}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '3px',
+                              background: 'rgba(239,68,68,0.12)',
+                              border: '1px solid rgba(239,68,68,0.35)',
+                              color: '#f87171',
+                              fontSize: '9px',
+                              fontWeight: 800,
+                              borderRadius: '6px',
+                              padding: '2px 8px',
+                              cursor: 'pointer',
+                              letterSpacing: '0.05em',
+                              textTransform: 'uppercase',
+                              transition: 'all 0.15s',
+                            }}
+                            title="Remove last overtime round"
+                          >
+                            <span>−</span>
+                          </button>
+                        )}
+
+                        <span
+                          onClick={() => setOtOpenA(!isOtExpandedA)}
+                          style={{ fontSize: '9px', fontWeight: 700, color: 'rgba(148,163,184,0.5)', cursor: 'pointer' }}
+                        >
+                          {isOtExpandedA ? 'Collapse' : 'Expand'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Overtime Rounds Body */}
+                    {isOtExpandedA && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+                        {Array.from({ length: visibleOtCount }, (_, j) => {
+                          const i = otOffset + j;
                           const val = roundLogsA[i] || '';
-                          const colorMap = { K: { bg: 'rgba(74,222,128,0.2)', border: 'rgba(74,222,128,0.6)', text: '#4ade80', glow: '0 0 8px rgba(74,222,128,0.4)' }, D: { bg: 'rgba(248,113,113,0.2)', border: 'rgba(248,113,113,0.6)', text: '#f87171', glow: '0 0 8px rgba(248,113,113,0.4)' }, P: { bg: 'rgba(167,139,250,0.2)', border: 'rgba(167,139,250,0.6)', text: '#a78bfa', glow: '0 0 8px rgba(167,139,250,0.4)' }, T: { bg: 'rgba(251,191,36,0.2)', border: 'rgba(251,191,36,0.6)', text: '#fbbf24', glow: '0 0 8px rgba(251,191,36,0.4)' } };
+                          const colorMap = {
+                            K: { bg: 'rgba(74,222,128,0.2)', border: 'rgba(74,222,128,0.6)', text: '#4ade80', glow: '0 0 8px rgba(74,222,128,0.4)' },
+                            D: { bg: 'rgba(248,113,113,0.2)', border: 'rgba(248,113,113,0.6)', text: '#f87171', glow: '0 0 8px rgba(248,113,113,0.4)' },
+                            P: { bg: 'rgba(167,139,250,0.2)', border: 'rgba(167,139,250,0.6)', text: '#a78bfa', glow: '0 0 8px rgba(167,139,250,0.4)' },
+                            T: { bg: 'rgba(251,191,36,0.2)', border: 'rgba(251,191,36,0.6)', text: '#fbbf24', glow: '0 0 8px rgba(251,191,36,0.4)' },
+                          };
                           const c = colorMap[val] || { bg: 'rgba(30,41,59,0.6)', border: 'rgba(51,65,85,0.5)', text: 'transparent', glow: 'none' };
                           return (
                             <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                               <div style={{ fontSize: '8px', fontWeight: 700, color: 'rgba(100,116,139,0.6)', letterSpacing: '0.05em' }}>R{i + 1}</div>
-                              <div style={{ width: `${size}px`, height: `${size}px`, borderRadius: '10px', background: c.bg, border: `1px solid ${c.border}`, boxShadow: c.glow, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', cursor: 'text' }}>
-                                <input id={`round-input-A-${i}`} className="round-dot-input" type="text" maxLength="1" value={val} onChange={(e) => updateRoundEvent('A', i, e.target.value)} onFocus={(e) => e.target.select()} onKeyDown={(e) => handleRoundInputKeyDown(e, 'A', i)} style={{ width: '100%', height: '100%', padding: 0, margin: 0, textAlign: 'center', background: 'transparent', color: c.text, fontSize: '13px', fontWeight: 900, letterSpacing: '0px', lineHeight: '1', textTransform: 'uppercase', border: 'none', outline: 'none', cursor: 'text', borderRadius: '10px', boxSizing: 'border-box' }} />
+                              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: c.bg, border: `1px solid ${c.border}`, boxShadow: c.glow, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', cursor: 'text' }}>
+                                <input
+                                  id={`round-input-A-${i}`}
+                                  className="round-dot-input"
+                                  type="text"
+                                  maxLength="1"
+                                  value={val}
+                                  onChange={(e) => updateRoundEvent('A', i, e.target.value)}
+                                  onFocus={(e) => e.target.select()}
+                                  onKeyDown={(e) => handleRoundInputKeyDown(e, 'A', i)}
+                                  style={{ width: '100%', height: '100%', padding: 0, margin: 0, textAlign: 'center', background: 'transparent', color: c.text, fontSize: '13px', fontWeight: 900, letterSpacing: '0px', lineHeight: '1', textTransform: 'uppercase', border: 'none', outline: 'none', cursor: 'text', borderRadius: '10px', boxSizing: 'border-box' }}
+                                />
                               </div>
                             </div>
                           );
                         })}
+
+                        {/* + Button next to last round */}
+                        {visibleOtCount < maxOvertime && (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                            <div style={{ fontSize: '8px', fontWeight: 700, color: '#38bdf8', letterSpacing: '0.05em' }}>
+                              +R{otOffset + visibleOtCount + 1}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={handleAddOtRound}
+                              style={{
+                                width: '36px',
+                                height: '36px',
+                                borderRadius: '10px',
+                                background: 'rgba(56,189,248,0.1)',
+                                border: '1px dashed rgba(56,189,248,0.6)',
+                                color: '#38bdf8',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '18px',
+                                fontWeight: 900,
+                                cursor: 'pointer',
+                                transition: 'all 0.15s',
+                                boxShadow: '0 0 10px rgba(56,189,248,0.12)',
+                              }}
+                              title={`Click to add Round ${otOffset + visibleOtCount + 1}`}
+                            >
+                              +
+                            </button>
+                          </div>
+                        )}
+
+                        {visibleOtCount === 0 && (
+                          <div style={{ fontSize: '10px', color: 'rgba(148,163,184,0.5)', fontStyle: 'italic', paddingLeft: '8px' }}>
+                            Click + to start adding overtime rounds
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -1590,27 +1786,194 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                   </div>
 
                   {/* Row 2: Overtime */}
-                  {[{ label: game === 'Valorant' ? 'Overtime - Rounds 25+' : 'Overtime - Rounds 19+', count: game === 'Valorant' ? 16 : 22, offset: game === 'Valorant' ? 24 : 18, size: 36 }].map(({ label, count, offset, size }) => (
-                    <div key={label}>
-                      <div style={{ fontSize: '9px', fontWeight: 700, color: 'rgba(148,163,184,0.5)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>{label}</div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                        {Array.from({ length: count }, (_, j) => {
-                          const i = offset + j;
+                  <div style={{ marginTop: '14px', borderTop: '1px solid rgba(148,163,184,0.15)', paddingTop: '12px' }}>
+                    {/* Collapsible Header */}
+                    <div
+                      onClick={() => setOtOpenB(!isOtExpandedB)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '7px 12px',
+                        borderRadius: '8px',
+                        background: isOtExpandedB ? 'rgba(244,114,182,0.08)' : 'rgba(30,41,59,0.5)',
+                        border: `1px solid ${isOtExpandedB ? 'rgba(244,114,182,0.25)' : 'rgba(51,65,85,0.4)'}`,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        userSelect: 'none',
+                        marginBottom: isOtExpandedB ? '12px' : '0',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          style={{
+                            transform: isOtExpandedB ? 'rotate(90deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.2s ease',
+                            color: isOtExpandedB ? '#f472b6' : 'rgba(148,163,184,0.6)',
+                          }}
+                        >
+                          <polyline points="9 18 15 12 9 6" />
+                        </svg>
+                        <span style={{ fontSize: '9px', fontWeight: 800, color: isOtExpandedB ? '#fbcfe8' : 'rgba(148,163,184,0.7)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+                          {game === 'Valorant' ? 'Overtime - Rounds 25+' : 'Overtime - Rounds 19+'}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '9px',
+                            fontWeight: 700,
+                            padding: '1px 7px',
+                            borderRadius: '999px',
+                            background: visibleOtCount > 0 ? 'rgba(244,114,182,0.15)' : 'rgba(100,116,139,0.15)',
+                            color: visibleOtCount > 0 ? '#f472b6' : 'rgba(148,163,184,0.5)',
+                            border: `1px solid ${visibleOtCount > 0 ? 'rgba(244,114,182,0.3)' : 'rgba(100,116,139,0.2)'}`,
+                          }}
+                        >
+                          {visibleOtCount > 0 ? `${visibleOtCount} round${visibleOtCount > 1 ? 's' : ''}` : 'Collapsed'}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }} onClick={(e) => e.stopPropagation()}>
+                        {visibleOtCount < maxOvertime && (
+                          <button
+                            type="button"
+                            onClick={handleAddOtRound}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '3px',
+                              background: 'rgba(244,114,182,0.15)',
+                              border: '1px solid rgba(244,114,182,0.4)',
+                              color: '#f472b6',
+                              fontSize: '9px',
+                              fontWeight: 800,
+                              borderRadius: '6px',
+                              padding: '2px 8px',
+                              cursor: 'pointer',
+                              letterSpacing: '0.05em',
+                              textTransform: 'uppercase',
+                              transition: 'all 0.15s',
+                            }}
+                            title={`Add Round R${otOffset + visibleOtCount + 1}`}
+                          >
+                            <span>+</span>
+                            <span>R{otOffset + visibleOtCount + 1}</span>
+                          </button>
+                        )}
+
+                        {visibleOtCount > maxDataOt && visibleOtCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={handleRemoveOtRound}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '3px',
+                              background: 'rgba(239,68,68,0.12)',
+                              border: '1px solid rgba(239,68,68,0.35)',
+                              color: '#f87171',
+                              fontSize: '9px',
+                              fontWeight: 800,
+                              borderRadius: '6px',
+                              padding: '2px 8px',
+                              cursor: 'pointer',
+                              letterSpacing: '0.05em',
+                              textTransform: 'uppercase',
+                              transition: 'all 0.15s',
+                            }}
+                            title="Remove last overtime round"
+                          >
+                            <span>−</span>
+                          </button>
+                        )}
+
+                        <span
+                          onClick={() => setOtOpenB(!isOtExpandedB)}
+                          style={{ fontSize: '9px', fontWeight: 700, color: 'rgba(148,163,184,0.5)', cursor: 'pointer' }}
+                        >
+                          {isOtExpandedB ? 'Collapse' : 'Expand'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Overtime Rounds Body */}
+                    {isOtExpandedB && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+                        {Array.from({ length: visibleOtCount }, (_, j) => {
+                          const i = otOffset + j;
                           const val = roundLogsB[i] || '';
-                          const colorMap = { K: { bg: 'rgba(244,114,182,0.2)', border: 'rgba(244,114,182,0.6)', text: '#f472b6', glow: '0 0 8px rgba(244,114,182,0.4)' }, D: { bg: 'rgba(248,113,113,0.2)', border: 'rgba(248,113,113,0.6)', text: '#f87171', glow: '0 0 8px rgba(248,113,113,0.4)' }, P: { bg: 'rgba(167,139,250,0.2)', border: 'rgba(167,139,250,0.6)', text: '#a78bfa', glow: '0 0 8px rgba(167,139,250,0.4)' }, T: { bg: 'rgba(251,191,36,0.2)', border: 'rgba(251,191,36,0.6)', text: '#fbbf24', glow: '0 0 8px rgba(251,191,36,0.4)' } };
+                          const colorMap = {
+                            K: { bg: 'rgba(244,114,182,0.2)', border: 'rgba(244,114,182,0.6)', text: '#f472b6', glow: '0 0 8px rgba(244,114,182,0.4)' },
+                            D: { bg: 'rgba(248,113,113,0.2)', border: 'rgba(248,113,113,0.6)', text: '#f87171', glow: '0 0 8px rgba(248,113,113,0.4)' },
+                            P: { bg: 'rgba(167,139,250,0.2)', border: 'rgba(167,139,250,0.6)', text: '#a78bfa', glow: '0 0 8px rgba(167,139,250,0.4)' },
+                            T: { bg: 'rgba(251,191,36,0.2)', border: 'rgba(251,191,36,0.6)', text: '#fbbf24', glow: '0 0 8px rgba(251,191,36,0.4)' },
+                          };
                           const c = colorMap[val] || { bg: 'rgba(30,41,59,0.6)', border: 'rgba(51,65,85,0.5)', text: 'transparent', glow: 'none' };
                           return (
                             <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                               <div style={{ fontSize: '8px', fontWeight: 700, color: 'rgba(100,116,139,0.6)', letterSpacing: '0.05em' }}>R{i + 1}</div>
-                              <div style={{ width: `${size}px`, height: `${size}px`, borderRadius: '10px', background: c.bg, border: `1px solid ${c.border}`, boxShadow: c.glow, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', cursor: 'text' }}>
-                                <input id={`round-input-B-${i}`} className="round-dot-input" type="text" maxLength="1" value={val} onChange={(e) => updateRoundEvent('B', i, e.target.value)} onFocus={(e) => e.target.select()} onKeyDown={(e) => handleRoundInputKeyDown(e, 'B', i)} style={{ width: '100%', height: '100%', padding: 0, margin: 0, textAlign: 'center', background: 'transparent', color: c.text, fontSize: '13px', fontWeight: 900, letterSpacing: '0px', lineHeight: '1', textTransform: 'uppercase', border: 'none', outline: 'none', cursor: 'text', borderRadius: '10px', boxSizing: 'border-box' }} />
+                              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: c.bg, border: `1px solid ${c.border}`, boxShadow: c.glow, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', cursor: 'text' }}>
+                                <input
+                                  id={`round-input-B-${i}`}
+                                  className="round-dot-input"
+                                  type="text"
+                                  maxLength="1"
+                                  value={val}
+                                  onChange={(e) => updateRoundEvent('B', i, e.target.value)}
+                                  onFocus={(e) => e.target.select()}
+                                  onKeyDown={(e) => handleRoundInputKeyDown(e, 'B', i)}
+                                  style={{ width: '100%', height: '100%', padding: 0, margin: 0, textAlign: 'center', background: 'transparent', color: c.text, fontSize: '13px', fontWeight: 900, letterSpacing: '0px', lineHeight: '1', textTransform: 'uppercase', border: 'none', outline: 'none', cursor: 'text', borderRadius: '10px', boxSizing: 'border-box' }}
+                                />
                               </div>
                             </div>
                           );
                         })}
+
+                        {/* + Button next to last round */}
+                        {visibleOtCount < maxOvertime && (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                            <div style={{ fontSize: '8px', fontWeight: 700, color: '#f472b6', letterSpacing: '0.05em' }}>
+                              +R{otOffset + visibleOtCount + 1}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={handleAddOtRound}
+                              style={{
+                                width: '36px',
+                                height: '36px',
+                                borderRadius: '10px',
+                                background: 'rgba(244,114,182,0.1)',
+                                border: '1px dashed rgba(244,114,182,0.6)',
+                                color: '#f472b6',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '18px',
+                                fontWeight: 900,
+                                cursor: 'pointer',
+                                transition: 'all 0.15s',
+                                boxShadow: '0 0 10px rgba(244,114,182,0.12)',
+                              }}
+                              title={`Click to add Round ${otOffset + visibleOtCount + 1}`}
+                            >
+                              +
+                            </button>
+                          </div>
+                        )}
+
+                        {visibleOtCount === 0 && (
+                          <div style={{ fontSize: '10px', color: 'rgba(148,163,184,0.5)', fontStyle: 'italic', paddingLeft: '8px' }}>
+                            Click + to start adding overtime rounds
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    )}
+                  </div>
                 </div>
               </div>
 
