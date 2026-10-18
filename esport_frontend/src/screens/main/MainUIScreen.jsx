@@ -91,6 +91,13 @@ const MainUIScreen = ({ onLogout }) => {
     document.documentElement.style.setProperty('--theme-accent-base', themeAccent);
   }, [themeAccent]);
 
+  useEffect(() => {
+    const pColor = localStorage.getItem('plantColor') || '#ef4444';
+    const dColor = localStorage.getItem('defuseColor') || '#10b981';
+    document.documentElement.style.setProperty('--color-plant', pColor);
+    document.documentElement.style.setProperty('--color-defuse', dColor);
+  }, []);
+
   // Core functional logic for system-wide Light/Dark mode
   useEffect(() => {
     if (theme === 'dark') {

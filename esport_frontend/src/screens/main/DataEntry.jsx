@@ -327,8 +327,27 @@ const DataEntry = ({ globalGame, globalTournament }) => {
   const [selectedRound, setSelectedRound] = useState(1);
   const [selectedAction, setSelectedAction] = useState("Plant");
   const [manualX, setManualX] = useState("");
-  const [manualY, setManualY] = useState("");
   const [heatmapNotif, setHeatmapNotif] = useState(null);
+  const [plantColor, setPlantColor] = useState(() => localStorage.getItem('plantColor') || '#ef4444');
+  const [defuseColor, setDefuseColor] = useState(() => localStorage.getItem('defuseColor') || '#10b981');
+
+  useEffect(() => {
+    const handleColors = (e) => {
+      if (e?.detail) {
+        if (e.detail.plantColor) setPlantColor(e.detail.plantColor);
+        if (e.detail.defuseColor) setDefuseColor(e.detail.defuseColor);
+      } else {
+        setPlantColor(localStorage.getItem('plantColor') || '#ef4444');
+        setDefuseColor(localStorage.getItem('defuseColor') || '#10b981');
+      }
+    };
+    window.addEventListener('mapColorsChanged', handleColors);
+    window.addEventListener('storage', handleColors);
+    return () => {
+      window.removeEventListener('mapColorsChanged', handleColors);
+      window.removeEventListener('storage', handleColors);
+    };
+  }, []);
 
   const showHeatmapNotifMsg = (action, round) => {
     setHeatmapNotif(`Recorded ${action} for Round ${round}`);
@@ -2382,12 +2401,18 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                           <button
                             key={h.id}
                             onClick={() => removeHeatmapEvent(h.id)}
-                            className={`group/ev flex items-center rounded-full text-[8px] font-bold transition-all px-2 py-0.5 gap-1 ${h.type === "Plant"
-                              ? "bg-red-500/15 text-red-400 border border-red-500/30"
-                              : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"}`}
+                            className="group/ev flex items-center rounded-full text-[8px] font-bold transition-all px-2 py-0.5 gap-1 border"
+                            style={{
+                              backgroundColor: h.type === "Plant" ? `${plantColor}20` : `${defuseColor}20`,
+                              borderColor: h.type === "Plant" ? `${plantColor}50` : `${defuseColor}50`,
+                              color: h.type === "Plant" ? plantColor : defuseColor
+                            }}
                             title={`${h.type} at (${Math.round(h.x)}%, ${Math.round(h.y)}%) — click to remove`}
                           >
-                            <span className={`w-1.5 h-1.5 rounded-full ${h.type === "Plant" ? "bg-red-400" : "bg-emerald-400"}`}></span>
+                            <span 
+                              className="w-1.5 h-1.5 rounded-full" 
+                              style={{ backgroundColor: h.type === "Plant" ? plantColor : defuseColor }}
+                            ></span>
                             {h.type[0]}
                             <span className="hidden group-hover/ev:inline text-red-400 ml-0.5">✕</span>
                           </button>
@@ -2435,15 +2460,13 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                           return (
                             <div
                               key={h.id}
-                              className={`absolute w-4 h-4 -ml-2 -mt-2 rounded-full border-2 border-white animate-in zoom-in hover:scale-150 transition-transform cursor-pointer hover:!z-50 ${
-                                isDefuse
-                                  ? "bg-emerald-500 shadow-[0_0_12px_#10b981] z-40"
-                                  : "bg-red-500 shadow-[0_0_12px_#ef4444] z-30"
-                              }`}
+                              className="absolute w-4 h-4 -ml-2 -mt-2 rounded-full border-2 border-white animate-in zoom-in hover:scale-150 transition-transform cursor-pointer hover:!z-50"
                               style={{
                                 left: `${h.x !== undefined ? h.x : h.coord_x}%`,
                                 top: `${h.y !== undefined ? h.y : h.coord_y}%`,
                                 zIndex: isDefuse ? 40 : 30,
+                                backgroundColor: isDefuse ? defuseColor : plantColor,
+                                boxShadow: `0 0 12px ${isDefuse ? defuseColor : plantColor}`,
                               }}
                             ></div>
                           );

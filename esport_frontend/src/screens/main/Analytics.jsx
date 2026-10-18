@@ -770,6 +770,27 @@ const StrategyMap = ({
   
   let mapNameForImage = selectedMap || (isValorant ? "Ascent" : "Ankara");
   const [filterType, setFilterType] = useState("ALL");
+  const [plantColor, setPlantColor] = useState(() => localStorage.getItem('plantColor') || '#ef4444');
+  const [defuseColor, setDefuseColor] = useState(() => localStorage.getItem('defuseColor') || '#10b981');
+
+  useEffect(() => {
+    const handleColors = (e) => {
+      if (e?.detail) {
+        if (e.detail.plantColor) setPlantColor(e.detail.plantColor);
+        if (e.detail.defuseColor) setDefuseColor(e.detail.defuseColor);
+      } else {
+        setPlantColor(localStorage.getItem('plantColor') || '#ef4444');
+        setDefuseColor(localStorage.getItem('defuseColor') || '#10b981');
+      }
+    };
+    window.addEventListener('mapColorsChanged', handleColors);
+    window.addEventListener('storage', handleColors);
+    return () => {
+      window.removeEventListener('mapColorsChanged', handleColors);
+      window.removeEventListener('storage', handleColors);
+    };
+  }, []);
+
   const [tooltip, setTooltip] = useState({
     visible: false,
     x: 0,
@@ -918,15 +939,13 @@ const StrategyMap = ({
               return (
                 <div
                   key={h.id}
-                  className={`absolute w-4 h-4 -ml-2 -mt-2 rounded-full border-2 border-white animate-in zoom-in hover:scale-150 transition-transform cursor-help hover:!z-50 ${
-                    isDefuse
-                      ? "bg-emerald-500 shadow-[0_0_12px_#10b981] z-40"
-                      : "bg-red-500 shadow-[0_0_12px_#ef4444] z-30"
-                  }`}
+                  className="absolute w-4 h-4 -ml-2 -mt-2 rounded-full border-2 border-white animate-in zoom-in hover:scale-150 transition-transform cursor-help hover:!z-50"
                   style={{
                     left: `${h.coord_x}%`,
                     top: `${h.coord_y}%`,
                     zIndex: isDefuse ? 40 : 30,
+                    backgroundColor: isDefuse ? defuseColor : plantColor,
+                    boxShadow: `0 0 12px ${isDefuse ? defuseColor : plantColor}`
                   }}
                   onMouseMove={(e) => {
                     e.stopPropagation();
@@ -938,11 +957,11 @@ const StrategyMap = ({
                       content: (
                         <div className="flex flex-col gap-1 min-w-[80px]">
                           <div
-                            className={`font-black uppercase tracking-widest text-xs border-b pb-1 ${
-                              isDefuse
-                                ? "text-emerald-400 border-emerald-900/50"
-                                : "text-red-400 border-red-900/50"
-                            }`}
+                            className="font-black uppercase tracking-widest text-xs border-b pb-1"
+                            style={{
+                              color: isDefuse ? defuseColor : plantColor,
+                              borderColor: `${isDefuse ? defuseColor : plantColor}40`
+                            }}
                           >
                             {isDefuse ? (h.event_type || "Defuse") : (h.event_type === "Plant" ? "Plant Success" : h.event_type)}
                           </div>
@@ -974,23 +993,29 @@ const StrategyMap = ({
           </span>
           <div className="flex items-center justify-between w-full mb-2">
             <div className="flex items-center gap-2.5">
-              <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] border border-white shrink-0"></div>
+              <div 
+                className="w-3 h-3 rounded-full border border-white shrink-0"
+                style={{ backgroundColor: defuseColor, boxShadow: `0 0 8px ${defuseColor}` }}
+              ></div>
               <span className="text-[10px] font-bold text-theme-text-base uppercase">
                 Defuse
               </span>
             </div>
-            <span className="text-[10px] font-bold text-emerald-400 font-mono">
+            <span className="text-[10px] font-bold font-mono" style={{ color: defuseColor }}>
               {defusePct}%
             </span>
           </div>
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-2.5">
-              <div className="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444] border border-white shrink-0"></div>
+              <div 
+                className="w-3 h-3 rounded-full border border-white shrink-0"
+                style={{ backgroundColor: plantColor, boxShadow: `0 0 8px ${plantColor}` }}
+              ></div>
               <span className="text-[10px] font-bold text-theme-text-base uppercase">
                 Plant Success
               </span>
             </div>
-            <span className="text-[10px] font-bold text-red-400 font-mono">
+            <span className="text-[10px] font-bold font-mono" style={{ color: plantColor }}>
               {plantPct}%
             </span>
           </div>
@@ -1012,6 +1037,26 @@ const Analytics = ({ globalGame, globalTournament }) => {
   });
   const [matchRecords, setMatchRecords] = useState([]);
   const [heatmapEvents, setHeatmapEvents] = useState([]);
+  const [plantColor, setPlantColor] = useState(() => localStorage.getItem('plantColor') || '#ef4444');
+  const [defuseColor, setDefuseColor] = useState(() => localStorage.getItem('defuseColor') || '#10b981');
+
+  useEffect(() => {
+    const handleColors = (e) => {
+      if (e?.detail) {
+        if (e.detail.plantColor) setPlantColor(e.detail.plantColor);
+        if (e.detail.defuseColor) setDefuseColor(e.detail.defuseColor);
+      } else {
+        setPlantColor(localStorage.getItem('plantColor') || '#ef4444');
+        setDefuseColor(localStorage.getItem('defuseColor') || '#10b981');
+      }
+    };
+    window.addEventListener('mapColorsChanged', handleColors);
+    window.addEventListener('storage', handleColors);
+    return () => {
+      window.removeEventListener('mapColorsChanged', handleColors);
+      window.removeEventListener('storage', handleColors);
+    };
+  }, []);
   useEffect(() => {
     const fetchRecords = async () => {
       try {
@@ -1703,15 +1748,13 @@ const Analytics = ({ globalGame, globalTournament }) => {
                         return (
                           <div
                             key={h.id}
-                            className={`absolute w-5 h-5 -ml-2.5 -mt-2.5 rounded-full border-[3px] border-white hover:scale-150 transition-transform cursor-help hover:!z-50 ${
-                              isDefuse
-                                ? "bg-emerald-500 shadow-[0_0_15px_#10b981] z-40"
-                                : "bg-red-500 shadow-[0_0_15px_#ef4444] z-30"
-                            }`}
+                            className="absolute w-5 h-5 -ml-2.5 -mt-2.5 rounded-full border-[3px] border-white hover:scale-150 transition-transform cursor-help hover:!z-50"
                             style={{
                               left: `${h.coord_x}%`,
                               top: `${h.coord_y}%`,
                               zIndex: isDefuse ? 40 : 30,
+                              backgroundColor: isDefuse ? defuseColor : plantColor,
+                              boxShadow: `0 0 15px ${isDefuse ? defuseColor : plantColor}`
                             }}
                             onMouseMove={(e) => {
                               e.stopPropagation();
@@ -1723,11 +1766,11 @@ const Analytics = ({ globalGame, globalTournament }) => {
                                 content: (
                                   <div className="flex flex-col gap-1 min-w-[80px]">
                                     <div
-                                      className={`font-black uppercase tracking-widest text-xs border-b pb-1 ${
-                                        isDefuse
-                                          ? "text-emerald-400 border-emerald-900/50"
-                                          : "text-red-400 border-red-900/50"
-                                      }`}
+                                      className="font-black uppercase tracking-widest text-xs border-b pb-1"
+                                      style={{
+                                        color: isDefuse ? defuseColor : plantColor,
+                                        borderColor: `${isDefuse ? defuseColor : plantColor}40`
+                                      }}
                                     >
                                       {isDefuse ? (h.event_type || "Defuse") : (h.event_type === "Plant" ? "Plant Success" : h.event_type)}
                                     </div>
@@ -1760,26 +1803,32 @@ const Analytics = ({ globalGame, globalTournament }) => {
                   </span>
                   <div className="flex items-center justify-between w-full gap-4 mb-2">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-4 h-4 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981] border-2 border-white shrink-0"></div>
+                      <div 
+                        className="w-4 h-4 rounded-full border-2 border-white shrink-0" 
+                        style={{ backgroundColor: defuseColor, boxShadow: `0 0 10px ${defuseColor}` }}
+                      ></div>
                       <span className="text-xs font-bold text-theme-text-base uppercase tracking-wider">
                         Defuse
                       </span>
                     </div>
                     {modalData.data?.defusePct !== undefined && (
-                      <span className="text-xs font-bold text-emerald-400 font-mono">
+                      <span className="text-xs font-bold font-mono" style={{ color: defuseColor }}>
                         {modalData.data.defusePct}%
                       </span>
                     )}
                   </div>
                   <div className="flex items-center justify-between w-full gap-4">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-4 h-4 rounded-full bg-red-500 shadow-[0_0_10px_#ef4444] border-2 border-white shrink-0"></div>
+                      <div 
+                        className="w-4 h-4 rounded-full border-2 border-white shrink-0" 
+                        style={{ backgroundColor: plantColor, boxShadow: `0 0 10px ${plantColor}` }}
+                      ></div>
                       <span className="text-xs font-bold text-theme-text-base uppercase tracking-wider">
                         Plant Success
                       </span>
                     </div>
                     {modalData.data?.plantPct !== undefined && (
-                      <span className="text-xs font-bold text-red-400 font-mono">
+                      <span className="text-xs font-bold font-mono" style={{ color: plantColor }}>
                         {modalData.data.plantPct}%
                       </span>
                     )}

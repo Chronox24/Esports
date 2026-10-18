@@ -284,6 +284,40 @@ const Settings = ({ globalGame, themeBg, setThemeBg, themeAccent, setThemeAccent
     window.pickingColorTimer = setTimeout(() => document.body.classList.remove('picking-color'), 150);
   };
 
+  const [plantColor, setPlantColor] = useState(() => localStorage.getItem('plantColor') || '#ef4444');
+  const [defuseColor, setDefuseColor] = useState(() => localStorage.getItem('defuseColor') || '#10b981');
+
+  useEffect(() => {
+    document.documentElement.style.setProperty('--color-plant', plantColor);
+    document.documentElement.style.setProperty('--color-defuse', defuseColor);
+  }, [plantColor, defuseColor]);
+
+  const handlePlantColorChange = (newColor) => {
+    setPlantColor(newColor);
+    localStorage.setItem('plantColor', newColor);
+    document.documentElement.style.setProperty('--color-plant', newColor);
+    window.dispatchEvent(new CustomEvent('mapColorsChanged', { detail: { plantColor: newColor, defuseColor } }));
+  };
+
+  const handleDefuseColorChange = (newColor) => {
+    setDefuseColor(newColor);
+    localStorage.setItem('defuseColor', newColor);
+    document.documentElement.style.setProperty('--color-defuse', newColor);
+    window.dispatchEvent(new CustomEvent('mapColorsChanged', { detail: { plantColor, defuseColor: newColor } }));
+  };
+
+  const handleResetMapColors = () => {
+    const defaultPlant = '#ef4444';
+    const defaultDefuse = '#10b981';
+    setPlantColor(defaultPlant);
+    setDefuseColor(defaultDefuse);
+    localStorage.setItem('plantColor', defaultPlant);
+    localStorage.setItem('defuseColor', defaultDefuse);
+    document.documentElement.style.setProperty('--color-plant', defaultPlant);
+    document.documentElement.style.setProperty('--color-defuse', defaultDefuse);
+    window.dispatchEvent(new CustomEvent('mapColorsChanged', { detail: { plantColor: defaultPlant, defuseColor: defaultDefuse } }));
+  };
+
   const [manualOverride, setManualOverride] = useState(true);
   const [decayRate, setDecayRate] = useState(false);
   const [mapVeto, setMapVeto] = useState(true);
@@ -624,6 +658,191 @@ const Settings = ({ globalGame, themeBg, setThemeBg, themeAccent, setThemeAccent
                         </button>
                         <div className="w-10 h-5 rounded-full p-0.5 flex items-center" style={{ backgroundColor: localThemeAccent }}>
                           <div className="w-4 h-4 rounded-full bg-white ml-auto shadow-sm"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tactical Map Event Colors (Defuse & Plant) */}
+                <div className="flex items-center gap-6 py-1">
+                  <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#2a3648] to-transparent"></div>
+                  <span className="text-xs font-black text-theme-text-muted uppercase tracking-[0.2em]">Tactical Map Event Markers</span>
+                  <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#2a3648] to-transparent"></div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* 1. Defuse Event Color */}
+                  <div className="bg-bg-400/30 light:bg-slate-50 rounded-2xl p-6 border border-[#1c2532] light:border-slate-200 flex flex-col justify-between">
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="text-xs font-black text-theme-text-base uppercase tracking-widest flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: defuseColor, boxShadow: `0 0 8px ${defuseColor}` }}></span>
+                          Defuse Event Color
+                        </label>
+                        <span className="font-black font-mono text-xs px-2.5 py-1 rounded-lg border" style={{ backgroundColor: `${defuseColor}20`, color: defuseColor, borderColor: `${defuseColor}40` }}>
+                          {defuseColor}
+                        </span>
+                      </div>
+                      <p className="text-xs text-theme-text-muted mb-4 leading-relaxed">
+                        Sets the marker color and neon glow for bomb defusal events plotted across tactical heatmaps.
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+                      {/* Color Input */}
+                      <div className="flex items-center gap-4 bg-bg-300 light:bg-white rounded-xl p-3 border border-white/5 light:border-slate-200">
+                        <div className="relative w-12 h-12 rounded-xl overflow-hidden border-2 border-white/20 shadow-md shrink-0" style={{ boxShadow: `0 0 16px ${defuseColor}60` }}>
+                          <input 
+                            type="color" 
+                            value={defuseColor}
+                            onChange={(e) => handleDefuseColorChange(e.target.value)}
+                            className="absolute inset-0 w-[200%] h-[200%] -top-1/2 -left-1/2 cursor-pointer border-0 p-0"
+                            style={{ backgroundColor: 'transparent' }}
+                          />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-theme-text-base">Click to Pick Defuse Color</span>
+                          <span className="text-[11px] text-theme-text-muted font-mono">{defuseColor}</span>
+                        </div>
+                      </div>
+
+                      {/* Quick Presets */}
+                      <div className="flex items-center gap-2 pt-1 flex-wrap">
+                        <span className="text-[10px] text-theme-text-muted font-bold uppercase mr-1">Presets:</span>
+                        {['#10b981', '#06b6d4', '#3b82f6', '#84cc16', '#a855f7', '#eab308'].map((c) => (
+                          <button
+                            key={c}
+                            type="button"
+                            onClick={() => handleDefuseColorChange(c)}
+                            className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-125 ${defuseColor.toLowerCase() === c.toLowerCase() ? 'border-white scale-110 shadow-md' : 'border-transparent'}`}
+                            style={{ backgroundColor: c, boxShadow: `0 0 6px ${c}50` }}
+                            title={c}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 2. Plant Event Color */}
+                  <div className="bg-bg-400/30 light:bg-slate-50 rounded-2xl p-6 border border-[#1c2532] light:border-slate-200 flex flex-col justify-between">
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="text-xs font-black text-theme-text-base uppercase tracking-widest flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: plantColor, boxShadow: `0 0 8px ${plantColor}` }}></span>
+                          Plant Event Color
+                        </label>
+                        <span className="font-black font-mono text-xs px-2.5 py-1 rounded-lg border" style={{ backgroundColor: `${plantColor}20`, color: plantColor, borderColor: `${plantColor}40` }}>
+                          {plantColor}
+                        </span>
+                      </div>
+                      <p className="text-xs text-theme-text-muted mb-4 leading-relaxed">
+                        Sets the marker color and neon glow for spike/bomb planting locations on the map.
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+                      {/* Color Input */}
+                      <div className="flex items-center gap-4 bg-bg-300 light:bg-white rounded-xl p-3 border border-white/5 light:border-slate-200">
+                        <div className="relative w-12 h-12 rounded-xl overflow-hidden border-2 border-white/20 shadow-md shrink-0" style={{ boxShadow: `0 0 16px ${plantColor}60` }}>
+                          <input 
+                            type="color" 
+                            value={plantColor}
+                            onChange={(e) => handlePlantColorChange(e.target.value)}
+                            className="absolute inset-0 w-[200%] h-[200%] -top-1/2 -left-1/2 cursor-pointer border-0 p-0"
+                            style={{ backgroundColor: 'transparent' }}
+                          />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-theme-text-base">Click to Pick Plant Color</span>
+                          <span className="text-[11px] text-theme-text-muted font-mono">{plantColor}</span>
+                        </div>
+                      </div>
+
+                      {/* Quick Presets */}
+                      <div className="flex items-center gap-2 pt-1 flex-wrap">
+                        <span className="text-[10px] text-theme-text-muted font-bold uppercase mr-1">Presets:</span>
+                        {['#ef4444', '#f97316', '#f43f5e', '#ec4899', '#f59e0b', '#8b5cf6'].map((c) => (
+                          <button
+                            key={c}
+                            type="button"
+                            onClick={() => handlePlantColorChange(c)}
+                            className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-125 ${plantColor.toLowerCase() === c.toLowerCase() ? 'border-white scale-110 shadow-md' : 'border-transparent'}`}
+                            style={{ backgroundColor: c, boxShadow: `0 0 6px ${c}50` }}
+                            title={c}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 3. Live Tactical Map Preview */}
+                  <div className="bg-bg-400/30 light:bg-slate-50 rounded-2xl p-6 border border-[#1c2532] light:border-slate-200 flex flex-col justify-between">
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="text-xs font-black text-theme-text-base uppercase tracking-widest">Tactical Map Preview</label>
+                        <button
+                          type="button"
+                          onClick={handleResetMapColors}
+                          className="text-[10px] font-bold px-2 py-0.5 rounded bg-white/5 hover:bg-white/10 text-theme-text-muted hover:text-white transition-colors uppercase tracking-wider border border-white/10"
+                          title="Restore default colors"
+                        >
+                          Reset Defaults
+                        </button>
+                      </div>
+                      <p className="text-xs text-theme-text-muted mb-3">Live visualization of your custom plant and defuse markers:</p>
+                    </div>
+
+                    {/* Simulated Mini Map Stage */}
+                    <div className="relative w-full h-36 rounded-xl overflow-hidden border border-slate-700/60 bg-[#070b10] flex items-center justify-center p-3 shadow-inner">
+                      {/* Background grid */}
+                      <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                      
+                      {/* Simulated Sites */}
+                      <div className="absolute top-3 left-4 px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700 text-[9px] font-black text-slate-400">
+                        SITE A
+                      </div>
+                      <div className="absolute bottom-3 right-4 px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700 text-[9px] font-black text-slate-400">
+                        SITE B
+                      </div>
+
+                      {/* Plant Marker with Glow */}
+                      <div 
+                        className="absolute w-5 h-5 rounded-full border-2 border-white flex items-center justify-center cursor-pointer transition-transform hover:scale-125"
+                        style={{
+                          top: '38%',
+                          left: '32%',
+                          backgroundColor: plantColor,
+                          boxShadow: `0 0 16px ${plantColor}`
+                        }}
+                        title={`Plant Event (${plantColor})`}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-white opacity-90"></span>
+                      </div>
+
+                      {/* Defuse Marker with Glow */}
+                      <div 
+                        className="absolute w-5 h-5 rounded-full border-2 border-white flex items-center justify-center cursor-pointer transition-transform hover:scale-125"
+                        style={{
+                          top: '55%',
+                          left: '68%',
+                          backgroundColor: defuseColor,
+                          boxShadow: `0 0 16px ${defuseColor}`
+                        }}
+                        title={`Defuse Event (${defuseColor})`}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-white opacity-90"></span>
+                      </div>
+
+                      {/* Floating Mini Legend inside Preview */}
+                      <div className="absolute bottom-2 left-2 bg-slate-900/90 backdrop-blur-md rounded-lg border border-slate-800 px-2.5 py-1 flex items-center gap-3 shadow-lg">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full border border-white shrink-0" style={{ backgroundColor: defuseColor, boxShadow: `0 0 6px ${defuseColor}` }}></span>
+                          <span className="text-[9px] font-bold text-white uppercase">Defuse</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full border border-white shrink-0" style={{ backgroundColor: plantColor, boxShadow: `0 0 6px ${plantColor}` }}></span>
+                          <span className="text-[9px] font-bold text-white uppercase">Plant</span>
                         </div>
                       </div>
                     </div>
