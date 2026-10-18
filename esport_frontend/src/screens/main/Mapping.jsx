@@ -1273,7 +1273,7 @@ const Mapping = ({ globalGame, globalTournament }) => {
 
         {/* Floating Toast Notification */}
         {toastMessage && (
-          <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-5 py-3 rounded-xl bg-slate-900/95 border border-cyan-500/50 text-cyan-300 text-xs font-bold shadow-[0_8px_30px_rgba(0,0,0,0.7)] backdrop-blur-md animate-[fadeInScale_0.2s_ease-out]">
+          <div className="fixed top-6 right-8 z-50 flex items-center gap-2.5 px-5 py-3 rounded-xl bg-slate-900/95 border border-cyan-500/50 text-cyan-300 text-xs font-bold shadow-[0_10px_35px_rgba(6,182,212,0.3)] backdrop-blur-md animate-[fadeInScale_0.2s_ease-out]">
             <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
             <span>{toastMessage}</span>
           </div>
