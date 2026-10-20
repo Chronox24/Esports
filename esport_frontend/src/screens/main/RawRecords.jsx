@@ -186,6 +186,7 @@ const RawRecords = ({ globalTournament }) => {
         .title-gradient {
           background: linear-gradient(135deg, #00d0eb, #818cf8);
           -webkit-background-clip: text;
+          background-clip: text;
           -webkit-text-fill-color: transparent;
         }
       `}</style>

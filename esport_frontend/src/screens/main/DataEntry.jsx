@@ -2914,50 +2914,64 @@ const DataEntry = ({ globalGame, globalTournament }) => {
           </div>
         { }
 
-        {submittedRecords.length > 0 && (
-          <div className="bg-[#0d131c] light:bg-white rounded-2xl border border-slate-800/60 light:border-slate-200 overflow-hidden shadow-2xl">
-            <div 
-              className="border-b border-slate-800/60 light:border-slate-200 bg-slate-900/50 light:bg-slate-50 flex flex-col"
-              style={{ padding: "24px 32px", gap: "8px" }}
+        <div className="bg-[#0d131c] light:bg-white rounded-2xl border border-slate-800/60 light:border-slate-200 overflow-hidden shadow-2xl">
+          <div 
+            className="border-b border-slate-800/60 light:border-slate-200 bg-slate-900/50 light:bg-slate-50 flex flex-col"
+            style={{ padding: "24px 32px", gap: "8px" }}
+          >
+            <h3 
+              className="text-xl font-black text-white light:text-slate-900 tracking-wider uppercase"
+              style={{ margin: 0, letterSpacing: "0.12em" }}
             >
-              <h3 
-                className="text-xl font-black text-white light:text-slate-900 tracking-wider uppercase"
-                style={{ margin: 0, letterSpacing: "0.12em" }}
-              >
-                SUBMITTED RECORDS
-              </h3>
-              <span 
-                className="text-xs font-bold text-slate-400 light:text-slate-500 uppercase"
-                style={{ letterSpacing: "0.2em" }}
-              >
-                {game.toUpperCase()} | {(globalTournament || 'REGULAR SEASON').toUpperCase()} | W{week} D{day} M{match} (ALL SETS)
-              </span>
-            </div>
-            <div className="overflow-x-auto overflow-y-auto max-h-[600px] de-scroll">
-              <table className="w-full text-left border-collapse text-sm text-slate-300 light:text-slate-700 whitespace-nowrap">
-                <thead>
-                  <tr className="text-[10px] uppercase tracking-[0.1em] text-slate-500 border-b border-slate-800/60 light:border-slate-200 bg-slate-900/90 light:bg-slate-100">
-                    <th className="px-3 py-3 font-bold text-center">STAGE #</th>
-                    <th className="px-3 py-3 font-bold text-center">DAY #</th>
-                    <th className="px-3 py-3 font-bold text-center">MATCH #</th>
-                    <th className="px-3 py-3 font-bold text-center">MAP #</th>
-                    <th className="px-4 py-3 font-bold text-left">TEAM</th>
-                    <th className="px-4 py-3 font-bold text-left">PLAYER</th>
-                    <th className="px-4 py-3 font-bold text-center">AGENTS</th>
-                    <th className="px-3 py-3 font-bold text-center text-emerald-400">Win</th>
-                    <th className="px-4 py-3 font-bold text-center text-emerald-400">PERFORMANCE SCORE</th>
-                    <th className="px-3 py-3 font-bold text-center">KILLS</th>
-                    <th className="px-3 py-3 font-bold text-center">DEATHS</th>
-                    <th className="px-3 py-3 font-bold text-center">ASSIST</th>
-                    <th className="px-4 py-3 font-bold text-center text-emerald-400">TRADES</th>
-                    <th className="px-4 py-3 font-bold text-center">FIRST KILLS</th>
-                    <th className="px-4 py-3 font-bold text-center">PLANTS</th>
-                    <th className="px-4 py-3 font-bold text-center">DEFUSE</th>
-                    <th className="px-4 py-3 font-bold text-center">ACE</th>
+              SUBMITTED RECORDS
+            </h3>
+            <span 
+              className="text-xs font-bold text-slate-400 light:text-slate-500 uppercase"
+              style={{ letterSpacing: "0.2em" }}
+            >
+              {game.toUpperCase()} | {(globalTournament || 'REGULAR SEASON').toUpperCase()} | W{week} D{day} M{match} (ALL SETS)
+            </span>
+          </div>
+          <div className="overflow-x-auto overflow-y-auto max-h-[600px] de-scroll">
+            <table className="w-full text-left border-collapse text-sm text-slate-300 light:text-slate-700 whitespace-nowrap">
+              <thead>
+                <tr className="text-[10px] uppercase tracking-[0.1em] text-slate-500 border-b border-slate-800/60 light:border-slate-200 bg-slate-900/90 light:bg-slate-100">
+                  <th className="px-3 py-3 font-bold text-center">STAGE #</th>
+                  <th className="px-3 py-3 font-bold text-center">DAY #</th>
+                  <th className="px-3 py-3 font-bold text-center">MATCH #</th>
+                  <th className="px-3 py-3 font-bold text-center">MAP #</th>
+                  <th className="px-4 py-3 font-bold text-left">TEAM</th>
+                  <th className="px-4 py-3 font-bold text-left">PLAYER</th>
+                  <th className="px-4 py-3 font-bold text-center">AGENTS</th>
+                  <th className="px-3 py-3 font-bold text-center text-emerald-400">Win</th>
+                  <th className="px-4 py-3 font-bold text-center text-emerald-400">PERFORMANCE SCORE</th>
+                  <th className="px-3 py-3 font-bold text-center">KILLS</th>
+                  <th className="px-3 py-3 font-bold text-center">DEATHS</th>
+                  <th className="px-3 py-3 font-bold text-center">ASSIST</th>
+                  <th className="px-4 py-3 font-bold text-center text-emerald-400">TRADES</th>
+                  <th className="px-4 py-3 font-bold text-center">FIRST KILLS</th>
+                  <th className="px-4 py-3 font-bold text-center">PLANTS</th>
+                  <th className="px-4 py-3 font-bold text-center">DEFUSE</th>
+                  <th className="px-4 py-3 font-bold text-center">ACE</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/30 light:divide-slate-200">
+                {submittedRecords.length === 0 ? (
+                  <tr>
+                    <td colSpan={17} className="px-4 py-12 text-center text-slate-500 light:text-slate-400">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <svg className="w-8 h-8 text-slate-600 light:text-slate-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <p className="font-bold text-sm text-slate-300 light:text-slate-700">No records submitted yet</p>
+                        <p className="text-xs text-slate-500 light:text-slate-400">
+                          Submitted match records will appear here.
+                        </p>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/30 light:divide-slate-200">
-                  {submittedRecords.map((rec, idx) => {
+                ) : (
+                  submittedRecords.map((rec, idx) => {
                     const isTeamA = rec.team_name === (teamA.name || "Team A");
                     const teamColorClass = isTeamA ? "text-blue-400" : "text-red-400";
 
@@ -2984,12 +2998,12 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                         <td className="px-4 py-2 text-center font-bold">{rec.aces ?? rec.ace ?? 0}</td>
                       </tr>
                     );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
+        </div>
         <div className="h-4" />
       </div>
     </div>
