@@ -182,28 +182,7 @@ const MainUIScreen = ({ onLogout }) => {
       links: [
         { name: 'Dashboard' },
         { name: 'Tournament' },
-
-        { name: 'Tournament History' },
-        { name: 'Predictions' }
-      ]
-    },
-    {
-      category: 'Management',
-      links: [
-        { name: 'Map Vetoes' },
-        { name: 'Data Entry' },
-        ...(globalGame === 'CROSSFIRE' ? [{ name: 'PRS Entry' }] : []),
-        { name: 'Player Management' }
-      ]
-    },
-    {
-      category: 'Statistics',
-      links: [
-        { name: 'Leaderboards' },
-        { name: 'Analytics' },
-        { name: 'Player Rankings' },
-        { name: 'Player Stats' },
-        { name: 'Raw Records' }
+        { name: 'Tournament History' }
       ]
     },
     {
@@ -216,7 +195,7 @@ const MainUIScreen = ({ onLogout }) => {
     }
   ];
   const renderContent = () => {
-    const requiresFolder = ['Dashboard', 'Tournament', 'Predictions', 'Map Vetoes', 'Data Entry', 'PRS Entry', 'Player Management', 'Leaderboards', 'Analytics', 'Player Rankings', 'Player Stats', 'Raw Records'];
+    const requiresFolder = [];
     if (requiresFolder.includes(activeTab) && !globalTournament) {
       return (
         <div className="p-8 w-full h-full flex flex-col items-center animate-fade-in text-theme-text-base overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#1e293b transparent' }}>
@@ -275,21 +254,23 @@ const MainUIScreen = ({ onLogout }) => {
         </div>
       );
     }
+    const currentTournObj = tournaments.find(t => t.name === globalTournament) || (globalTournament ? { name: globalTournament, game: globalGame } : null);
+
     switch (activeTab) {
       case 'Dashboard': return <ErrorBoundary><Dashboard globalGame={globalGame} globalTournament={globalTournament} /></ErrorBoundary>;
-      case 'Tournament': return <Tournament globalGame={globalGame} globalTournament={tournaments.find(t => t.name === globalTournament) || (globalTournament ? { name: globalTournament, game: globalGame } : null)} setGlobalTournament={setGlobalTournament} />;
-
+      case 'Tournament': return <Tournament globalGame={globalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} />;
       case 'Tournament History': return <TournamentHistory setGlobalTournament={setGlobalTournament} setActiveTab={setActiveTab} />;
-      case 'Predictions': return <Predictions globalGame={globalGame} globalTournament={globalTournament} />;
-      case 'Map Vetoes': return <Mapping key={`mapping-${globalTournament}-${globalGame}`} globalGame={globalGame} globalTournament={globalTournament} />;
-      case 'Data Entry': return <DataEntry key={`de-${globalTournament}`} globalGame={globalGame} globalTournament={globalTournament} />;
-      case 'PRS Entry': return <PRSEntry key={`prs-${globalTournament}`} globalGame={globalGame} globalTournament={globalTournament} />;
-      case 'Player Management': return <PlayerManagement globalGame={globalGame} globalTournament={globalTournament} />;
-      case 'Leaderboards': return <Leaderboards globalGame={globalGame} globalTournament={globalTournament} />;
-      case 'Analytics': return <Analytics globalGame={globalGame} globalTournament={globalTournament} />;
-      case 'Player Rankings': return <PlayerRankings globalGame={globalGame} globalTournament={globalTournament} />;
-      case 'Player Stats': return <PlayerStatsTab globalGame={globalGame} globalTournament={globalTournament} />;
-      case 'Raw Records': return <RawRecords globalGame={globalGame} globalTournament={globalTournament} />;
+      case 'Predictions': return <Tournament globalGame={globalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="predictions" />;
+      case 'Map Vetoes': return <Tournament globalGame={globalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="mapping" />;
+      case 'Data Entry': return <Tournament globalGame={globalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="data-entry" />;
+      case 'PRS Entry': return <Tournament globalGame={globalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="prs-entry" />;
+      case 'Player Management': return <Tournament globalGame={globalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="player-management" />;
+      case 'Leaderboards': return <Tournament globalGame={globalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="leaderboards" />;
+      case 'Analytics': return <Tournament globalGame={globalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="analytics" />;
+      case 'Player Rankings': return <Tournament globalGame={globalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="player-rankings" />;
+      case 'Player Stats': return <Tournament globalGame={globalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="player-stats" />;
+      case 'Raw Records': return <Tournament globalGame={globalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="raw-records" />;
+      case 'Bracket': return <Tournament globalGame={globalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="BRACKET MANAGEMENT" />;
       case 'Admin': return <Admin globalGame={globalGame} globalTournament={globalTournament} />;
       case 'Audit Logs': return <AuditLogs globalGame={globalGame} globalTournament={globalTournament} />;
       case 'Settings': return <Settings globalGame={globalGame} globalTournament={globalTournament} themeBg={themeBg} setThemeBg={setThemeBg} themeAccent={themeAccent} setThemeAccent={setThemeAccent} />;

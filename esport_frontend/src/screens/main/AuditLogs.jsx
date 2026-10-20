@@ -83,7 +83,9 @@ const AuditLogs = () => {
                 logs.map((log) => {
                   const isExpanded = expandedLogId === log.id;
                   const date = new Date(log.created_at);
-                  const ign = log.details?.ign || 'System';
+                  const rawIgn = log.details?.ign || log.details?.account || log.details?.username || log.details?.email;
+                  const ign = (rawIgn && rawIgn !== 'System') ? rawIgn : (log.game === 'Admin' ? 'Admin' : (rawIgn || 'System'));
+                  const showGameBadge = log.game && log.game !== 'System' && log.game !== 'Admin';
                   return (
                     <React.Fragment key={log.id}>
                       <div className="bg-bg-300 light:bg-white rounded-xl border border-[#1c2532] light:border-slate-200 flex flex-col transition-colors hover:border-cyan-500/30 light:hover:border-cyan-500/30 hover:bg-bg-400 light:hover:bg-slate-50 overflow-hidden shadow-sm">
@@ -91,13 +93,18 @@ const AuditLogs = () => {
                            <div className="flex flex-col" style={{ gap: "8px", minWidth: "200px" }}>
                               <div className="flex items-center gap-2">
                                 <span className="text-[10px] font-black text-cyan-400 light:text-cyan-600 uppercase tracking-widest">{log.action_type}</span>
-                                {log.game && (
+                                {showGameBadge && (
                                   <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border ${getGameColor(log.game)}`} style={{ padding: "4px 8px", borderRadius: "9999px" }}>
                                     {log.game}
                                   </span>
                                 )}
                               </div>
-                              <span className="text-sm font-bold text-gray-200 light:text-slate-800">{ign}</span>
+                              <div className="flex items-center gap-1.5">
+                                <svg className="w-3.5 h-3.5 text-cyan-400/80 light:text-cyan-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                <span className="text-sm font-bold text-gray-200 light:text-slate-800">{ign}</span>
+                              </div>
                            </div>
                            <div className="flex-1 md:px-4">
                               <span className="text-xs text-theme-text-muted light:text-slate-600 leading-relaxed">{log.description}</span>

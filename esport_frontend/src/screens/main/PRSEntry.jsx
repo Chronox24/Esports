@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { io } from "socket.io-client";
+import { getUserAccount } from "../../utils/api";
 
 const SOCKET_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:5000' : undefined);
 const socket = io(SOCKET_URL);
@@ -21,7 +22,8 @@ function useStickyState(defaultValue, key) {
     window.sessionStorage.setItem(key, JSON.stringify(value));
     const room = window.currentDataEntryRoom || "Default";
     if (!isRemote.current) {
-      socket.emit('cellEdit', { room, field: key, new_value: value });
+      const currentAccount = getUserAccount() || 'Admin';
+      socket.emit('cellEdit', { room, field: key, new_value: value, user_id: currentAccount, username: currentAccount });
     }
     isRemote.current = false;
   }, [key, value]);

@@ -38,8 +38,46 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
+export const getUserAccount = () => {
+  try {
+    const directIgn = localStorage.getItem('user_ign') || localStorage.getItem('username');
+    if (directIgn) return directIgn;
+  } catch (e) {}
+  try {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const u = JSON.parse(userStr);
+      if (u?.user_metadata?.username) return u.user_metadata.username;
+      if (u?.user_metadata?.ign) return u.user_metadata.ign;
+      if (u?.email) return u.email.split('@')[0];
+    }
+  } catch (e) {}
+  try {
+    const sessionStr = localStorage.getItem('supabase.auth.token');
+    if (sessionStr) {
+      const session = JSON.parse(sessionStr);
+      if (session?.user?.user_metadata?.username) return session.user.user_metadata.username;
+      if (session?.user?.user_metadata?.ign) return session.user.user_metadata.ign;
+      if (session?.user?.email) return session.user.email.split('@')[0];
+    }
+  } catch (e) {}
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+        const val = JSON.parse(localStorage.getItem(key));
+        if (val?.user?.user_metadata?.username) return val.user.user_metadata.username;
+        if (val?.user?.user_metadata?.ign) return val.user.user_metadata.ign;
+        if (val?.user?.email) return val.user.email.split('@')[0];
+      }
+    }
+  } catch (e) {}
+  return null;
+};
+
 export const apiFetch = async (endpoint, options = {}) => {
   const token = getAuthToken();
+  const account = getUserAccount();
   const headers = {
     'Content-Type': 'application/json',
     ...(options.headers || {}),
@@ -49,6 +87,9 @@ export const apiFetch = async (endpoint, options = {}) => {
   }
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+  }
+  if (account) {
+    headers['X-User-Account'] = account;
   }
   const url = endpoint.startsWith('http') ? endpoint : `${API_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
   let response = await fetch(url, {

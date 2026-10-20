@@ -73,6 +73,12 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
         localStorage.setItem('supabase.auth.token', JSON.stringify(data.session));
         localStorage.setItem('token', data.session.access_token);
       }
+      if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+        const username = data.user.user_metadata?.username || data.user.user_metadata?.ign || (data.user.email ? data.user.email.split('@')[0] : 'Admin');
+        localStorage.setItem('username', username);
+        localStorage.setItem('user_ign', username);
+      }
       if (onLoginSuccess) {
         onLoginSuccess();
       } else {

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { apiFetch } from "../../utils/api";
+import { apiFetch, getUserAccount } from "../../utils/api";
 import { io } from "socket.io-client";
 import { AgentBadge, getAgentImagePath } from "../../utils/agentHelper";
 
@@ -166,7 +166,8 @@ function useStickyState(defaultValue, key) {
     window.sessionStorage.setItem(key, JSON.stringify(value));
     const room = window.currentDataEntryRoom || "Default";
     if (!isRemote.current) {
-      socket.emit('cellEdit', { room, field: key, new_value: value });
+      const currentAccount = getUserAccount() || 'Admin';
+      socket.emit('cellEdit', { room, field: key, new_value: value, user_id: currentAccount, username: currentAccount });
     }
     isRemote.current = false;
   }, [key, value]);

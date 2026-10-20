@@ -1,6 +1,17 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import Bracket from "./Bracket.jsx";
+import Predictions from "./Predictions.jsx";
+import Mapping from "./Mapping.jsx";
+import DataEntry from "./DataEntry.jsx";
+import PRSEntry from "./PRSEntry.jsx";
+import Leaderboards from "./Leaderboards.jsx";
+import Analytics from "./Analytics.jsx";
+import PlayerManagement from "./PlayerManagement.jsx";
+import PlayerRankings from "./PlayerRankings.jsx";
+import PlayerStatsTab from "./PlayerStatsTab.jsx";
+import RawRecords from "./RawRecords.jsx";
+import { ErrorBoundary } from "../../ErrorBoundary.jsx";
 import { apiFetch } from "../../utils/api";
 import {
   Calendar,
@@ -19,7 +30,18 @@ import {
   X,
   RefreshCw,
   Image as ImageIcon,
-  ChevronRight
+  ChevronRight,
+  LineChart,
+  Map as MapIcon,
+  FileEdit,
+  Users,
+  ListOrdered,
+  PieChart,
+  BarChart2,
+  TrendingUp,
+  Archive,
+  UserPlus,
+  ArrowLeft
 } from "lucide-react";
 
 function useStickyState(defaultValue, key) {
@@ -760,7 +782,7 @@ const MatchCard = ({ match, showCountdown, game, index = 0 }) => {
     </div>
   );
 };
-const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCreateModal }) => {
+const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCreateModal, onNavigateToHub }) => {
   const currentTournamentName = typeof globalTournament === 'string'
     ? globalTournament
     : globalTournament?.name;
@@ -944,16 +966,24 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
   };
 
   const handleLiveCardClick = (tName) => {
-    toggleLiveTournament(tName);
     if (setGlobalTournament) {
       setGlobalTournament(tName);
+    }
+    if (onNavigateToHub) {
+      onNavigateToHub(tName);
+    } else {
+      toggleLiveTournament(tName);
     }
   };
 
   const handleFinishedCardClick = (tName) => {
-    toggleFinishedTournament(tName);
     if (setGlobalTournament) {
       setGlobalTournament(tName);
+    }
+    if (onNavigateToHub) {
+      onNavigateToHub(tName);
+    } else {
+      toggleFinishedTournament(tName);
     }
   };
 
@@ -1075,6 +1105,7 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
                           ? 'border-cyan-500 bg-slate-800 shadow-[0_0_25px_rgba(6,182,212,0.3)]'
                           : 'border-slate-700 bg-[#0d131c] hover:border-cyan-400 hover:bg-slate-800/80 hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]'}`}
                     onClick={() => handleLiveCardClick(t.name)}
+                    title={`Open ${t.name} Tournament Hub`}
                   >
                     <div className="flex-1 relative flex flex-col items-center justify-center p-4 md:p-5 text-center overflow-hidden">
                       {isCurrent ? (
@@ -1086,9 +1117,12 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
                       <span className="text-xs md:text-sm font-semibold text-slate-400 drop-shadow-sm capitalize">
                         {(t.game || game).toLowerCase()}
                       </span>
-                      <h3 className="text-base md:text-xl font-black text-white uppercase leading-tight drop-shadow-md line-clamp-4 mt-1">
+                      <h3 className="text-base md:text-xl font-black text-white uppercase leading-tight drop-shadow-md line-clamp-4 mt-1 group-hover:text-cyan-400 transition-colors">
                         {t.name}
                       </h3>
+                      <div className="mt-2.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[11px] font-bold text-cyan-400 uppercase tracking-widest bg-cyan-500/10 px-2.5 py-0.5 rounded-full border border-cyan-500/30">
+                        Open Hub <ChevronRight size={12} />
+                      </div>
                     </div>
 
                     <div
@@ -1098,6 +1132,11 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
                           : isExpanded
                             ? 'border-cyan-500 bg-cyan-900/30 text-cyan-400'
                             : 'border-slate-700 bg-[#0a0f16] group-hover:bg-slate-800 text-slate-400 group-hover:text-cyan-400'}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleLiveTournament(t.name);
+                      }}
+                      title="Toggle match dropdown preview"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -1124,6 +1163,13 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
                     {expandedLiveTournament} <span className="text-cyan-500">MATCHES</span>
                   </h3>
                   <div className="flex items-center gap-3 flex-wrap">
+                    <button
+                      onClick={() => onNavigateToHub && onNavigateToHub(expandedLiveTournament)}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-cyan-400/50 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-bold uppercase tracking-wider text-xs transition-all shadow-[0_0_15px_rgba(6,182,212,0.3)] cursor-pointer"
+                    >
+                      <Layers size={14} /> Open Tournament Hub
+                    </button>
+
                     <button
                       onClick={() => handleToggleCompletion(expandedLiveTournament, false)}
                       disabled={isTogglingStatus}
@@ -1219,6 +1265,7 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
                           ? 'border-amber-400 bg-slate-800 shadow-[0_0_25px_rgba(245,158,11,0.35)]'
                           : 'border-slate-700 bg-[#0d131c] hover:border-amber-400/80 hover:bg-slate-800/80'}`}
                     onClick={() => handleFinishedCardClick(t.name)}
+                    title={`Open ${t.name} Tournament Hub`}
                   >
                     <div className="flex-1 relative flex flex-col items-center justify-center p-4 md:p-5 text-center overflow-hidden">
                       {isCurrent ? (
@@ -1237,9 +1284,12 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
                       <span className="text-xs md:text-sm font-semibold text-slate-400 drop-shadow-sm capitalize">
                         {(t.game || game).toLowerCase()}
                       </span>
-                      <h3 className="text-base md:text-xl font-black text-white uppercase leading-tight drop-shadow-md line-clamp-4 mt-1">
+                      <h3 className="text-base md:text-xl font-black text-white uppercase leading-tight drop-shadow-md line-clamp-4 mt-1 group-hover:text-amber-400 transition-colors">
                         {t.name}
                       </h3>
+                      <div className="mt-2.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[11px] font-bold text-amber-400 uppercase tracking-widest bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/30">
+                        Open Hub <ChevronRight size={12} />
+                      </div>
                     </div>
 
                     <div
@@ -1249,6 +1299,11 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
                           : isExpanded
                             ? 'border-amber-400 bg-amber-950/40'
                             : 'border-slate-700 bg-[#0a0f16] group-hover:bg-slate-800 text-slate-400 group-hover:text-amber-400'}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFinishedTournament(t.name);
+                      }}
+                      title="Toggle match dropdown preview"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -1281,6 +1336,13 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
                   </div>
 
                   <div className="flex items-center gap-3 flex-wrap">
+                    <button
+                      onClick={() => onNavigateToHub && onNavigateToHub(expandedFinishedTournament)}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-amber-500/50 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold uppercase tracking-wider text-xs transition-all shadow-[0_0_15px_rgba(245,158,11,0.3)] cursor-pointer"
+                    >
+                      <Layers size={14} /> Open Tournament Hub
+                    </button>
+
                     <button
                       onClick={() => handleToggleCompletion(expandedFinishedTournament, true)}
                       disabled={isTogglingStatus}
@@ -3100,9 +3162,232 @@ const TournamentRulebookTab = ({ globalGame, globalTournament }) => {
   );
 };
 
-const Tournament = ({ globalGame, globalTournament, setGlobalTournament }) => {
+const TournamentHubTab = ({
+  game,
+  tournamentName,
+  globalTournament,
+  setGlobalTournament,
+  onBackToTournaments,
+  activeSubTab = "predictions",
+  setActiveSubTab
+}) => {
+  const [availableTournaments, setAvailableTournaments] = useState([]);
+
+  useEffect(() => {
+    apiFetch('/api/tournaments')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setAvailableTournaments(data);
+      })
+      .catch(console.error);
+  }, []);
+
+  const subTabs = useMemo(() => {
+    return [
+      { key: "predictions", label: "Prediction", icon: LineChart },
+      { key: "mapping", label: "Map Veto", icon: MapIcon },
+      { key: "data-entry", label: "Data Entry", icon: FileEdit },
+      ...(game === "CROSSFIRE" ? [{ key: "prs-entry", label: "PRS Entry", icon: UserPlus }] : []),
+      { key: "player-management", label: "Player Management", icon: Users },
+      { key: "leaderboards", label: "Leaderboards", icon: ListOrdered },
+      { key: "analytics", label: "Analytics", icon: PieChart },
+      { key: "player-stats", label: "Player Stats", icon: BarChart2 },
+      { key: "player-rankings", label: "Player Rankings", icon: TrendingUp },
+      { key: "raw-records", label: "Raw Record", icon: Archive },
+      { key: "bracket", label: "Bracket", icon: Swords },
+    ];
+  }, [game]);
+
+  if (!tournamentName) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 md:p-16 text-center max-w-4xl mx-auto animate-fade-in text-white">
+        <div className="w-20 h-20 rounded-3xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-6 shadow-[0_0_30px_rgba(6,182,212,0.25)]">
+          <Layers size={36} />
+        </div>
+        <h2 className="text-2xl md:text-3xl font-black uppercase text-white tracking-widest mb-3">
+          Select a Tournament Hub
+        </h2>
+        <p className="text-sm text-slate-400 max-w-lg mb-8 leading-relaxed">
+          Choose a tournament to access its Prediction, Map Veto, Data Entry, Player Management, Leaderboards, Analytics, Player Stats, and Raw Record.
+        </p>
+
+        {availableTournaments.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full max-w-3xl mb-8">
+            {availableTournaments
+              .filter(t => !game || (t.game || 'VALORANT').toUpperCase() === game.toUpperCase())
+              .map(t => (
+                <div
+                  key={t.id || t.name}
+                  onClick={() => setGlobalTournament && setGlobalTournament(t.name)}
+                  className="p-5 rounded-2xl bg-slate-900/70 border border-slate-700/60 hover:border-cyan-400 hover:bg-slate-800/80 cursor-pointer transition-all duration-200 group text-left shadow-lg hover:shadow-[0_0_20px_rgba(6,182,212,0.3)] flex flex-col justify-between"
+                >
+                  <div>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block">
+                      {t.game || game}
+                    </span>
+                    <h3 className="text-base font-black text-white uppercase group-hover:text-cyan-400 mt-1 line-clamp-2">
+                      {t.name}
+                    </h3>
+                  </div>
+                  <div className="mt-4 flex items-center gap-1.5 text-xs font-bold text-cyan-400 uppercase tracking-wider">
+                    Enter Hub <ChevronRight size={14} />
+                  </div>
+                </div>
+              ))}
+          </div>
+        ) : null}
+
+        <button
+          onClick={onBackToTournaments}
+          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold uppercase tracking-wider text-xs border border-slate-600 transition-all cursor-pointer"
+        >
+          <ArrowLeft size={16} /> Back to Live & Upcoming
+        </button>
+      </div>
+    );
+  }
+
+  const renderActiveSubContent = () => {
+    switch (activeSubTab) {
+      case "predictions":
+        return <Predictions globalGame={game} globalTournament={tournamentName} />;
+      case "mapping":
+        return <Mapping key={`hub-mapping-${tournamentName}-${game}`} globalGame={game} globalTournament={tournamentName} />;
+      case "data-entry":
+        return <DataEntry key={`hub-de-${tournamentName}-${game}`} globalGame={game} globalTournament={tournamentName} />;
+      case "prs-entry":
+        return <PRSEntry key={`hub-prs-${tournamentName}-${game}`} globalGame={game} globalTournament={tournamentName} />;
+      case "player-management":
+        return <PlayerManagement globalGame={game} globalTournament={tournamentName} />;
+      case "leaderboards":
+        return <Leaderboards globalGame={game} globalTournament={tournamentName} />;
+      case "analytics":
+        return <Analytics globalGame={game} globalTournament={tournamentName} />;
+      case "player-stats":
+        return <PlayerStatsTab globalGame={game} globalTournament={tournamentName} />;
+      case "player-rankings":
+        return <PlayerRankings globalGame={game} globalTournament={tournamentName} />;
+      case "raw-records":
+        return <RawRecords globalGame={game} globalTournament={tournamentName} />;
+      case "bracket":
+        return (
+          <div className="w-full border border-slate-700/50 rounded-3xl overflow-hidden shadow-2xl animate-fade-in">
+            <Bracket globalGame={game} globalTournament={tournamentName} isReadOnly={false} />
+          </div>
+        );
+      default:
+        return <Predictions globalGame={game} globalTournament={tournamentName} />;
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-6 w-full animate-fade-in pb-12">
+      {/* ── Hub Banner Header ── */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center bg-[#0d131c] rounded-3xl p-6 md:p-8 border border-slate-700/60 shadow-2xl relative overflow-hidden gap-6">
+        <div className="absolute top-0 right-0 w-[350px] h-[350px] bg-cyan-500/10 blur-[90px] rounded-full pointer-events-none translate-x-1/3 -translate-y-1/3" />
+
+        <div className="flex items-center gap-5 relative z-10">
+          <button
+            onClick={onBackToTournaments}
+            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-900/80 hover:bg-slate-800 hover:border-cyan-400 text-slate-300 hover:text-cyan-300 font-bold uppercase tracking-wider text-xs transition-all cursor-pointer shrink-0 shadow-sm"
+            title="Return to tournament cards"
+          >
+            <ArrowLeft size={16} />
+            <span className="hidden sm:inline">Tournaments</span>
+          </button>
+
+          <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/10 border border-cyan-400/40 flex items-center justify-center text-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.3)] shrink-0">
+            <Layers size={26} />
+          </div>
+
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <span className="text-[11px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/50 shadow-[0_0_10px_rgba(6,182,212,0.3)]">
+                {game}
+              </span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                Tournament Workspace
+              </span>
+            </div>
+            <h1 className="text-xl md:text-3xl font-black text-white uppercase tracking-wider drop-shadow-md truncate mt-1">
+              {tournamentName}
+            </h1>
+          </div>
+        </div>
+
+        {/* Quick Tournament Switcher */}
+        {availableTournaments.length > 0 && (
+          <div className="flex items-center gap-3 relative z-10 w-full lg:w-auto justify-end">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider hidden sm:inline">
+              Switch:
+            </span>
+            <select
+              value={tournamentName}
+              onChange={(e) => setGlobalTournament && setGlobalTournament(e.target.value)}
+              className="bg-slate-900 border border-slate-700 hover:border-cyan-400 text-white text-xs font-bold uppercase tracking-wider rounded-xl px-4 py-2.5 outline-none transition-colors cursor-pointer w-full sm:w-auto"
+            >
+              {availableTournaments
+                .filter(t => !game || (t.game || 'VALORANT').toUpperCase() === game.toUpperCase())
+                .map(t => (
+                  <option key={t.id || t.name} value={t.name}>
+                    {t.name}
+                  </option>
+                ))}
+            </select>
+          </div>
+        )}
+      </div>
+
+      {/* ── Sub-Navigation Ribbon ── */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-1 px-1 custom-scrollbar border-b border-slate-800/80">
+        {subTabs.map(st => {
+          const isActive = activeSubTab === st.key;
+          const Icon = st.icon;
+
+          return (
+            <button
+              key={st.key}
+              onClick={() => setActiveSubTab(st.key)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold uppercase tracking-wider transition-all duration-200 shrink-0 cursor-pointer border ${
+                isActive
+                  ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-[0_0_18px_rgba(6,182,212,0.35)]'
+                  : 'bg-[#0d131c]/60 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 hover:bg-slate-800/60'
+              }`}
+            >
+              <Icon size={16} className={isActive ? 'text-cyan-400' : 'text-slate-400'} />
+              <span>{st.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Render Sub-module Content ── */}
+      <div className="w-full">
+        <ErrorBoundary>
+          {renderActiveSubContent()}
+        </ErrorBoundary>
+      </div>
+    </div>
+  );
+};
+
+const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initialTab, initialHubSubTab }) => {
   const activeGame = (globalGame || "VALORANT").toUpperCase();
-  const [activeTab, setActiveTab] = useState("LIVE & UPCOMING");
+  const currentTournamentName = typeof globalTournament === 'object' && globalTournament ? globalTournament.name : (globalTournament || '');
+  const [activeTab, setActiveTab] = useState(initialTab || "LIVE & UPCOMING");
+  const [hubSubTab, setHubSubTab] = useState(initialHubSubTab || "predictions");
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
+
+  useEffect(() => {
+    if (initialHubSubTab) {
+      setHubSubTab(initialHubSubTab);
+    }
+  }, [initialHubSubTab]);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [step, setStep] = useState(1);
@@ -3141,6 +3426,11 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament }) => {
       label: "LIVE & UPCOMING"
     },
     {
+      key: "TOURNAMENT HUB",
+      icon: <Layers className="h-4 w-4" />,
+      label: "TOURNAMENT HUB"
+    },
+    {
       key: "RESULT",
       icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>,
       label: "RESULT"
@@ -3167,7 +3457,7 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament }) => {
     },
     {
       key: "CREATE TOURNAMENT",
-      icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>,
+      icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>,
       label: "CREATE TOURNAMENT"
     },
   ];
@@ -3189,7 +3479,30 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament }) => {
   const renderTab = () => {
     switch (activeTab) {
       case "LIVE & UPCOMING":
-        return <LiveUpcomingTab game={activeGame} globalTournament={globalTournament} setGlobalTournament={setGlobalTournament} onOpenCreateModal={handleOpenCreateModal} />;
+        return (
+          <LiveUpcomingTab
+            game={activeGame}
+            globalTournament={globalTournament}
+            setGlobalTournament={setGlobalTournament}
+            onOpenCreateModal={handleOpenCreateModal}
+            onNavigateToHub={(tName) => {
+              if (setGlobalTournament) setGlobalTournament(tName);
+              setActiveTab("TOURNAMENT HUB");
+            }}
+          />
+        );
+      case "TOURNAMENT HUB":
+        return (
+          <TournamentHubTab
+            game={activeGame}
+            tournamentName={currentTournamentName}
+            globalTournament={globalTournament}
+            setGlobalTournament={setGlobalTournament}
+            onBackToTournaments={() => setActiveTab("LIVE & UPCOMING")}
+            activeSubTab={hubSubTab}
+            setActiveSubTab={setHubSubTab}
+          />
+        );
       case "RESULT":
         return (
           <ResultTab game={activeGame} globalTournament={globalTournament} />

@@ -121,11 +121,72 @@ const preventDuplicates = (req, res, next) => {
   next();
 };
 app.use(preventDuplicates);
-const logAudit = async (action_type, description, details, game = null) => {
+const getReqAccount = (req) => {
+  if (req?.adminUser?.username) return req.adminUser.username;
+  if (req?.user?.user_metadata?.username) return req.user.user_metadata.username;
+  if (req?.user?.user_metadata?.ign) return req.user.user_metadata.ign;
+  if (req?.headers && (req.headers['x-user-account'] || req.headers['x-user-ign'])) {
+    return req.headers['x-user-account'] || req.headers['x-user-ign'];
+  }
+  if (req?.user?.email) {
+    return req.user.email.split('@')[0];
+  }
+  if (req?.body && (req.body.account || req.body.ign || req.body.operator || req.body.author)) {
+    return req.body.account || req.body.ign || req.body.operator || req.body.author;
+  }
+  return 'Admin';
+};
+
+const extractUser = async (req, res, next) => {
+  if (req.user) return next();
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (token && supabase) {
+    try {
+      const { data } = await supabase.auth.getUser(token);
+      if (data?.user) {
+        req.user = data.user;
+        const { data: userData } = await supabase
+          .from('users')
+          .select('user_id, username, is_super_admin, permissions, role')
+          .eq('user_id', data.user.id)
+          .single();
+        if (userData) {
+          req.adminUser = userData;
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+  next();
+};
+app.use(extractUser);
+
+const logAudit = async (action_type, description, details = {}, game = null, reqOrAccount = null) => {
   if (!supabase) return;
   try {
-    const defaultDetails = { ign: 'System', ...details };
-    await supabase.from('audit_logs').insert([{ action_type, description, details: defaultDetails, game }]);
+    let ign = details?.ign;
+    if (!ign || ign === 'System' || ign === 'Admin(Argie)') {
+      if (reqOrAccount) {
+        ign = typeof reqOrAccount === 'string' ? reqOrAccount : getReqAccount(reqOrAccount);
+      } else if (details?.account || details?.username || details?.user) {
+        ign = details.account || details.username || details.user;
+      } else {
+        ign = 'Admin';
+      }
+    }
+    let validGame = game;
+    if (validGame === 'System' || validGame === 'Admin') {
+      validGame = null;
+    }
+    const finalDetails = {
+      ...details,
+      ign,
+      account: ign,
+      timestamp: new Date().toISOString()
+    };
+    await supabase.from('audit_logs').insert([{ action_type, description, details: finalDetails, game: validGame }]);
   } catch (err) {
     console.error('Failed to log audit event:', err);
   }
@@ -152,7 +213,7 @@ const isAdmin = async (req, res, next) => {
   try {
     let { data, error } = await supabase
       .from('users')
-      .select('is_super_admin, permissions, role')
+      .select('user_id, username, is_super_admin, permissions, role')
       .eq('user_id', req.user.id)
       .single();
     if (error || !data) {
@@ -164,12 +225,15 @@ const isAdmin = async (req, res, next) => {
         role: 'Super Admin',
         permissions: { full: true, edit: true, view: true, manage_folders: true },
         is_super_admin: true
-      }]).select('is_super_admin, permissions, role').single();
+      }]).select('user_id, username, is_super_admin, permissions, role').single();
       if (insertError || !newData) {
         console.error('Auto-recovery failed:', insertError);
         return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
       }
       data = newData;
+    }
+    if (!data.username && req.user?.email) {
+      data.username = req.user.email.split('@')[0];
     }
     if (data.is_super_admin || data.role === 'Super Admin' || req.user.user_metadata?.role === 'Super Admin') {
       data.is_super_admin = true;
@@ -503,7 +567,7 @@ app.post('/api/admin/send-email-verification', authenticateToken, isAdmin, async
       console.error('[Email] Error dispatching verification email:', mailErr.message);
     }
 
-    await logAudit('ADMIN_VERIFICATION_SENT', `Verification code sent to ${cleanEmail}`, { email: cleanEmail });
+    await logAudit('ADMIN_VERIFICATION_SENT', `Verification code sent to ${cleanEmail}`, { email: cleanEmail }, null, req);
 
     res.json({
       success: true,
@@ -602,7 +666,7 @@ app.post('/api/admin/create-user', authenticateToken, isAdmin, async (req, res) 
       return res.status(500).json({ error: 'User created in auth, but failed to add to public.users table: ' + dbError.message });
     }
     emailVerificationCache.del(cleanEmail);
-    await logAudit('USER_CREATED', `Account created for ${cleanEmail} with role ${role} (Email Verified)`, { email: cleanEmail, role });
+    await logAudit('USER_CREATED', `Account created for ${cleanEmail} with role ${role} (Email Verified)`, { email: cleanEmail, role }, null, req);
     res.status(201).json({ message: 'User created successfully', user: { id: userId, email: cleanEmail, role } });
   } catch (err) {
     console.error(err);
@@ -625,7 +689,7 @@ app.put('/api/admin/user/:id/permissions', authenticateToken, isAdmin, async (re
       .eq('user_id', id)
       .select();
     if (error) throw error;
-    await logAudit('PERMISSIONS_UPDATED', `Permissions updated for user ${id}`, { userId: id, permissions });
+    await logAudit('PERMISSIONS_UPDATED', `Permissions updated for user ${id}`, { userId: id, permissions }, null, req);
     res.json(data[0] || {});
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -652,7 +716,7 @@ app.post('/api/admin/transfer-ownership', authenticateToken, isAdmin, async (req
       .update({ is_super_admin: false })
       .eq('user_id', currentOwnerId);
     if (err2) throw err2;
-    await logAudit('OWNERSHIP_TRANSFERRED', `Super Admin ownership transferred`, { from: currentOwnerId, to: newOwnerId });
+    await logAudit('OWNERSHIP_TRANSFERRED', `Super Admin ownership transferred`, { from: currentOwnerId, to: newOwnerId }, null, req);
     res.json({ message: 'Ownership transferred successfully.' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -722,14 +786,14 @@ app.post('/api/tournaments/toggle-complete', authenticateToken, isAdmin, async (
           logo_url: null
         }]);
       }
-      await logAudit('TOURNAMENT', `Marked tournament "${tournament_name}" as finished`, { tournament_name }, 'System');
+      await logAudit('TOURNAMENT', `Marked tournament "${tournament_name}" as finished`, { tournament_name }, game_title || null, req);
       return res.json({ message: `Tournament "${tournament_name}" marked as finished.`, status: 'COMPLETE', is_finished: true });
     } else {
       await supabase
         .from('bracket_results')
         .delete()
         .eq('tournament_name', tournament_name);
-      await logAudit('TOURNAMENT', `Reopened tournament "${tournament_name}" as active`, { tournament_name }, 'System');
+      await logAudit('TOURNAMENT', `Reopened tournament "${tournament_name}" as active`, { tournament_name }, game_title || null, req);
       return res.json({ message: `Tournament "${tournament_name}" reopened as active.`, status: 'ACTIVE', is_finished: false });
     }
   } catch (err) {
@@ -758,7 +822,7 @@ app.post('/api/tournaments', authenticateToken, isAdmin, async (req, res) => {
       }
       return res.status(500).json({ error: error.message });
     }
-    await logAudit('FOLDER_CREATED', `Created new folder/tournament: ${trimmedName} (${game || 'VALORANT'})`, { name: trimmedName, game: game || 'VALORANT' }, 'System');
+    await logAudit('FOLDER_CREATED', `Created new folder/tournament: ${trimmedName} (${game || 'VALORANT'})`, { name: trimmedName, game: game || 'VALORANT' }, game || 'VALORANT', req);
     res.json({ message: 'Tournament created successfully', data: data[0] });
   } catch (err) {
     console.error('Error creating tournament folder:', err);
@@ -777,7 +841,7 @@ app.put('/api/tournaments', authenticateToken, isAdmin, async (req, res) => {
     .eq('name', name)
     .select();
   if (error) return res.status(500).json({ error: error.message });
-  await logAudit('SYSTEM', `Updated tournament game for ${name} to ${game}`, { name, game }, 'System');
+  await logAudit('TOURNAMENT_UPDATED', `Updated tournament game for ${name} to ${game}`, { name, game }, game, req);
   res.json({ message: 'Tournament updated successfully', data: data[0] });
 });
 app.delete('/api/tournaments/:id', authenticateToken, isAdmin, async (req, res) => {
@@ -808,7 +872,7 @@ app.delete('/api/tournaments/:id', authenticateToken, isAdmin, async (req, res) 
       return res.status(500).json({ error: delErr.message });
     }
 
-    await logAudit('FOLDER_DELETED', `Deleted folder/tournament: ${tourneyName}`, { id: tourney.id, name: tourneyName }, req.adminUser?.username || 'Admin');
+    await logAudit('FOLDER_DELETED', `Deleted folder/tournament: ${tourneyName}`, { id: tourney.id, name: tourneyName }, tourney.game || null, req);
     res.json({ message: `Tournament "${tourneyName}" deleted successfully.` });
   } catch (err) {
     console.error('Error deleting tournament folder:', err);
@@ -904,7 +968,7 @@ app.post('/api/stats/crossfire/match', authenticateToken, isAdmin, async (req, r
       .from('match_records')
       .insert(matchRecords);
     if (matchRecordsError) console.error('Failed to insert match records:', matchRecordsError);
-    await logAudit('MATCH', `Submitted Crossfire match stats for ${players.length} players`, { players, matchHeader, ign: 'Admin(Argie)' }, 'Crossfire');
+    await logAudit('MATCH_STATS', `Submitted Crossfire match stats for ${players.length} players (${tournamentName})`, { players, matchHeader, tournamentName }, 'Crossfire', req);
     res.json({ message: 'Stats successfully updated!', data: upsertData });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1105,7 +1169,7 @@ app.post('/api/stats/valorant/match', authenticateToken, isAdmin, async (req, re
         .upsert(agentUpdates, { onConflict: 'agent,tournament_name' });
       if (agentUpsertError) console.error('Failed to upsert agent stats:', agentUpsertError);
     }
-    await logAudit('MATCH', `Submitted Valorant match stats for ${players.length} players`, { players, matchHeader, ign: 'Admin(Argie)' }, 'Valorant');
+    await logAudit('MATCH_STATS', `Submitted Valorant match stats for ${players.length} players (${tournamentName})`, { players, matchHeader, tournamentName }, 'Valorant', req);
     res.json({ message: 'Stats successfully updated!', data: upsertData });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1152,7 +1216,7 @@ app.post('/api/stats/heatmap', authenticateToken, isAdmin, async (req, res) => {
       .insert(events)
       .select();
     if (error) throw error;
-    await logAudit('HEATMAP', `Submitted ${events.length} heatmap events`, { events: events.length, sample: events[0] });
+    await logAudit('HEATMAP', `Submitted ${events.length} heatmap events`, { events: events.length, sample: events[0] }, events[0]?.game || null, req);
     res.json({ message: 'Heatmap data successfully saved!', data });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1183,7 +1247,7 @@ app.post('/api/vetoes', authenticateToken, isAdmin, async (req, res) => {
     }
     const { data, error } = await supabase.from('map_vetoes').insert([payload]).select();
     if (error) throw error;
-    await logAudit('VETO', `Submitted map veto for ${payload.team_a} vs ${payload.team_b}`, { payload }, payload.game);
+    await logAudit('VETO', `Submitted map veto for ${payload.team_a} vs ${payload.team_b}`, { payload }, payload.game, req);
     res.json({ message: 'Veto data successfully saved!', data: data[0] });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1217,7 +1281,7 @@ app.post('/api/teams', authenticateToken, isAdmin, upload.single('logo'), async 
     }
     const { data, error } = await supabase.from('teams').insert([payload]).select();
     if (error) throw error;
-    await logAudit('TEAM', `Created new team: ${team_name} in ${tName}`, { team_name, tournament_name: tName, data: data[0] });
+    await logAudit('TEAM_CREATED', `Created new team: ${team_name} in ${tName}`, { team_name, tournament_name: tName, data: data[0] }, null, req);
     res.json(data[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1230,7 +1294,7 @@ app.delete('/api/teams/:id', authenticateToken, isAdmin, async (req, res) => {
     await supabase.from('players').delete().eq('team_id', id);
     const { error } = await supabase.from('teams').delete().eq('team_id', id);
     if (error) throw error;
-    await logAudit('TEAM', `Deleted team with ID: ${id}`, { team_id: id });
+    await logAudit('TEAM_DELETED', `Deleted team with ID: ${id}`, { team_id: id }, null, req);
     res.json({ message: 'Team deleted' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1261,8 +1325,7 @@ app.post('/api/players', authenticateToken, isAdmin, async (req, res) => {
     if (!player_name || !team_id) return res.status(400).json({ error: 'Player name and team ID are required.' });
     const { data, error } = await supabase.from('players').insert([{ team_id, player_name, role_in_game: role_in_game || '' }]).select('*, teams(team_name)');
     if (error) throw error;
-    // Log this action
-    await logAudit('PLAYER', `Added player ${player_name} to team`, { player_name, team_id, role_in_game });
+    await logAudit('PLAYER_ADDED', `Added player ${player_name} to team`, { player_name, team_id, role_in_game }, null, req);
     res.json(data[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1274,7 +1337,7 @@ app.delete('/api/players/:id', authenticateToken, isAdmin, async (req, res) => {
     const { id } = req.params;
     const { error } = await supabase.from('players').delete().eq('player_id', id);
     if (error) throw error;
-    await logAudit('PLAYER', `Deleted player with ID: ${id}`, { player_id: id });
+    await logAudit('PLAYER_DELETED', `Deleted player with ID: ${id}`, { player_id: id }, null, req);
     res.json({ message: 'Player deleted' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1330,6 +1393,7 @@ app.post('/api/matches/sync-live', authenticateToken, isAdmin, async (req, res) 
         .eq('match_id', existingMatch[0].match_id)
         .select();
       if (error) throw error;
+      await logAudit('LIVE_MATCH_SYNC', `Updated live match score in ${tournament_name}: ${team_a_score} - ${team_b_score} (${status})`, { tournament_name, team_a_id, team_b_id, team_a_score, team_b_score, status }, game_title || null, req);
       return res.json(data[0]);
     } else {
       // If we are trying to mark a match as finished but there is no live match, just ignore
@@ -1343,6 +1407,7 @@ app.post('/api/matches/sync-live', authenticateToken, isAdmin, async (req, res) 
         .insert([{ tournament_name, team_a_id, team_b_id, map_name, game_title, status, team_a_score, team_b_score }])
         .select();
       if (error) throw error;
+      await logAudit('LIVE_MATCH_SYNC', `Created live match in ${tournament_name}: ${team_a_score} - ${team_b_score} (${status})`, { tournament_name, team_a_id, team_b_id, team_a_score, team_b_score, status }, game_title || null, req);
       return res.json(data[0]);
     }
   } catch (err) {
@@ -1398,6 +1463,7 @@ app.post('/api/matches/finish-live', authenticateToken, isAdmin, async (req, res
           .eq('match_id', existingMatch[0].match_id)
           .select();
         if (error) throw error;
+        await logAudit('LIVE_MATCH_FINISHED', `Concluded live match in ${tournament_name}: ${team_a_name || tAId} (${team_a_score}) vs ${team_b_name || tBId} (${team_b_score})`, { tournament_name, team_a: team_a_name || tAId, team_b: team_b_name || tBId, score_a: team_a_score, score_b: team_b_score }, null, req);
         return res.json(data[0]);
       } else {
         return res.json({ message: 'No active live match found to finish' });
@@ -1419,6 +1485,7 @@ app.post('/api/matches', authenticateToken, isAdmin, async (req, res) => {
       .insert([{ tournament_name, team_a_id, team_b_id, map_name, game_title, status: status || 'scheduled', match_day, match_time, match_timezone }])
       .select();
     if (error) throw error;
+    await logAudit('MATCH_SCHEDULED', `Scheduled match in ${tournament_name}`, { tournament_name, team_a_id, team_b_id, map_name, game_title, match_day, match_time }, game_title || null, req);
     res.json(data[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1440,6 +1507,7 @@ app.put('/api/matches/:id', authenticateToken, isAdmin, async (req, res) => {
       .eq('match_id', id)
       .select();
     if (error) throw error;
+    await logAudit('MATCH_UPDATED', `Updated match #${id} score/details`, { match_id: id, ...updates }, null, req);
     res.json(data[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1451,6 +1519,7 @@ app.delete('/api/matches/:id', authenticateToken, isAdmin, async (req, res) => {
     const { id } = req.params;
     const { error } = await supabase.from('matches').delete().eq('match_id', id);
     if (error) throw error;
+    await logAudit('MATCH_DELETED', `Deleted match #${id}`, { match_id: id }, null, req);
     res.json({ message: 'Match deleted' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1508,6 +1577,7 @@ app.post('/api/predictions', async (req, res) => {
       .upsert([payload], { onConflict: 'username,match_id' })
       .select();
     if (error) throw error;
+    await logAudit('PREDICTION_SUBMITTED', `User ${username} submitted prediction for match #${match_id}`, { username, match_id, predicted_winner_team_id, ign: username }, null, req);
     res.json({ message: 'Prediction saved successfully', data: data[0] });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1607,6 +1677,7 @@ app.post('/api/brackets', authenticateToken, isAdmin, async (req, res) => {
       .select();
 
     if (error) throw error;
+    await logAudit('BRACKET_MATCH', `Recorded bracket match in ${tournament_name}: Round ${round}, Score ${score_a} - ${score_b}`, { tournament_name, game_title, round, best_of, team_a_id, team_b_id, score_a, score_b }, game_title || null, req);
     res.status(201).json(data[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1623,6 +1694,7 @@ app.delete('/api/brackets/:id', authenticateToken, isAdmin, async (req, res) => 
       .eq('id', id);
 
     if (error) throw error;
+    await logAudit('BRACKET_MATCH_DELETED', `Deleted bracket match #${id}`, { bracket_id: id }, null, req);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1742,6 +1814,7 @@ app.post('/api/bracket-state', authenticateToken, isAdmin, async (req, res) => {
 
     const { data, error } = await query.select();
     if (error) throw error;
+    await logAudit('BRACKET_STATE_UPDATED', `Updated bracket tournament tree for ${tournament_name} (${game_title} - ${format})`, { tournament_name, game_title, format, teamsCount: team_pool?.length || 0 }, game_title || null, req);
     res.status(200).json(data[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1758,6 +1831,7 @@ app.delete('/api/bracket-state', authenticateToken, isAdmin, async (req, res) =>
       .eq('game_title', game_title);
 
     if (error) throw error;
+    await logAudit('BRACKET_STATE_CLEARED', `Reset bracket state for ${tournament_name} (${game_title})`, { tournament_name, game_title }, game_title || null, req);
     res.json({ message: 'Bracket state cleared successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1858,6 +1932,7 @@ app.post('/api/map-pool', async (req, res) => {
     }
 
     if (result.error) throw result.error;
+    await logAudit('MAP_POOL_UPDATED', `Updated map pool for ${tName} (${gTitle})`, { tournament_name: tName, game_title: gTitle, mapCount: Array.isArray(maps) ? maps.length : (maps ? Object.keys(maps).length : 0) }, gTitle, req);
     res.status(200).json({ success: true, data: result.data?.[0] });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1892,6 +1967,7 @@ app.post('/api/bracket-results', authenticateToken, isAdmin, async (req, res) =>
     const { data, error } = await supabase.from('bracket_results').insert(insertData);
     if (error) throw error;
 
+    await logAudit('BRACKET_RESULTS_SAVED', `Saved tournament placement results for ${tournament_name} (${results?.length || 0} teams)`, { tournament_name, game_title, format, count: results?.length }, game_title || null, req);
     res.json({ message: 'Results saved successfully!', data });
   } catch (err) {
     console.error('Save Bracket Results Error:', err);
@@ -2093,6 +2169,7 @@ app.delete('/api/admin/rulebook/:id', async (req, res) => {
     const { id } = req.params;
     const { error } = await supabase.from('rulebooks').delete().eq('id', id);
     if (error) throw error;
+    await logAudit('RULEBOOK_DELETED', `Deleted rulebook #${id}`, { rulebook_id: id }, null, req);
     res.json({ success: true, message: 'Rulebook removed from database' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2130,6 +2207,7 @@ app.post('/api/admin/rulebook', upload.single('rulebook'), async (req, res) => {
 
     const { data, error } = await supabase.from('rulebooks').insert([{ file_url, tournament_name }]).select();
     if (error) throw error;
+    await logAudit('RULEBOOK_UPLOADED', `Uploaded rulebook for ${tournament_name}`, { tournament_name, file_url }, null, req);
     res.status(201).json(data[0]);
   } catch (err) {
     console.error('Error uploading rulebook:', err);
@@ -2155,6 +2233,7 @@ app.put('/api/settings/formula/:id', async (req, res) => {
       kill_weight, death_weight, assist_weight, acs_weight, econ_weight, first_kill_weight, plants_weight, defuse_weight, ace_weight, excel_formula, acs_formula, kda_formula, base_multiplier, base_rating, updated_at: new Date()
     }).eq('id', id).select();
     if (error) throw error;
+    await logAudit('FORMULA_UPDATED', `Updated evaluation formula #${id}`, { formula_id: id, ...req.body }, null, req);
     res.json(data[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2188,6 +2267,7 @@ app.post('/api/settings/reports', upload.single('evidence'), async (req, res) =>
       status: 'Pending'
     }]).select();
     if (error) throw error;
+    await logAudit('REPORT_SUBMITTED', `Filed cheat report against ${reported}`, { reported, reporter, reason }, null, req);
     res.status(201).json(data[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2199,6 +2279,7 @@ app.delete('/api/settings/reports/:id', async (req, res) => {
     const { id } = req.params;
     const { error } = await supabase.from('cheat_reports').delete().eq('id', id);
     if (error) throw error;
+    await logAudit('REPORT_RESOLVED', `Resolved/Dismissed cheat report #${id}`, { report_id: id }, null, req);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2226,6 +2307,7 @@ app.post('/api/settings/bans', async (req, res) => {
       await supabase.from('cheat_reports').delete().eq('id', report_id);
     }
 
+    await logAudit('PLAYER_BANNED', `Banned player ${player_name} (${duration}) - Reason: ${reason}`, { player_name, reason, duration, report_id }, null, req);
     res.status(200).json(data[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2366,7 +2448,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('cellEdit', async (data) => {
-    const { room, user_id, field, new_value } = data;
+    const { room, user_id, username, field, new_value } = data;
+    const author = username || user_id || 'Admin';
     // Broadcast to everyone else in the room
     socket.to(room).emit('cellEdit', data);
 
@@ -2375,10 +2458,10 @@ io.on('connection', (socket) => {
       try {
         await supabase.from('data_entry_events').insert([{
           room_id: room,
-          user_id: user_id || 'anonymous',
+          user_id: author,
           event_type: 'cellEdit',
           field,
-          new_value
+          new_value: typeof new_value === 'object' ? JSON.stringify(new_value) : String(new_value)
         }]);
       } catch (e) {
         console.error('Failed to log event', e);
