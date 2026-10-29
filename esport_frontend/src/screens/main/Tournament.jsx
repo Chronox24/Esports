@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import Bracket from "./Bracket.jsx";
 import Predictions from "./Predictions.jsx";
@@ -1071,17 +1071,20 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
       {/* LAYER 1: LIVE & UPCOMING TOURNAMENTS */}
       {/* ========================================================================= */}
       <div className="flex flex-col gap-6 w-full">
-        <div className="flex flex-col md:flex-row justify-between items-center bg-[#0d131c] rounded-3xl p-6 border border-slate-700/40 shadow-lg relative overflow-hidden gap-4">
-          <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-cyan-500/10 blur-[80px] rounded-full pointer-events-none translate-x-1/2 -translate-y-1/2" />
-          <h2 className="text-xl md:text-2xl font-black uppercase tracking-widest text-white relative z-10 flex items-center gap-3">
-            <IconCalendar /> Live & Upcoming Tournaments
-          </h2>
-          <div className="flex items-center gap-2 relative z-10">
-            <span className="text-xs font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 px-3.5 py-1.5 rounded-xl uppercase tracking-wider">
+        {/* Section Header: Active Tournaments */}
+        {liveTournaments.length > 0 && (
+          <div className="flex items-center justify-between px-1 mb-4">
+            <div className="flex items-center gap-3">
+              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_10px_rgba(6,182,212,0.7)]"></span>
+              <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-300">
+                Active Tournaments
+              </h3>
+            </div>
+            <span style={{ padding: '4px 14px' }} className="text-[11px] font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/25 px-3.5 py-1 rounded-full uppercase tracking-wider shadow-sm">
               {liveTournaments.length} Active
             </span>
           </div>
-        </div>
+        )}
 
         {liveTournaments.length === 0 ? (
           <div className="text-center py-14 text-slate-500 font-bold uppercase tracking-widest bg-[#0d131c] rounded-2xl border border-slate-800">
@@ -1090,7 +1093,7 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
         ) : (
           <div className="flex flex-col gap-6 w-full">
             {/* Scrollable Row of Live & Upcoming Tournament Cards */}
-            <div className="flex gap-4 overflow-x-auto pb-4 px-2 custom-scrollbar snap-x snap-mandatory">
+            <div className="flex gap-5 sm:gap-6 overflow-x-auto pb-4 px-1 custom-scrollbar snap-x snap-mandatory">
               {liveTournaments.map(t => {
                 const isCurrent = t.is_current || (currentTournamentName && t.name.toLowerCase() === currentTournamentName.toLowerCase());
                 const isExpanded = expandedLiveTournament === t.name;
@@ -1098,7 +1101,7 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
                 return (
                   <div
                     key={t.id || t.name}
-                    className={`flex-1 min-w-[130px] max-w-[320px] h-[220px] md:min-w-[150px] md:h-[250px] shrink-0 snap-center rounded-2xl flex flex-col overflow-hidden cursor-pointer shadow-lg transition-all duration-300 group border-[3px] relative
+                    className={`flex-1 min-w-[250px] max-w-[360px] min-h-[250px] h-[250px] flex-1 shrink-0 snap-center rounded-2xl flex flex-col overflow-hidden cursor-pointer shadow-lg transition-all duration-300 group border-[2px] relative
                       ${isCurrent
                         ? 'border-cyan-400 bg-slate-800/90 shadow-[0_0_25px_rgba(6,182,212,0.5)] ring-2 ring-cyan-400/50'
                         : isExpanded
@@ -1107,26 +1110,34 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
                     onClick={() => handleLiveCardClick(t.name)}
                     title={`Open ${t.name} Tournament Hub`}
                   >
-                    <div className="flex-1 relative flex flex-col items-center justify-center p-4 md:p-5 text-center overflow-hidden">
-                      {isCurrent ? (
-                        <div className="mb-1 flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400 text-cyan-300 text-[10px] font-black uppercase tracking-wider shadow-[0_0_12px_rgba(6,182,212,0.4)] animate-pulse">
-                          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
-                          Selected
-                        </div>
-                      ) : null}
-                      <span className="text-xs md:text-sm font-semibold text-slate-400 drop-shadow-sm capitalize">
-                        {(t.game || game).toLowerCase()}
-                      </span>
-                      <h3 className="text-base md:text-xl font-black text-white uppercase leading-tight drop-shadow-md line-clamp-4 mt-1 group-hover:text-cyan-400 transition-colors">
-                        {t.name}
-                      </h3>
-                      <div className="mt-2.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[11px] font-bold text-cyan-400 uppercase tracking-widest bg-cyan-500/10 px-2.5 py-0.5 rounded-full border border-cyan-500/30">
-                        Open Hub <ChevronRight size={12} />
+                    <div style={{ padding: '22px 20px' }} className="flex-1 flex flex-col items-center justify-between p-5 text-center overflow-hidden">
+                      <div className="h-6 flex items-center justify-center">
+                        {isCurrent ? (
+                          <div style={{ padding: '4px 12px' }} className="flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400 text-cyan-300 text-[10px] font-black uppercase tracking-wider shadow-[0_0_12px_rgba(6,182,212,0.4)] animate-pulse">
+                            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                            Selected
+                          </div>
+                        ) : null}
+                      </div>
+
+                      <div style={{ padding: '0 8px' }} className="flex flex-col items-center justify-center my-auto px-2">
+                        <span className="text-[11px] font-semibold text-slate-400 tracking-wider uppercase mb-1">
+                          {(t.game || game).toLowerCase()}
+                        </span>
+                        <h3 className="text-xs sm:text-sm font-bold text-white uppercase leading-relaxed line-clamp-2 px-2 text-center group-hover:text-cyan-400 transition-colors tracking-wide">
+                          {t.name}
+                        </h3>
+                      </div>
+
+                      <div className="h-5 flex items-center justify-center">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-cyan-400/80 group-hover:text-cyan-300 transition-colors">
+                          Click to view hub
+                        </span>
                       </div>
                     </div>
 
                     <div
-                      className={`h-[45px] md:h-[55px] border-t-[3px] flex items-center justify-center transition-colors shrink-0
+                      className={`h-[44px] sm:h-[50px] border-t-[2px] flex items-center justify-center transition-colors shrink-0
                         ${isCurrent
                           ? 'border-cyan-400 bg-cyan-950/60 text-cyan-300'
                           : isExpanded
@@ -1140,7 +1151,7 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className={`w-6 h-6 md:w-8 md:h-8 transition-transform duration-300 ${isExpanded ? 'text-cyan-400 rotate-180' : ''}`}
+                        className={`w-5 h-5 sm:w-6 sm:h-6 transition-transform duration-300 ${isExpanded ? 'text-cyan-400 rotate-180' : ''}`}
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -1155,25 +1166,34 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
 
             {/* Expanded Live Tournament Container */}
             {expandedLiveTournament && (
-              <div className="p-6 md:p-8 border-[3px] border-slate-700 bg-[#0a0f16] rounded-3xl shadow-2xl animate-fade-in-up relative mt-1">
-                <div className="absolute -top-[14px] left-[50px] w-6 h-6 bg-[#0a0f16] border-t-[3px] border-l-[3px] border-slate-700 rotate-45 hidden md:block" />
+              <div
+                style={{ padding: '28px 32px', marginTop: '16px', marginBottom: '24px' }}
+                className="p-6 sm:p-8 md:p-10 border border-slate-700/60 bg-[#0a0f16] rounded-3xl shadow-2xl animate-fade-in-up relative mt-4 mb-6"
+              >
+                <div className="absolute -top-[9px] left-[60px] w-4 h-4 bg-[#0a0f16] border-t border-l border-slate-700/60 rotate-45 hidden md:block" />
 
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                  <h3 className="text-xl md:text-2xl font-black text-white uppercase tracking-widest">
-                    {expandedLiveTournament} <span className="text-cyan-500">MATCHES</span>
+                <div
+                  style={{ marginBottom: '24px', padding: '4px 8px' }}
+                  className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 px-2 sm:px-4"
+                >
+                  <h3 className="text-sm md:text-base font-bold text-white uppercase tracking-wide flex items-center gap-2 flex-wrap">
+                    <span>{expandedLiveTournament}</span>
+                    <span className="text-cyan-400 font-extrabold tracking-wider">MATCHES</span>
                   </h3>
                   <div className="flex items-center gap-3 flex-wrap">
                     <button
                       onClick={() => onNavigateToHub && onNavigateToHub(expandedLiveTournament)}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-cyan-400/50 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-bold uppercase tracking-wider text-xs transition-all shadow-[0_0_15px_rgba(6,182,212,0.3)] cursor-pointer"
+                      style={{ padding: '8px 16px' }}
+                      className="flex items-center justify-center text-center gap-2 px-4 py-2 rounded-xl border border-cyan-400/40 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 font-bold uppercase tracking-wider text-xs transition-all shadow-[0_0_12px_rgba(6,182,212,0.25)] cursor-pointer"
                     >
-                      <Layers size={14} /> Open Tournament Hub
+                      <Layers size={13} /> Open Tournament Hub
                     </button>
 
                     <button
                       onClick={() => handleToggleCompletion(expandedLiveTournament, false)}
                       disabled={isTogglingStatus}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-bold uppercase tracking-wider text-xs transition-all cursor-pointer disabled:opacity-50"
+                      style={{ padding: '8px 16px' }}
+                      className="flex items-center justify-center text-center gap-2 px-4 py-2 rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-bold uppercase tracking-wider text-xs transition-all cursor-pointer disabled:opacity-50"
                       title="Move this tournament to Finished Tournaments"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
@@ -1184,10 +1204,11 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
 
                     <button
                       onClick={() => setShowLiveBracket(!showLiveBracket)}
-                      className={`flex items-center gap-2 px-5 py-2.5 rounded-xl border font-bold uppercase tracking-widest transition-colors shadow-inner text-xs md:text-sm cursor-pointer
-                        ${showLiveBracket ? 'bg-cyan-500 text-white border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.4)]' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-cyan-500 hover:text-cyan-400'}`}
+                      style={{ padding: '8px 16px' }}
+                      className={`flex items-center justify-center text-center gap-2 px-4 py-2 rounded-xl border font-bold uppercase tracking-wider transition-colors shadow-inner text-xs cursor-pointer
+                        ${showLiveBracket ? 'bg-cyan-500 text-white border-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.35)]' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-cyan-500 hover:text-cyan-400'}`}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         {showLiveBracket ? <path d="M18 15l-6-6-6 6" /> : <path d="M6 9l6 6 6-6" />}
                       </svg>
                       {showLiveBracket ? 'Hide Bracket' : 'View Bracket'}
@@ -1196,7 +1217,7 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
                 </div>
 
                 {(!matchesByTournament[expandedLiveTournament] || matchesByTournament[expandedLiveTournament].length === 0) ? (
-                  <div className="text-center py-16 text-slate-500 font-bold tracking-widest uppercase">
+                  <div style={{ padding: '36px 24px', marginTop: '8px' }} className="text-center py-14 px-6 text-slate-500 font-bold tracking-widest uppercase bg-slate-900/40 rounded-2xl border border-slate-800/80">
                     No upcoming matches for this tournament
                   </div>
                 ) : (
@@ -1228,19 +1249,18 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
       {/* LAYER 2: FINISHED TOURNAMENTS */}
       {/* ========================================================================= */}
       <div className="flex flex-col gap-6 w-full pt-4">
-        <div className="flex flex-col md:flex-row justify-between items-center bg-[#0d131c] rounded-3xl p-6 border border-slate-700/40 shadow-lg relative overflow-hidden gap-4">
-          <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-amber-500/10 blur-[80px] rounded-full pointer-events-none translate-x-1/2 -translate-y-1/2" />
-          <h2 className="text-xl md:text-2xl font-black uppercase tracking-widest text-white relative z-10 flex items-center gap-3">
+        <div className="flex items-center justify-between px-1 pt-6 mb-4">
+          <div className="flex items-center gap-3">
             <span className="text-amber-400">
               <IconTrophy />
             </span>
-            Finished Tournaments
-          </h2>
-          <div className="flex items-center gap-2 relative z-10">
-            <span className="text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-3.5 py-1.5 rounded-xl uppercase tracking-wider">
-              {finishedTournaments.length} Concluded
-            </span>
+            <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-300">
+              Finished Tournaments
+            </h3>
           </div>
+          <span style={{ padding: '4px 14px' }} className="text-[11px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/25 px-3.5 py-1 rounded-full uppercase tracking-wider">
+            {finishedTournaments.length} Concluded
+          </span>
         </div>
 
         {finishedTournaments.length === 0 ? (
@@ -1250,7 +1270,7 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
         ) : (
           <div className="flex flex-col gap-6 w-full">
             {/* Scrollable Row of Finished Tournament Cards */}
-            <div className="flex gap-4 overflow-x-auto pb-4 px-2 custom-scrollbar snap-x snap-mandatory">
+            <div className="flex gap-5 sm:gap-6 overflow-x-auto pb-4 px-1 custom-scrollbar snap-x snap-mandatory">
               {finishedTournaments.map(t => {
                 const isCurrent = t.is_current || (currentTournamentName && t.name.toLowerCase() === currentTournamentName.toLowerCase());
                 const isExpanded = expandedFinishedTournament === t.name;
@@ -1258,7 +1278,7 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
                 return (
                   <div
                     key={t.id || t.name}
-                    className={`flex-1 min-w-[130px] max-w-[320px] h-[220px] md:min-w-[150px] md:h-[250px] shrink-0 snap-center rounded-2xl flex flex-col overflow-hidden cursor-pointer shadow-lg hover:shadow-[0_0_20px_rgba(245,158,11,0.35)] transition-all duration-300 group border-[3px]
+                    className={`flex-1 min-w-[250px] max-w-[360px] min-h-[250px] h-[250px] flex-1 shrink-0 snap-center rounded-2xl flex flex-col overflow-hidden cursor-pointer shadow-lg hover:shadow-[0_0_20px_rgba(245,158,11,0.35)] transition-all duration-300 group border-[2px]
                       ${isCurrent
                         ? 'border-amber-400 bg-slate-800/90 shadow-[0_0_25px_rgba(245,158,11,0.5)] ring-2 ring-amber-400/50'
                         : isExpanded
@@ -1267,33 +1287,41 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
                     onClick={() => handleFinishedCardClick(t.name)}
                     title={`Open ${t.name} Tournament Hub`}
                   >
-                    <div className="flex-1 relative flex flex-col items-center justify-center p-4 md:p-5 text-center overflow-hidden">
-                      {isCurrent ? (
-                        <div className="mb-1 flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400 text-amber-300 text-[10px] font-black uppercase tracking-wider shadow-[0_0_12px_rgba(245,158,11,0.4)] animate-pulse">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                          Selected
-                        </div>
-                      ) : (
-                        <div className="mb-1 flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[10px] font-black uppercase tracking-wider shadow-sm">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                          </svg>
-                          Concluded
-                        </div>
-                      )}
-                      <span className="text-xs md:text-sm font-semibold text-slate-400 drop-shadow-sm capitalize">
-                        {(t.game || game).toLowerCase()}
-                      </span>
-                      <h3 className="text-base md:text-xl font-black text-white uppercase leading-tight drop-shadow-md line-clamp-4 mt-1 group-hover:text-amber-400 transition-colors">
-                        {t.name}
-                      </h3>
-                      <div className="mt-2.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[11px] font-bold text-amber-400 uppercase tracking-widest bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/30">
-                        Open Hub <ChevronRight size={12} />
+                    <div style={{ padding: '22px 20px' }} className="flex-1 flex flex-col items-center justify-between p-5 text-center overflow-hidden">
+                      <div className="h-6 flex items-center justify-center">
+                        {isCurrent ? (
+                          <div style={{ padding: '4px 12px' }} className="flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-500/20 border border-amber-400 text-amber-300 text-[10px] font-black uppercase tracking-wider shadow-[0_0_12px_rgba(245,158,11,0.4)] animate-pulse">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                            Selected
+                          </div>
+                        ) : (
+                          <div style={{ padding: '4px 12px' }} className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[10px] font-black uppercase tracking-wider shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                            </svg>
+                            Concluded
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ padding: '0 8px' }} className="flex flex-col items-center justify-center my-auto px-2">
+                        <span className="text-[11px] font-semibold text-slate-400 tracking-wider uppercase mb-1">
+                          {(t.game || game).toLowerCase()}
+                        </span>
+                        <h3 className="text-xs sm:text-sm font-bold text-white uppercase leading-relaxed line-clamp-2 px-2 text-center group-hover:text-amber-400 transition-colors tracking-wide">
+                          {t.name}
+                        </h3>
+                      </div>
+
+                      <div className="h-5 flex items-center justify-center">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400/80 group-hover:text-amber-300 transition-colors">
+                          Click to view hub
+                        </span>
                       </div>
                     </div>
 
                     <div
-                      className={`h-[45px] md:h-[55px] border-t-[3px] flex items-center justify-center transition-colors shrink-0
+                      className={`h-[42px] sm:h-[48px] border-t-[2px] flex items-center justify-center transition-colors shrink-0
                         ${isCurrent
                           ? 'border-amber-400 bg-amber-950/60 text-amber-300'
                           : isExpanded
@@ -1322,15 +1350,22 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
 
             {/* Expanded Finished Tournament Container */}
             {expandedFinishedTournament && (
-              <div className="p-6 md:p-8 border-[3px] border-amber-500/70 bg-[#0a0f16] rounded-3xl shadow-2xl animate-fade-in-up relative mt-1">
-                <div className="absolute -top-[14px] left-[50px] w-6 h-6 bg-[#0a0f16] border-t-[3px] border-l-[3px] border-amber-500/70 rotate-45 hidden md:block" />
+              <div
+                style={{ padding: '28px 32px', marginTop: '16px', marginBottom: '24px' }}
+                className="p-6 sm:p-8 md:p-10 border border-amber-500/50 bg-[#0a0f16] rounded-3xl shadow-2xl animate-fade-in-up relative mt-4 mb-6"
+              >
+                <div className="absolute -top-[9px] left-[60px] w-4 h-4 bg-[#0a0f16] border-t border-l border-amber-500/50 rotate-45 hidden md:block" />
 
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div
+                  style={{ marginBottom: '24px', padding: '4px 8px' }}
+                  className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 gap-4 px-2 sm:px-4"
+                >
                   <div>
-                    <h3 className="text-xl md:text-2xl font-black text-white uppercase tracking-widest flex items-center gap-2">
-                      {expandedFinishedTournament} <span className="text-amber-400">RESULTS & BRACKET</span>
+                    <h3 className="text-sm md:text-base font-bold text-white uppercase tracking-wide flex items-center gap-2 flex-wrap">
+                      <span>{expandedFinishedTournament}</span>
+                      <span className="text-amber-400 font-extrabold tracking-wider">RESULTS & BRACKET</span>
                     </h3>
-                    <p className="text-xs text-slate-400 mt-1 uppercase tracking-wider">
+                    <p className="text-[11px] text-slate-400 mt-0.5 uppercase tracking-wider">
                       Tournament finalized and recorded in archives
                     </p>
                   </div>
@@ -1338,27 +1373,30 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
                   <div className="flex items-center gap-3 flex-wrap">
                     <button
                       onClick={() => onNavigateToHub && onNavigateToHub(expandedFinishedTournament)}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-amber-500/50 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold uppercase tracking-wider text-xs transition-all shadow-[0_0_15px_rgba(245,158,11,0.3)] cursor-pointer"
+                      style={{ padding: '8px 16px' }}
+                      className="flex items-center justify-center text-center gap-2 px-3.5 py-2 rounded-xl border border-amber-500/50 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold uppercase tracking-wider text-xs transition-all shadow-[0_0_12px_rgba(245,158,11,0.25)] cursor-pointer"
                     >
-                      <Layers size={14} /> Open Tournament Hub
+                      <Layers size={13} /> Open Tournament Hub
                     </button>
 
                     <button
                       onClick={() => handleToggleCompletion(expandedFinishedTournament, true)}
                       disabled={isTogglingStatus}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-300 font-bold uppercase tracking-wider text-xs transition-all cursor-pointer disabled:opacity-50"
+                      style={{ padding: '8px 16px' }}
+                      className="flex items-center justify-center text-center gap-2 px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-300 font-bold uppercase tracking-wider text-xs transition-all cursor-pointer disabled:opacity-50"
                       title="Reopen tournament into Live & Upcoming"
                     >
-                      <RefreshCw size={13} className={isTogglingStatus ? 'animate-spin' : ''} />
+                      <RefreshCw size={12} className={isTogglingStatus ? 'animate-spin' : ''} />
                       {isTogglingStatus ? 'Updating...' : 'Reopen Tournament'}
                     </button>
 
                     <button
                       onClick={() => setShowFinishedBracket(!showFinishedBracket)}
-                      className={`flex items-center gap-2 px-5 py-2.5 rounded-xl border font-bold uppercase tracking-widest transition-colors shadow-inner text-xs md:text-sm cursor-pointer
-                        ${showFinishedBracket ? 'bg-amber-500 text-slate-950 font-black border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.4)]' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-amber-400 hover:text-amber-400'}`}
+                      style={{ padding: '8px 16px' }}
+                      className={`flex items-center justify-center text-center gap-2 px-4 py-2 rounded-xl border font-bold uppercase tracking-wider transition-colors shadow-inner text-xs cursor-pointer
+                        ${showFinishedBracket ? 'bg-amber-500 text-slate-950 font-black border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.35)]' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-amber-400 hover:text-amber-400'}`}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         {showFinishedBracket ? <path d="M18 15l-6-6-6 6" /> : <path d="M6 9l6 6 6-6" />}
                       </svg>
                       {showFinishedBracket ? 'Hide Bracket' : 'View Bracket'}
@@ -3404,7 +3442,7 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
   const tabsRef = useRef({});
 
-  useEffect(() => {
+  const updateIndicator = useCallback(() => {
     const activeTabElement = tabsRef.current[activeTab];
     if (activeTabElement) {
       setIndicatorStyle({
@@ -3413,6 +3451,16 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
       });
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    updateIndicator();
+    window.addEventListener('resize', updateIndicator);
+    const timer = setTimeout(updateIndicator, 100);
+    return () => {
+      window.removeEventListener('resize', updateIndicator);
+      clearTimeout(timer);
+    };
+  }, [updateIndicator]);
 
   const tabs = [
     {
@@ -3553,46 +3601,37 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #334155; }
       `}</style>
       { }
-      <div className="shrink-0 px-8 md:px-12 pt-6 pb-0 bg-gradient-to-b from-[#0a1018] to-[#090e14] light:from-white light:to-[#f8fafc] flex flex-col items-center relative overflow-hidden">
-        {/* Subtle ambient glow behind header */}
-        <div className="absolute top-0 left-1/4 w-[600px] h-[200px] bg-cyan-500/5 blur-[100px] rounded-full pointer-events-none" />
-        <div className="absolute top-0 right-1/4 w-[400px] h-[150px] bg-blue-500/5 blur-[80px] rounded-full pointer-events-none" />
+      {/* Top Tab Navigation Bar - Full Width, Flexible, Solid Background (No Component Overlapping) */}
+      <div className="shrink-0 w-full bg-[#090e14] border-b border-slate-800/80 z-20 shadow-md relative" style={{ padding: '6px 36px 0 36px' }}>
+        <div className="w-full max-w-[1440px] mx-auto relative flex items-center justify-between overflow-x-auto scrollbar-hide py-1">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              ref={(el) => (tabsRef.current[tab.key] = el)}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex-1 min-w-max flex items-center justify-center gap-2 px-3 sm:px-4 py-3 text-xs sm:text-[0.84rem] font-bold tracking-wider uppercase border-none bg-transparent cursor-pointer transition-colors duration-200 shrink-0 z-10 ${
+                activeTab === tab.key
+                  ? "text-cyan-400"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <span className="opacity-80 shrink-0">{tab.icon}</span>
+              <span className="truncate">{tab.label}</span>
+            </button>
+          ))}
 
-        <div className="w-full max-w-[1400px] relative z-10">
-          { }
-          <div className="flex justify-center items-center w-full mb-6" style={{ padding: '16px 0' }}>
-            <div className="relative flex items-center justify-between max-w-[1200px] w-full gap-4 md:gap-12 overflow-x-auto scrollbar-hide pb-2 border-b border-slate-800/60 light:border-slate-200">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.key}
-                  ref={(el) => (tabsRef.current[tab.key] = el)}
-                  onClick={() => setActiveTab(tab.key)}
-                  className={`flex items-center gap-3 px-8 py-3 text-[0.85rem] md:text-[0.95rem] font-bold tracking-[0.1em] uppercase border-none bg-transparent cursor-pointer transition-all duration-300 shrink-0 z-10 ${activeTab === tab.key
-                      ? "text-white"
-                      : "text-[#94a3b8] hover:text-white"
-                    }`}
-                >
-                  <span className="opacity-80">{tab.icon}</span>
-                  {tab.label}
-                </button>
-              ))}
-
-              {/* The Sliding Bar */}
-              <div
-                className="absolute bottom-[-1px] h-[3px] bg-cyan-400 rounded-full shadow-[0_0_12px_rgba(0,240,255,1)] pointer-events-none"
-                style={{
-                  left: `${indicatorStyle.left}px`,
-                  width: `${indicatorStyle.width}px`,
-                  transition: 'all 0.3s cubic-bezier(0.25, 1, 0.5, 1)'
-                }}
-              />
-            </div>
-          </div>
+          {/* The Sliding Bar */}
+          <div
+            className="absolute bottom-0 h-[2.5px] bg-cyan-400 rounded-full shadow-[0_0_12px_rgba(0,240,255,1)] pointer-events-none transition-all duration-300 ease-out"
+            style={{
+              left: `${indicatorStyle.left}px`,
+              width: `${indicatorStyle.width}px`,
+            }}
+          />
         </div>
       </div>
-      { }
-      <div className="flex-1 overflow-y-auto custom-scrollbar px-8 md:px-12 py-6 flex flex-col items-center">
-        <div className="w-full max-w-[1400px]">{renderTab()}</div>
+      <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col items-center w-full" style={{ padding: '28px 36px' }}>
+        <div className="w-full max-w-[1440px] flex flex-col gap-8">{renderTab()}</div>
       </div>
 
       {/* 4-Step Create Tournament Modal */}

@@ -133,6 +133,9 @@ const MainUIScreen = ({ onLogout }) => {
         const data = await res.json();
         if (Array.isArray(data)) {
           setTournaments(data);
+          if (data.length > 0) {
+            setGlobalTournament(prev => prev || data[0].name);
+          }
         }
       }
     } catch (err) {
@@ -195,65 +198,6 @@ const MainUIScreen = ({ onLogout }) => {
     }
   ];
   const renderContent = () => {
-    const requiresFolder = [];
-    if (requiresFolder.includes(activeTab) && !globalTournament) {
-      return (
-        <div className="p-8 w-full h-full flex flex-col items-center animate-fade-in text-theme-text-base overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#1e293b transparent' }}>
-          <div className="flex flex-col items-center justify-center w-full max-w-[1200px] mt-12 mb-10">
-            <div className="w-16 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent mb-6 opacity-50"></div>
-            <h1 className="text-3xl md:text-4xl font-black uppercase tracking-[0.2em] drop-shadow-lg text-theme-text-base mb-2">Select a Folder</h1>
-            <p className="text-theme-text-muted font-medium tracking-widest text-sm uppercase">Choose a tournament to view its {activeTab}</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-[1200px] w-full pb-20">
-            {tournaments.map(t => (
-              <div
-                key={t.id}
-                onClick={() => setGlobalTournament(t.name)}
-                className="bg-slate-900/50 border border-slate-700/50 rounded-2xl p-6 cursor-pointer hover:border-cyan-400 hover:bg-slate-800/80 shadow-lg hover:shadow-[0_0_30px_rgba(6,182,212,0.35)] transition-all flex items-center gap-5 group relative"
-              >
-                <div className="w-16 h-16 rounded-xl bg-slate-950/80 border border-white/5 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform shadow-inner shrink-0">
-                  <svg className="w-8 h-8 opacity-80 group-hover:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
-                </div>
-                <div className="flex-1 overflow-hidden pr-8">
-                  <h3 className="text-xl font-black text-theme-text-base truncate">{t.name}</h3>
-                  <div className="flex items-center gap-2 mt-1.5">
-                    <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
-                    <p className="text-xs text-theme-text-muted font-bold uppercase tracking-widest">{t.game}</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  title={`Delete folder: ${t.name}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setFolderToDelete(t);
-                  }}
-                  className="absolute top-4 right-4 p-2 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-500/10 opacity-30 group-hover:opacity-100 hover:!opacity-100 transition-all duration-200 z-10"
-                >
-                  <Trash2 size={18} strokeWidth={2} />
-                </button>
-              </div>
-            ))}
-            <div
-              onClick={() => {
-                setNewFolderGame(globalGame || 'VALORANT');
-                setNewFolderName('');
-                setShowCreateFolderModal(true);
-              }}
-              className="bg-transparent border-2 border-dashed border-slate-700/50 rounded-2xl p-6 cursor-pointer hover:border-cyan-400 hover:bg-cyan-400/5 transition-all flex items-center gap-5 group opacity-60 hover:opacity-100"
-            >
-              <div className="w-16 h-16 rounded-xl border border-slate-600 flex items-center justify-center text-theme-text-muted group-hover:text-cyan-400 group-hover:border-cyan-400/50 group-hover:scale-110 transition-all">
-                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-              </div>
-              <div>
-                <h3 className="text-xl font-black text-theme-text-base group-hover:text-cyan-400">Create New</h3>
-                <p className="text-xs text-theme-text-muted font-bold uppercase tracking-widest mt-1">Add Folder</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
     const currentTournObj = tournaments.find(t => t.name === globalTournament) || (globalTournament ? { name: globalTournament, game: globalGame } : null);
 
     switch (activeTab) {
@@ -319,7 +263,7 @@ const MainUIScreen = ({ onLogout }) => {
         `}
     >
       {/* Added pt-14 to lower the whole sidebar contents away from the browser top */}
-      <div className="w-full h-full flex flex-col font-sans select-none shrink-0 pb-6 pt-14">
+      <div className="w-full h-full flex flex-col font-sans select-none shrink-0" style={{ padding: 0 }}>
 
         {/* Brand Header - Padded away from all borders */}
         <div className="shrink-0 flex items-center animate-fade-in-down group cursor-pointer" style={{ padding: "32px 32px 16px 32px" }}>
@@ -345,10 +289,10 @@ const MainUIScreen = ({ onLogout }) => {
               <div
                 key={idx}
                 className="animate-slide-in-right"
-                style={{ animationDelay: `${idx * 100}ms`, opacity: 0, animationFillMode: 'forwards' }}
+                style={{ animationDelay: `${idx * 100}ms`, opacity: 1 }}
               >
                 {/* Softened Section Header */}
-                <h2 className="text-[11px] font-bold text-theme-text-muted tracking-[0.25em] uppercase mb-4 px-2">
+                <h2 style={{ margin: "0 0 8px 0", padding: "0 8px" }} className="text-[11px] font-bold text-theme-text-muted tracking-[0.25em] uppercase">
                   {section.category}
                 </h2>
 
@@ -360,7 +304,7 @@ const MainUIScreen = ({ onLogout }) => {
                     return (
                       <li key={link.name}>
                         <button
-                          onClick={() => setActiveTab(link.name)}
+                          onClick={() => setActiveTab(link.name)} style={{ padding: "8px 12px" }}
                           className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-300 ease-out transform ${isActive
                             ? 'bg-gradient-to-r from-cyan-900/50 to-cyan-900/10 light:from-cyan-100 light:to-white text-cyan-400 light:text-cyan-600 font-bold border border-cyan-500/30 light:border-cyan-300 shadow-[inset_0_0_20px_rgba(6,182,212,0.25)] light:shadow-sm translate-x-1'
                             : 'text-theme-text-muted light:text-slate-600 hover:bg-slate-800/40 light:hover:bg-slate-100 hover:text-theme-text-base light:hover:text-slate-900 font-medium hover:translate-x-1'
@@ -384,11 +328,11 @@ const MainUIScreen = ({ onLogout }) => {
           </div>
 
           {/* Bottom Action Controls */}
-          <div className="px-8 mt-auto flex flex-col gap-3 animate-fade-in-up shrink-0">
+          <div style={{ marginTop: "auto", padding: 0 }} className="flex flex-col gap-3 animate-fade-in-up shrink-0">
 
             {/* Animated Logout */}
             <button
-              onClick={() => setShowLogoutModal(true)}
+              onClick={() => setShowLogoutModal(true)} style={{ padding: "8px 12px" }}
               className="group w-full flex items-center gap-4 px-4 py-3 rounded-xl text-theme-text-muted hover:bg-red-500/10 hover:text-red-400 transition-all duration-300 transform hover:-translate-y-1"
             >
               <LogOut size={20} strokeWidth={2} className="text-theme-text-muted group-hover:text-red-500 transition-colors" />
@@ -402,187 +346,37 @@ const MainUIScreen = ({ onLogout }) => {
     {/* MAIN CONTENT AREA */}
     <main className="flex-1 bg-bg-100 light:bg-slate-50 flex flex-col overflow-hidden relative">
       {/* Modern Glassmorphism Header */}
-      <header className="h-24 border-b border-slate-800/50 light:border-slate-200 flex items-center justify-between px-8 md:px-10 bg-bg-200/80 light:bg-white/80 backdrop-blur-xl z-10 shrink-0 shadow-sm transition-all duration-500">
-        <div className="flex items-center gap-10">
-          {/* Sidebar Toggle Button */}
+      <header
+        style={{ padding: '0 28px' }}
+        className="h-14 border-b border-slate-800/40 light:border-slate-200 flex items-center justify-between px-6 sm:px-10 md:px-16 lg:px-20 bg-bg-200/80 light:bg-white/80 backdrop-blur-xl z-10 shrink-0 shadow-sm transition-all duration-300"
+      >
+        <div className="flex items-center gap-3 sm:gap-4">
+          {/* Sidebar Toggle Button - Clean 3-line icon, no container */}
           <button
+            type="button"
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="bg-white/5 border border-white/10 text-theme-text-muted hover:text-theme-text-base hover:bg-white/10 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all duration-300 group flex items-center justify-center shrink-0"
-            style={{ width: "48px", height: "48px", borderRadius: "14px" }}
+            style={{ padding: '8px' }}
+            className="p-2 text-theme-text-muted hover:text-cyan-400 hover:bg-slate-800/40 rounded-lg bg-transparent border-none outline-none cursor-pointer transition-all duration-200 flex items-center justify-center shrink-0"
+            aria-label="Toggle sidebar menu"
           >
-            <svg className={`transform transition-transform duration-300 ${!isSidebarOpen ? 'rotate-180' : ''}`} style={{ width: "28px", height: "28px" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            <svg className="w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <div className="flex items-center gap-6">
-            <div className="w-1.5 h-8 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full shadow-[0_0_15px_rgba(6,182,212,0.5)]"></div>
-            <h2 className="text-xl md:text-2xl font-black text-theme-text-base light:text-slate-900 tracking-[0.2em] uppercase drop-shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <div className="w-1 h-4 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full shadow-[0_0_8px_rgba(6,182,212,0.4)]"></div>
+            <h2 className="text-xs sm:text-sm md:text-base font-bold text-theme-text-base light:text-slate-900 tracking-[0.14em] uppercase drop-shadow-sm">
               {activeTab}
             </h2>
           </div>
-          {/* Folder Selection Dropdown */}
-          <select
-            value={globalTournament}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (val === 'create_new') {
-                setNewFolderGame(globalGame || 'VALORANT');
-                setNewFolderName('');
-                setShowCreateFolderModal(true);
-                e.target.value = globalTournament;
-              } else {
-                setGlobalTournament(val);
-              }
-            }}
-            className="bg-theme-input border-theme-input text-theme-text-base rounded-xl px-4 py-2 outline-none border hover:border-cyan-400/50 transition-colors cursor-pointer ml-6"
-          >
-            <option value="">Select a Folder...</option>
-            {tournaments.map((t) => (
-              <option key={t.id} value={t.name}>{t.name}</option>
-            ))}
-            <option value="create_new" className="font-bold text-cyan-400">+ Create New Folder...</option>
-          </select>
         </div>
-
       </header>
       {/* Dynamic Rendering of Components */}
-      <div className="flex-1 overflow-auto relative z-10 bg-bg-100 light:bg-slate-50">
+      <div className="flex-1 overflow-auto relative z-10 bg-bg-100 light:bg-slate-50 flex flex-col">
         {renderContent()}
       </div>
     </main>
-    {/* Create Folder Modal */}
-    {showCreateFolderModal && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
-        <div className="bg-bg-300 light:bg-white border border-[#1c2532] light:border-slate-200 rounded-3xl p-8 max-w-md w-full shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
-          <h2 className="text-2xl font-black text-theme-text-base mb-6 uppercase tracking-wider flex items-center gap-3">
-            <svg className="w-6 h-6 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-            Create New Folder
-          </h2>
-          <div className="space-y-5">
-            <div>
-              <label className="block text-xs font-bold text-theme-text-muted uppercase tracking-widest mb-2">Folder Name</label>
-              <input
-                type="text"
-                value={newFolderName}
-                onChange={(e) => setNewFolderName(e.target.value)}
-                placeholder="e.g. VCT Champions 2026"
-                className="w-full bg-theme-input border-theme-input border rounded-xl px-4 py-3 text-theme-text-base outline-none focus:border-cyan-400 transition-colors placeholder:text-theme-text-muted"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-theme-text-muted uppercase tracking-widest mb-2">Game Title</label>
-              <select
-                value={newFolderGame}
-                onChange={(e) => setNewFolderGame(e.target.value)}
-                className="w-full bg-theme-input border-theme-input border rounded-xl px-4 py-3 text-theme-text-base outline-none focus:border-cyan-400 transition-colors appearance-none cursor-pointer"
-              >
-                <option value="VALORANT">Valorant</option>
-                <option value="CROSSFIRE">Crossfire</option>
-              </select>
-            </div>
-          </div>
-          <div className="flex items-center justify-end gap-3 mt-8">
-            <button
-              onClick={() => setShowCreateFolderModal(false)}
-              className="px-6 py-2.5 rounded-xl text-theme-text-muted hover:text-theme-text-base hover:bg-theme-input transition-colors font-bold text-sm"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={async () => {
-                const trimmedName = newFolderName.trim();
-                if (!trimmedName) {
-                  alert("Folder name is required.");
-                  return;
-                }
-                const duplicate = tournaments.some(
-                  (t) => t.name.toLowerCase() === trimmedName.toLowerCase()
-                );
-                if (duplicate) {
-                  alert(`A folder named "${trimmedName}" already exists. Please choose a different name.`);
-                  return;
-                }
-                try {
-                  const res = await apiFetch('/api/tournaments', {
-                    method: 'POST',
-                    body: JSON.stringify({ name: trimmedName, game: newFolderGame })
-                  });
-                  if (res.ok) {
-                    const result = await res.json();
-                    await loadTournaments();
-                    const folderName = result?.name || result?.data?.name || (Array.isArray(result) ? result[0]?.name : null) || trimmedName;
-                    setGlobalTournament(folderName);
-                    setNewFolderName('');
-                    setShowCreateFolderModal(false);
-                  } else {
-                    const errData = await res.json().catch(() => ({}));
-                    alert(errData.error || "Failed to create folder. Please check your permissions or try another name.");
-                  }
-                } catch (err) {
-                  console.error(err);
-                  alert("Error connecting to server while creating folder.");
-                }
-              }}
-              className="px-6 py-2.5 rounded-xl bg-cyan-400 text-slate-950 font-bold text-sm hover:bg-white transition-colors"
-            >
-              Create Folder
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
-    {/* Delete Folder Modal */}
-    {folderToDelete && (
-      <div
-        className="fixed inset-0 z-[120] flex items-center justify-center modal-overlay-enter"
-        style={{ backgroundColor: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}
-        onClick={() => !isDeletingFolder && setFolderToDelete(null)}
-      >
-        <div
-          className="modal-content-enter bg-bg-300 border border-red-500/30 rounded-3xl w-full max-w-md mx-4 shadow-[0_25px_60px_rgba(0,0,0,0.6)] flex flex-col items-center relative overflow-hidden"
-          style={{ padding: '36px' }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent"></div>
-          <div className="rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 shrink-0 mb-5 w-16 h-16 shadow-[0_0_20px_rgba(239,68,68,0.2)]">
-            <Trash2 size={32} strokeWidth={2} />
-          </div>
 
-          <h3 className="font-black text-theme-text-base text-center tracking-widest uppercase text-xl mb-2">
-            Delete Folder?
-          </h3>
-
-          <p className="text-theme-text-muted text-center text-sm leading-relaxed mb-6">
-            Are you sure you want to permanently delete <span className="font-bold text-theme-text-base">"{folderToDelete.name}"</span>? This will remove the tournament folder from the system.
-          </p>
-
-          <div className="flex w-full gap-3">
-            <button
-              disabled={isDeletingFolder}
-              onClick={() => setFolderToDelete(null)}
-              className="flex-1 rounded-xl font-bold text-theme-text-base bg-slate-800/60 border border-slate-700/50 hover:bg-slate-700/60 transition-all duration-300 tracking-wider uppercase py-3 text-sm cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              disabled={isDeletingFolder}
-              onClick={handleDeleteFolder}
-              className="flex-1 rounded-xl font-bold text-white bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 shadow-[0_4px_20px_rgba(239,68,68,0.3)] hover:shadow-[0_6px_30px_rgba(239,68,68,0.5)] transition-all duration-300 tracking-wider uppercase active:scale-95 py-3 text-sm flex items-center justify-center gap-2 cursor-pointer"
-            >
-              {isDeletingFolder ? (
-                <>
-                  <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
-                  <span>Deleting...</span>
-                </>
-              ) : (
-                'Delete Folder'
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
   </div>
   );
 };

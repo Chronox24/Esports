@@ -4,8 +4,8 @@ import { apiFetch } from '../../utils/api';
 
 const LoginScreen = ({ onClose, onLoginSuccess }) => {
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'forgot' | 'success'
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('admin@esport.ph');
+  const [password, setPassword] = useState('admin123');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);

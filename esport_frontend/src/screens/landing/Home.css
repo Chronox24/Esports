@@ -12,10 +12,12 @@
   --glass-border-neon: rgba(0, 229, 255, 0.25);
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 }
 
 .maximized-home-wrapper {

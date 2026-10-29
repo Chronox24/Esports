@@ -89,9 +89,6 @@ const Home = ({ onLoginSuccess }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [activePage, setActivePage] = useState('Home');
   const [showLogin, setShowLogin] = useState(false);
-  const [showReportModal, setShowReportModal] = useState(false);
-  const [reportForm, setReportForm] = useState({ reporter: '', reported: '', reason: 'Aimbot', statement: '' });
-  const [evidenceFile, setEvidenceFile] = useState(null);
 
   // Live YouTube Highlights state
   const [highlights, setHighlights] = useState(defaultHighlights);
@@ -221,38 +218,6 @@ const Home = ({ onLoginSuccess }) => {
     }
   };
 
-  const handleReportSubmit = async (e) => {
-    e.preventDefault();
-    if (!reportForm.reported || !reportForm.reason) return alert("Reported IGN and Reason are required!");
-    
-    const formData = new FormData();
-    formData.append('reporter', reportForm.reporter);
-    formData.append('reported', reportForm.reported);
-    formData.append('reason', reportForm.reason);
-    formData.append('statement', reportForm.statement);
-    if (evidenceFile) {
-      formData.append('evidence', evidenceFile);
-    }
-
-    try {
-      const res = await apiFetch('/api/settings/reports', {
-        method: 'POST',
-        body: formData
-      });
-      if (res.ok) {
-        alert('Report submitted successfully! Thank you for keeping our community clean.');
-        setShowReportModal(false);
-        setReportForm({ reporter: '', reported: '', reason: 'Aimbot', statement: '' });
-        setEvidenceFile(null);
-      } else {
-        alert('Error submitting report.');
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Failed to submit report.');
-    }
-  };
-
   return (
     <div className="maximized-home-wrapper">
       <div className="hero-trophy-bg" />
@@ -261,8 +226,7 @@ const Home = ({ onLoginSuccess }) => {
       {/* Navigation Header */}
       <header className={`main-navbar ${isLoaded ? 'fade-in-down' : ''}`}>
         <div className="brand-logo" onClick={() => navigate('/')}>
-          <span className="brand-logo-icon">⚡</span>
-          <span className="brand-logo-text">ESPORT</span>
+                    <span className="brand-logo-text">ESPORT</span>
         </div>
 
         {/* Desktop Links */}
@@ -281,13 +245,6 @@ const Home = ({ onLoginSuccess }) => {
 
         {/* Desktop Actions */}
         <div className="navbar-actions">
-          <button 
-            type="button" 
-            className="report-nav-btn"
-            onClick={() => setShowReportModal(true)}
-          >
-            Report Cheater
-          </button>
           <button 
             type="button" 
             className="login-btn" 
@@ -326,8 +283,7 @@ const Home = ({ onLoginSuccess }) => {
         <div className="mobile-drawer-sheet">
           <div className="mobile-drawer-header">
             <div className="brand-logo">
-              <span className="brand-logo-icon">⚡</span>
-              <span className="brand-logo-text">ESPORT</span>
+                            <span className="brand-logo-text">ESPORT</span>
             </div>
             <button 
               type="button" 
@@ -354,16 +310,6 @@ const Home = ({ onLoginSuccess }) => {
           </div>
 
           <div className="mobile-drawer-footer">
-            <button 
-              type="button" 
-              className="mobile-report-btn"
-              onClick={() => {
-                setMobileMenuOpen(false);
-                setShowReportModal(true);
-              }}
-            >
-              <span className="shield-icon">🛡️</span> Report Cheater
-            </button>
             <button 
               type="button" 
               className="mobile-login-drawer-btn"
@@ -410,13 +356,6 @@ const Home = ({ onLoginSuccess }) => {
                 }}
               >
                 <span className="cta-icon">▶</span> WATCH GAME HIGHLIGHTS
-              </button>
-              <button 
-                type="button" 
-                className="hero-cta-secondary"
-                onClick={() => setShowReportModal(true)}
-              >
-                REPORT VIOLATION
               </button>
             </div>
 
@@ -595,6 +534,7 @@ const Home = ({ onLoginSuccess }) => {
             </div>
             <div className="video-player-frame">
               <iframe
+                key={activeVideo.id || activeVideo.videoUrl}
                 width="100%"
                 height="100%"
                 src={`${activeVideo.videoUrl || activeVideo}?autoplay=1`}
@@ -608,105 +548,6 @@ const Home = ({ onLoginSuccess }) => {
         </div>
       )}
       
-      {/* Report Cheater Modal */}
-      {showReportModal && (
-        <div className="video-modal-overlay report-modal-overlay" onClick={() => setShowReportModal(false)}>
-          <div className="report-modal-dialog" onClick={(e) => e.stopPropagation()}>
-            <div className="report-modal-header">
-              <div className="report-modal-title-row">
-                <span className="report-alert-icon">⚠️</span>
-                <h2>Report a Cheater</h2>
-              </div>
-              <button 
-                type="button" 
-                className="report-modal-close-btn"
-                onClick={() => setShowReportModal(false)}
-                aria-label="Close modal"
-              >
-                ×
-              </button>
-            </div>
-
-            <p className="report-modal-subtitle">
-              Fair play is strictly enforced. Submit suspect player info and match evidence for official review.
-            </p>
-
-            <form onSubmit={handleReportSubmit} className="report-form-body">
-              <div className="report-field-group">
-                <label>Your IGN / Name (Optional)</label>
-                <input 
-                  type="text" 
-                  value={reportForm.reporter} 
-                  onChange={e => setReportForm({...reportForm, reporter: e.target.value})} 
-                  placeholder="Anonymous" 
-                />
-              </div>
-
-              <div className="report-field-group">
-                <label>Suspect IGN <span className="report-required-star">*</span></label>
-                <input 
-                  type="text" 
-                  required 
-                  value={reportForm.reported} 
-                  onChange={e => setReportForm({...reportForm, reported: e.target.value})} 
-                  placeholder="Enter exact in-game name" 
-                />
-              </div>
-
-              <div className="report-field-group">
-                <label>Infraction Reason</label>
-                <select 
-                  value={reportForm.reason} 
-                  onChange={e => setReportForm({...reportForm, reason: e.target.value})}
-                >
-                  <option value="Aimbot">Aimbot / Auto-Aim</option>
-                  <option value="Wallhack">Wallhack / ESP</option>
-                  <option value="Griefing">Griefing / Toxicity</option>
-                  <option value="Boosting">Elo Boosting / Smurfing</option>
-                  <option value="Other">Other Exploits</option>
-                </select>
-              </div>
-
-              <div className="report-field-group">
-                <label>Statement & Evidence Links</label>
-                <textarea 
-                  rows="3" 
-                  value={reportForm.statement} 
-                  onChange={e => setReportForm({...reportForm, statement: e.target.value})} 
-                  placeholder="Describe the incident, match time, or paste YouTube/Streamable links..."
-                />
-              </div>
-
-              <div className="report-field-group">
-                <label>Upload Screenshot / Clip</label>
-                <input 
-                  type="file" 
-                  onChange={e => setEvidenceFile(e.target.files[0])} 
-                  accept="video/*,image/*" 
-                  className="report-file-control"
-                />
-              </div>
-
-              <div className="report-form-footer">
-                <button 
-                  type="button" 
-                  onClick={() => setShowReportModal(false)} 
-                  className="report-cancel-btn"
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit" 
-                  className="report-submit-btn"
-                >
-                  Submit Report
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* Login Screen Modal */}
       {showLogin && <LoginScreen onClose={() => setShowLogin(false)} onLoginSuccess={onLoginSuccess} />}
     </div>
