@@ -3819,6 +3819,14 @@ const TournamentHubTab = ({
     ];
   }, [game]);
 
+  const { layer1, layer2 } = useMemo(() => {
+    const mid = Math.ceil(subTabs.length / 2);
+    return {
+      layer1: subTabs.slice(0, mid),
+      layer2: subTabs.slice(mid),
+    };
+  }, [subTabs]);
+
   if (!tournamentName) {
     return (
       <div className="flex flex-col items-center justify-center p-8 md:p-16 text-center max-w-4xl mx-auto animate-fade-in text-white">
@@ -3959,27 +3967,53 @@ const TournamentHubTab = ({
         )}
       </div>
 
-      {/* ── Sub-Navigation Ribbon ── */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-1 px-1 custom-scrollbar border-b border-slate-800/80">
-        {subTabs.map(st => {
-          const isActive = activeSubTab === st.key;
-          const Icon = st.icon;
+      {/* ── Sub-Navigation Ribbon (2 Layers, No Scroll) ── */}
+      <div className="flex flex-col gap-2 pb-3 pt-1 border-b border-slate-800/80 w-full">
+        {/* Layer 1 */}
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full">
+          {layer1.map(st => {
+            const isActive = activeSubTab === st.key;
+            const Icon = st.icon;
 
-          return (
-            <button
-              key={st.key}
-              onClick={() => setActiveSubTab(st.key)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold uppercase tracking-wider transition-all duration-200 shrink-0 cursor-pointer border ${
-                isActive
-                  ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-[0_0_18px_rgba(6,182,212,0.35)]'
-                  : 'bg-[#0d131c]/60 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 hover:bg-slate-800/60'
-              }`}
-            >
-              <Icon size={16} className={isActive ? 'text-cyan-400' : 'text-slate-400'} />
-              <span>{st.label}</span>
-            </button>
-          );
-        })}
+            return (
+              <button
+                key={st.key}
+                onClick={() => setActiveSubTab(st.key)}
+                className={`flex-1 min-w-[120px] sm:min-w-0 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs md:text-sm font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer border text-center ${
+                  isActive
+                    ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-[0_0_18px_rgba(6,182,212,0.35)]'
+                    : 'bg-[#0d131c]/60 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 hover:bg-slate-800/60'
+                }`}
+              >
+                <Icon size={16} className={`shrink-0 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
+                <span className="truncate">{st.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Layer 2 */}
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full">
+          {layer2.map(st => {
+            const isActive = activeSubTab === st.key;
+            const Icon = st.icon;
+
+            return (
+              <button
+                key={st.key}
+                onClick={() => setActiveSubTab(st.key)}
+                className={`flex-1 min-w-[120px] sm:min-w-0 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs md:text-sm font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer border text-center ${
+                  isActive
+                    ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-[0_0_18px_rgba(6,182,212,0.35)]'
+                    : 'bg-[#0d131c]/60 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 hover:bg-slate-800/60'
+                }`}
+              >
+                <Icon size={16} className={`shrink-0 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
+                <span className="truncate">{st.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* ── Render Sub-module Content ── */}
