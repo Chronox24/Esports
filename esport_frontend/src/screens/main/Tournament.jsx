@@ -782,7 +782,7 @@ const MatchCard = ({ match, showCountdown, game, index = 0 }) => {
     </div>
   );
 };
-const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCreateModal, onNavigateToHub }) => {
+const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCreateModal, onNavigateToHub, onEditTournamentSchedule }) => {
   const currentTournamentName = typeof globalTournament === 'string'
     ? globalTournament
     : globalTournament?.name;
@@ -1190,6 +1190,15 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
                     </button>
 
                     <button
+                      onClick={() => onEditTournamentSchedule && onEditTournamentSchedule(expandedLiveTournament)}
+                      style={{ padding: '8px 16px' }}
+                      className="flex items-center justify-center text-center gap-2 px-4 py-2 rounded-xl border border-cyan-400/30 bg-slate-900/80 hover:bg-cyan-500/20 text-cyan-300 font-bold uppercase tracking-wider text-xs transition-all cursor-pointer shadow-sm hover:border-cyan-400"
+                      title="Edit this tournament's match schedule"
+                    >
+                      <Calendar size={13} /> Edit Schedule
+                    </button>
+
+                    <button
                       onClick={() => handleToggleCompletion(expandedLiveTournament, false)}
                       disabled={isTogglingStatus}
                       style={{ padding: '8px 16px' }}
@@ -1380,6 +1389,15 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
                     </button>
 
                     <button
+                      onClick={() => onEditTournamentSchedule && onEditTournamentSchedule(expandedFinishedTournament)}
+                      style={{ padding: '8px 16px' }}
+                      className="flex items-center justify-center text-center gap-2 px-3.5 py-2 rounded-xl border border-amber-500/30 bg-slate-900/80 hover:bg-amber-500/20 text-amber-300 font-bold uppercase tracking-wider text-xs transition-all cursor-pointer shadow-sm hover:border-amber-400"
+                      title="Edit this tournament's match schedule"
+                    >
+                      <Calendar size={13} /> Edit Schedule
+                    </button>
+
+                    <button
                       onClick={() => handleToggleCompletion(expandedFinishedTournament, true)}
                       disabled={isTogglingStatus}
                       style={{ padding: '8px 16px' }}
@@ -1446,158 +1464,421 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
     </div>
   );
 };
-const ResultTab = ({ game, globalTournament }) => {
+const ResultTab = ({ game, globalTournament, setGlobalTournament, availableTournaments = [] }) => {
   const d = DATA[game];
-  const medalColors = { 1: "#FFD700", 2: "#C0C0C0", 3: "#CD7F32" };
-  const [liveBrackets, setLiveBrackets] = useState([]);
-  const [bracketResults, setBracketResults] = useState([]);
-  useEffect(() => {
-    apiFetch(
-      `/api/brackets?tournament=${globalTournament?.name || "Default"}&game_title=${game}`,
-    )
-      .then((res) => res.json())
-      .then((data) =>
-        setLiveBrackets(
-          data.map((b) => ({
-            round: b.round,
-            bestOf: b.best_of,
-            team1: b.team_a?.team_name || "TBD",
-            team2: b.team_b?.team_name || "TBD",
-            score1: b.score_a,
-            score2: b.score_b,
-            map: b.map_info,
-            team1Logo: b.team_a?.logo_url,
-            team2Logo: b.team_b?.logo_url,
-          })),
-        ),
-      )
-      .catch(console.error);
-
-    apiFetch(`/api/bracket-results?tournament_name=${globalTournament?.name || "Default"}&game_title=${game}&format=Results`)
-      .then(res => res.json())
-      .then(data => setBracketResults(data || []))
-      .catch(console.error);
-  }, [game, globalTournament?.name]);
-
-  // Dynamically group matches by their league property
-  const groupedTimeline = (d.results?.timeline || []).reduce((acc, match) => {
-    const league = match.league || 'OTHER';
-    if (!acc[league]) {
-      acc[league] = [];
+  const [matchRecords, setMatchRecords] = useState([]);
+  const [tournamentTeams, setTournamentTeams] = useState([]);
+  const [selectedTournament, setSelectedTournament] = useState(() => {
+    if (globalTournament) {
+      return typeof globalTournament === 'string' ? globalTournament : (globalTournament.name || "ALL");
     }
-    acc[league].push(match);
-    return acc;
-  }, {});
+    return "ALL";
+  });
+
+  // Keep selectedTournament in sync with globalTournament changes
+  useEffect(() => {
+    if (globalTournament) {
+      const name = typeof globalTournament === 'string' ? globalTournament : globalTournament.name;
+      if (name) setSelectedTournament(name);
+    }
+  }, [globalTournament]);
+
+  // Fetch match_records and teams from API
+  const fetchStandingsData = useCallback(() => {
+    const tourneyParam = selectedTournament && selectedTournament !== 'ALL' ? selectedTournament : 'all';
+    apiFetch(`/api/match-records?tournament=${encodeURIComponent(tourneyParam)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setMatchRecords(data);
+      })
+      .catch((err) => console.error("Error fetching match records for standings:", err));
+
+    apiFetch(`/api/teams?tournament=${encodeURIComponent(tourneyParam)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setTournamentTeams(data);
+      })
+      .catch((err) => console.error("Error fetching teams for standings:", err));
+  }, [selectedTournament]);
+
+  useEffect(() => {
+    fetchStandingsData();
+    // Live update every 4 seconds so match submissions from Data Entry instantly reflect
+    const timer = setInterval(fetchStandingsData, 4000);
+    return () => clearInterval(timer);
+  }, [fetchStandingsData, game]);
+
+  // Team logo map for fast lookup
+  const teamLogoMap = useMemo(() => {
+    const map = {};
+    tournamentTeams.forEach((t) => {
+      const name = t.team_name || t.name;
+      if (name && t.logo_url) map[name] = t.logo_url;
+    });
+    return map;
+  }, [tournamentTeams]);
+
+  // Dynamically compute real team standings from Data Entry match submissions
+  const standings = useMemo(() => {
+    const gameUpper = (game || "VALORANT").toUpperCase();
+    const relevantRecords = matchRecords.filter((r) => {
+      const g = (r.game || "VALORANT").toUpperCase();
+      const matchGame =
+        g === gameUpper ||
+        (gameUpper === "VALORANT" && g.includes("VAL")) ||
+        (gameUpper === "CROSSFIRE" && g.includes("CROSS"));
+      if (!matchGame) return false;
+      if (!selectedTournament || selectedTournament === "ALL") return true;
+      return (r.tournament_name || "").toLowerCase() === selectedTournament.toLowerCase();
+    });
+
+    const teamStats = {};
+    const setsSeen = new Set();
+    const matchResults = {};
+    const maxR = gameUpper === "VALORANT" ? 13 : 10;
+
+    relevantRecords.forEach((record) => {
+      const team = record.team_name;
+      if (!team) return;
+      if (!teamStats[team]) {
+        teamStats[team] = {
+          team,
+          seriesWin: 0,
+          seriesLoss: 0,
+          setWin: 0,
+          setLoss: 0,
+          roundDiff: 0,
+          kills: 0,
+          deaths: 0,
+          logo: teamLogoMap[team] || null,
+        };
+      }
+      teamStats[team].kills += Number(record.kills) || 0;
+      teamStats[team].deaths += Number(record.deaths) || 0;
+
+      const matchKey = `${record.tournament_name || "T"}-${record.week || "W"}-${record.day || "D"}-${record.match || "M"}-${record.created_at ? record.created_at.substring(0, 16) : "TIME"}`;
+      const setKey = `${matchKey}-${record.set_num || "1"}-${team}`;
+
+      if (!setsSeen.has(setKey)) {
+        setsSeen.add(setKey);
+        if (!matchResults[matchKey]) matchResults[matchKey] = {};
+        if (!matchResults[matchKey][team]) matchResults[matchKey][team] = { setsWon: 0, setsLost: 0 };
+
+        const isWin = String(record.win).toLowerCase() === "true" || record.win === 1;
+        if (isWin) {
+          teamStats[team].setWin += 1;
+          matchResults[matchKey][team].setsWon += 1;
+        } else {
+          teamStats[team].setLoss += 1;
+          matchResults[matchKey][team].setsLost += 1;
+        }
+
+        let rd = 0;
+        const rounds = Number(record.rounds) || 0;
+        if (rounds >= maxR * 2) rd = isWin ? 2 : -2;
+        else rd = isWin ? maxR * 2 - rounds : rounds - maxR * 2;
+        teamStats[team].roundDiff += rd;
+      }
+    });
+
+    Object.values(matchResults).forEach((matchObj) => {
+      const teamsInMatch = Object.keys(matchObj);
+      if (teamsInMatch.length === 2) {
+        const [t1, t2] = teamsInMatch;
+        const t1Wins = matchObj[t1].setsWon;
+        const t2Wins = matchObj[t2].setsWon;
+        if (t1Wins > t2Wins) {
+          if (teamStats[t1]) teamStats[t1].seriesWin += 1;
+          if (teamStats[t2]) teamStats[t2].seriesLoss += 1;
+        } else if (t2Wins > t1Wins) {
+          if (teamStats[t2]) teamStats[t2].seriesWin += 1;
+          if (teamStats[t1]) teamStats[t1].seriesLoss += 1;
+        }
+      } else if (teamsInMatch.length === 1) {
+        const t1 = teamsInMatch[0];
+        if (matchObj[t1].setsWon > matchObj[t1].setsLost) {
+          if (teamStats[t1]) teamStats[t1].seriesWin += 1;
+        } else if (matchObj[t1].setsLost > matchObj[t1].setsWon) {
+          if (teamStats[t1]) teamStats[t1].seriesLoss += 1;
+        }
+      }
+    });
+
+    // Also include registered tournament teams if in a specific tournament so 0-0 teams appear
+    if (selectedTournament && selectedTournament !== "ALL" && tournamentTeams && tournamentTeams.length > 0) {
+      tournamentTeams.forEach((t) => {
+        const name = t.team_name || t.name;
+        if (name && !teamStats[name]) {
+          teamStats[name] = {
+            team: name,
+            seriesWin: 0,
+            seriesLoss: 0,
+            setWin: 0,
+            setLoss: 0,
+            roundDiff: 0,
+            kills: 0,
+            deaths: 0,
+            logo: t.logo_url || null,
+          };
+        }
+      });
+    }
+
+    const list = Object.values(teamStats)
+      .map((t) => ({
+        ...t,
+        record: `${t.seriesWin} - ${t.seriesLoss}`,
+        pts: t.seriesWin * 3,
+        setDiff: t.setWin - t.setLoss,
+        totalPlusMinus: t.kills - t.deaths,
+      }))
+      .sort((a, b) => {
+        if (b.pts !== a.pts) return b.pts - a.pts;
+        if (b.seriesWin !== a.seriesWin) return b.seriesWin - a.seriesWin;
+        if (a.seriesLoss !== b.seriesLoss) return a.seriesLoss - b.seriesLoss;
+        if (b.setDiff !== a.setDiff) return b.setDiff - a.setDiff;
+        if (b.roundDiff !== a.roundDiff) return b.roundDiff - a.roundDiff;
+        return b.totalPlusMinus - a.totalPlusMinus;
+      })
+      .map((t, idx) => ({
+        ...t,
+        rank: idx + 1,
+      }));
+
+    return list;
+  }, [matchRecords, game, selectedTournament, tournamentTeams, teamLogoMap]);
+
+  // Dynamically compute match timeline from real match submissions
+  const timelineMatches = useMemo(() => {
+    const gameUpper = (game || "VALORANT").toUpperCase();
+    const relevantRecords = matchRecords.filter((r) => {
+      const g = (r.game || "VALORANT").toUpperCase();
+      const matchGame =
+        g === gameUpper ||
+        (gameUpper === "VALORANT" && g.includes("VAL")) ||
+        (gameUpper === "CROSSFIRE" && g.includes("CROSS"));
+      if (!matchGame) return false;
+      if (!selectedTournament || selectedTournament === "ALL") return true;
+      return (r.tournament_name || "").toLowerCase() === selectedTournament.toLowerCase();
+    });
+
+    const matchesMap = {};
+    relevantRecords.forEach((r) => {
+      const key = `${r.tournament_name || "Tournament"}::${r.week || "1"}::${r.day || "1"}::${r.match || "1"}::${r.set_num || "1"}`;
+      if (!matchesMap[key]) {
+        matchesMap[key] = {
+          league: r.tournament_name || "Tournament",
+          stage: `Week ${r.week || 1} • Day ${r.day || 1} • Match ${r.match || 1}`,
+          map: r.map || "Competitive Map",
+          teams: {},
+          createdAt: r.created_at || "",
+        };
+      }
+      if (r.team_name) {
+        if (!matchesMap[key].teams[r.team_name]) {
+          matchesMap[key].teams[r.team_name] = {
+            win: String(r.win).toLowerCase() === "true" || r.win === 1,
+            rounds: Number(r.rounds) || 0,
+          };
+        }
+      }
+    });
+
+    const list = [];
+    Object.values(matchesMap).forEach((m) => {
+      const teamNames = Object.keys(m.teams);
+      if (teamNames.length >= 2) {
+        const [t1, t2] = teamNames;
+        const s1 = m.teams[t1].rounds || (m.teams[t1].win ? 13 : 0);
+        const s2 = m.teams[t2].rounds || (m.teams[t2].win ? 13 : 0);
+        list.push({
+          league: m.league,
+          stage: m.stage,
+          team1: t1,
+          team2: t2,
+          score: `${s1} - ${s2}`,
+          map: m.map,
+        });
+      }
+    });
+    return list;
+  }, [matchRecords, game, selectedTournament]);
 
   return (
-    <div className="dashboard-wrapper" style={{ gridTemplateColumns: '1fr' }}>
+    <div className="flex flex-col gap-6 w-full items-center">
+      {/* Top Standings Panel: Centered, fits cleanly without scrollbars */}
+      <div className="glass-panel w-full max-w-5xl flex flex-col p-6 sm:p-7">
+        {/* Header Bar */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 pb-3 border-b border-slate-800">
+          <div className="flex items-center gap-2.5">
+            <span className="text-yellow-500 text-lg">
+              <IconTrophy />
+            </span>
+            <div>
+              <h2 className="text-white font-black text-base sm:text-lg tracking-wide">
+                FINAL RESULTS & KEY STATS
+              </h2>
+              <p className="text-[11px] text-slate-400 font-medium">
+                Top Standings • Live sync from Data Entry
+              </p>
+            </div>
+          </div>
 
-      {/* Top Left: Leaderboard Panel */}
-      <div className="glass-panel">
-        <h2 className="text-white font-bold text-lg mb-6 flex items-center gap-2">
-          <span className="text-yellow-500"><IconTrophy /></span> FINAL RESULTS & KEY STATS
-        </h2>
+          {/* Tournament Picker Dropdown */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Tournament:</span>
+            <select
+              value={selectedTournament}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSelectedTournament(val);
+                if (setGlobalTournament && val !== "ALL") {
+                  setGlobalTournament(val);
+                }
+              }}
+              className="bg-slate-900 border border-slate-700 hover:border-cyan-400 text-xs text-cyan-300 font-bold px-3 py-1.5 rounded-lg focus:outline-none focus:border-cyan-400 cursor-pointer shadow-sm transition-colors"
+            >
+              <option value="ALL">All Tournaments</option>
+              {availableTournaments
+                .filter((t) => t.name && t.name.toLowerCase() !== "default")
+                .map((t) => (
+                  <option key={t.id || t.name} value={t.name}>
+                    {t.name}
+                  </option>
+                ))}
+            </select>
+          </div>
+        </div>
 
-        <table className="stats-table">
-          <thead>
-            <tr>
-              <th className="text-left w-16">RANK</th>
-              <th className="text-left">TEAM</th>
-              <th className="text-center">PRIZE</th>
-              <th className="text-center">RECORD</th>
-              <th className="text-center">PTS</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(bracketResults.length > 0 ? bracketResults : d.results.table).map((row, i) => {
-              const rank = row.placement_rank || row.rank;
-              const teamName = row.team_name || row.team;
-              const abbr = row.abbr || teamName.substring(0, 2).toUpperCase();
-              const logo = row.logo_url;
-              const prize = row.prize_money || row.prize || '—';
-              const record = row.series_score || row.record || '—';
-              const pts = row.total_points || row.pts || '—';
-              const rankClass = rank <= 3 ? `rank-${rank}` : 'text-gray-400';
-
-              return (
-                <tr key={row.id || row.rank || i} className="rounded-lg">
-                  <td>
-                    <div className="flex items-center gap-2">
-                      <span className={`rank-pill ${rankClass}`}>{rank}</span>
-                      {rank === 1 && <span className="text-yellow-500 text-sm">🏆</span>}
-                      {rank === 2 && <span className="text-gray-300 text-sm">🥈</span>}
-                      {rank === 3 && <span className="text-orange-400 text-sm">🥉</span>}
-                    </div>
-                  </td>
-                  <td className="text-white font-semibold flex items-center gap-3">
-                    {logo ? (
-                      <img src={logo} alt={teamName} className="w-8 h-8 rounded-full border border-slate-600 object-cover" />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-[10px] shadow-sm">
-                        {abbr}
-                      </div>
-                    )}
-                    {teamName}
-                  </td>
-                  <td className="text-center text-emerald-400 font-mono">
-                    {prize}
-                  </td>
-                  <td className="text-center text-slate-300 font-mono">{record}</td>
-                  <td className="text-center text-white font-bold">{pts}</td>
+        {/* Scrollable Standings Container: Top 5 rows visible with scrollbar for more */}
+        <div className="w-full overflow-hidden rounded-2xl border border-cyan-500/20 bg-slate-900/40 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_20px_rgba(6,182,212,0.06)]">
+          <div className="max-h-[305px] overflow-y-auto overflow-x-hidden custom-scrollbar">
+            <table className="w-full border-collapse table-fixed">
+              <thead className="sticky top-0 bg-[#0b1017]/95 backdrop-blur-md z-10 border-b border-cyan-500/20 shadow-sm">
+                <tr className="text-[11px] font-black uppercase tracking-wider text-slate-400">
+                  <th className="py-3 px-4 w-[90px] text-left">RANK</th>
+                  <th className="py-3 px-4 text-left">TEAM</th>
+                  <th className="py-3 px-4 w-[130px] text-center">RECORD</th>
+                  <th className="py-3 px-4 w-[95px] text-center text-cyan-400 font-black tracking-wider">PTS</th>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              </thead>
+              <tbody className="divide-y divide-slate-800/40">
+                {standings.length > 0 ? (
+                  standings.map((row) => {
+                    const rank = row.rank;
+                    const teamName = row.team;
+                    const abbr = teamName.substring(0, 2).toUpperCase();
+                    const logo = row.logo;
+                    const record = row.record;
+                    const pts = row.pts;
+
+                    return (
+                      <tr
+                        key={row.team}
+                        className="hover:bg-cyan-500/10 transition-colors h-[52px] group"
+                      >
+                        <td className="py-2 px-4">
+                          <div className="flex items-center gap-2">
+                            {rank === 1 ? (
+                              <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black bg-gradient-to-br from-amber-400 to-amber-600 text-black shadow-[0_0_12px_rgba(245,158,11,0.4)]">
+                                1
+                              </div>
+                            ) : rank === 2 ? (
+                              <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black bg-gradient-to-br from-slate-200 to-slate-400 text-slate-900 shadow-[0_0_10px_rgba(203,213,225,0.3)]">
+                                2
+                              </div>
+                            ) : rank === 3 ? (
+                              <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black bg-gradient-to-br from-orange-400 to-orange-700 text-black shadow-[0_0_10px_rgba(234,88,12,0.3)]">
+                                3
+                              </div>
+                            ) : (
+                              <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-slate-800/80 border border-slate-700/60 text-slate-400">
+                                {rank}
+                              </div>
+                            )}
+                            {rank === 1 && <span className="text-sm">🏆</span>}
+                            {rank === 2 && <span className="text-sm">🥈</span>}
+                            {rank === 3 && <span className="text-sm">🥉</span>}
+                          </div>
+                        </td>
+                        <td className="py-2 px-4 font-semibold text-white">
+                          <div className="flex items-center gap-3 min-w-0">
+                            {logo ? (
+                              <img
+                                src={logo}
+                                alt={teamName}
+                                className="w-7 h-7 rounded-full border border-cyan-500/30 object-cover shrink-0"
+                              />
+                            ) : (
+                              <div className="w-7 h-7 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-[10px] font-extrabold text-cyan-300 shrink-0 shadow-[0_0_8px_rgba(6,182,212,0.15)] group-hover:border-cyan-400 transition-colors">
+                                {abbr}
+                              </div>
+                            )}
+                            <span className="truncate text-sm text-slate-100 group-hover:text-cyan-300 transition-colors">{teamName}</span>
+                          </div>
+                        </td>
+                        <td className="py-2 px-4 text-center text-slate-300 font-mono text-xs font-bold">
+                          {record}
+                        </td>
+                        <td className="py-2 px-4 text-center text-cyan-400 font-black text-sm drop-shadow-[0_0_8px_rgba(6,182,212,0.4)]">
+                          {pts}
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="text-center py-10 text-slate-400 text-xs italic">
+                      No match submissions recorded yet for this tournament. Matches submitted in Data Entry will automatically update team standings here.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       {/* Bottom Full Width: Timeline Section */}
-      <div className="glass-panel w-full">
-        <div className="flex justify-between items-center" style={{ marginBottom: "40px" }}>
-          <h2 className="text-white font-bold text-lg flex items-center gap-2">
+      <div className="glass-panel w-full max-w-5xl p-6 sm:p-7">
+        <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
+          <h2 className="text-white font-bold text-base flex items-center gap-2">
             <span className="text-purple-400">🗓️</span> TOURNAMENT MATCH TIMELINE
           </h2>
         </div>
 
-        {/* Dynamically render a separate row for each league */}
-        <div className="flex flex-col gap-8">
-          {Object.entries(groupedTimeline).map(([league, matches]) => (
-            <div key={league} className="timeline-category">
-              {/* League Header */}
-              <div className="flex items-center gap-3 mb-3">
-                <span className={`league-indicator indicator-${league.toLowerCase()}`}></span>
-                <h3 className="text-sm text-slate-300 font-bold uppercase tracking-widest">
-                  {league} Timeline
-                </h3>
+        {/* Dynamic Timeline Rows */}
+        {timelineMatches.length > 0 ? (
+          <div className="timeline-scroll-row overflow-x-auto pb-2 custom-scrollbar">
+            {timelineMatches.map((match, idx) => (
+              <div key={idx} className="timeline-card shrink-0">
+                <span className="text-[10px] text-slate-400 font-bold uppercase mb-2 block">
+                  {match.stage}
+                </span>
+                <div className="flex items-center gap-4 text-white font-bold text-xl">
+                  <div className="team-circle">{match.team1[0]}</div>
+                  <span className="text-cyan-400">{match.score}</span>
+                  <div className="team-circle">{match.team2[0]}</div>
+                </div>
+                <div className="text-right text-[10px] text-slate-500 mt-2 flex flex-col items-end">
+                  <span className="truncate max-w-[150px]">
+                    {match.team1} vs {match.team2}
+                  </span>
+                  <span>Map: {match.map}</span>
+                </div>
               </div>
-
-              {/* Independent Horizontal Scroll */}
-              <div className="timeline-scroll-row">
-                {matches.map((match, idx) => (
-                  <div key={idx} className="timeline-card">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase mb-2 block">
-                      {match.stage}
-                    </span>
-                    <div className="flex items-center gap-4 text-white font-bold text-xl">
-                      <div className="team-circle">{match.team1[0]}</div>
-                      <span className="text-cyan-400">{match.score}</span>
-                      <div className="team-circle">{match.team2[0]}</div>
-                    </div>
-                    <div className="text-right text-[10px] text-slate-500 mt-2 flex flex-col items-end">
-                      <span>{match.team1} vs {match.team2}</span>
-                      <span>Map: {match.map}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-slate-400 text-xs italic text-center py-4">
+            No match timelines recorded yet. Completed matches from Data Entry will appear here.
+          </p>
+        )}
       </div>
-
     </div>
   );
 };
+
 const MiniCalendar = ({ highlightDays = [], selectedDay, onSelectDay }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const daysOfWeek = ["M", "T", "W", "T", "F", "S", "S"];
@@ -2087,11 +2368,24 @@ const ManageBracketTab = ({ globalGame, globalTournament }) => {
   );
 };
 
-const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, onOpenCreateModal }) => {
+const ManageScheduleTab = ({
+  readOnly,
+  globalGame,
+  globalTournament,
+  embedded,
+  onOpenCreateModal,
+  selectedTournamentForEdit,
+  setSelectedTournamentForEdit,
+  availableTournaments = [],
+}) => {
   const activeGame = (globalGame || "VALORANT").toUpperCase();
-  const safeFolder = globalTournament?.name
-    ? globalTournament.name.replace(/[^a-zA-Z0-9]/g, "_")
-    : "default";
+  const activeTournamentName = embedded
+    ? (globalTournament?.name?.trim() || "")
+    : (selectedTournamentForEdit?.trim() || "");
+
+  const safeFolder = activeTournamentName
+    ? activeTournamentName.replace(/[^a-zA-Z0-9]/g, "_")
+    : "none";
   const key = `tourney_schedule_${safeFolder}_${activeGame}`;
 
   const [schedule, setSchedule] = useState([]);
@@ -2170,13 +2464,12 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
 
   const fetchMatches = async () => {
     try {
-      const tourneyName = globalTournament?.name?.trim();
-      if (!tourneyName) {
+      if (!activeTournamentName || activeTournamentName.toLowerCase() === "default") {
         setSchedule([]);
         return;
       }
       const res = await apiFetch(
-        `/api/matches?tournament=${encodeURIComponent(tourneyName)}`,
+        `/api/matches?tournament=${encodeURIComponent(activeTournamentName)}`,
       );
       if (res.ok) {
         const data = await res.json();
@@ -2202,12 +2495,15 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
 
   useEffect(() => {
     fetchMatches();
-  }, [globalTournament?.name]);
+  }, [activeTournamentName]);
 
   const getOrCreateTeam = async (teamName, teamLogoUrl, teamFile) => {
+    if (!activeTournamentName || activeTournamentName.toLowerCase() === "default") {
+      return null;
+    }
     try {
       const res = await apiFetch(
-        `/api/teams?tournament=${encodeURIComponent(globalTournament?.name || "Default")}`,
+        `/api/teams?tournament=${encodeURIComponent(activeTournamentName)}`,
       );
       if (res.ok) {
         const teams = await res.json();
@@ -2224,7 +2520,7 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
 
     const formData = new FormData();
     formData.append("team_name", teamName);
-    formData.append("tournament_name", globalTournament?.name || "Default");
+    formData.append("tournament_name", activeTournamentName);
 
     if (teamFile) {
       formData.append("logo", teamFile);
@@ -2252,6 +2548,10 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
   };
 
   const addMatch = async () => {
+    if (!activeTournamentName || activeTournamentName.toLowerCase() === "default") {
+      showToast("Please select a tournament to edit its schedule.");
+      return;
+    }
     if (!teamA.trim() || !teamB.trim() || !day || !time) {
       setShowErrors(true);
       return;
@@ -2270,7 +2570,7 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
         const matchRes = await apiFetch("/api/matches", {
           method: "POST",
           body: JSON.stringify({
-            tournament_name: globalTournament?.name || "Default",
+            tournament_name: activeTournamentName,
             team_a_id: teamAId,
             team_b_id: teamBId,
             game_title: activeGame,
@@ -2341,52 +2641,132 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
         </div>
       )}
 
-      <div className={`flex flex-col lg:flex-row gap-6 w-full items-start ${embedded ? 'max-w-full px-0 mt-0' : 'max-w-[1400px] px-2 sm:px-4 lg:px-8 mt-4'}`}>
+      <div className={`flex flex-col gap-6 w-full ${embedded ? 'max-w-full px-0 mt-0' : 'max-w-[1400px] px-2 sm:px-4 lg:px-8 mt-4'}`}>
         
-        {/* LEFT COLUMN: SETUP & SCHEDULE FORM */}
-        <div className="flex-1 flex flex-col gap-6 w-full min-w-0">
+        {/* ── Top Tournament Setup Banner (Full Width) ── */}
+        {!readOnly && !embedded && (
+          <div className="w-full relative overflow-hidden rounded-3xl bg-slate-900/60 border border-slate-800/80 p-6 sm:p-7 sm:px-8 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.45)] flex flex-col md:flex-row justify-between items-start md:items-center gap-5">
+            {/* Top ambient highlight line */}
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
 
-          {/* ── Top Tournament Setup Banner ── */}
-          {!readOnly && !embedded && onOpenCreateModal && (
-            <div className="relative overflow-hidden rounded-3xl bg-slate-900/60 border border-slate-800/80 p-6 sm:p-7 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.45)] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5">
-              {/* Top ambient highlight line */}
-              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.25)] shrink-0">
+                <Trophy size={28} />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-cyan-500/15 text-cyan-400 border border-cyan-500/25">
+                    {activeTournamentName ? "Edit Schedule Mode" : "Tournament Setup Hub"}
+                  </span>
+                  <span className="text-xs font-bold text-slate-500">•</span>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider truncate">
+                    {activeTournamentName || "Create or Edit"}
+                  </span>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-black uppercase text-white font-['Outfit'] tracking-wider truncate">
+                  {activeTournamentName ? `Editing: ${activeTournamentName}` : "Tournament Setup"}
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5 line-clamp-2">
+                  {activeTournamentName
+                    ? "Manage matches, adjust showdown times, and update rosters for this tournament."
+                    : "Create a new tournament from scratch or select an existing tournament to edit its schedule."}
+                </p>
+              </div>
+            </div>
 
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.25)] shrink-0">
-                  <Trophy size={28} />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-cyan-500/15 text-cyan-400 border border-cyan-500/25">
-                      Tournament Hub
-                    </span>
-                    <span className="text-xs font-bold text-slate-500">•</span>
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                      {globalTournament?.name || "Default Tournament"}
-                    </span>
-                  </div>
-                  <h2 className="text-xl sm:text-2xl font-black uppercase text-white font-['Outfit'] tracking-wider">
-                    Tournament Setup
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Configure tournament fixtures, register team rosters, and manage match schedules.
-                  </p>
-                </div>
+            <div className="flex items-center gap-3.5 flex-wrap sm:flex-nowrap shrink-0 pr-1">
+              {/* Dropdown to select existing tournament to edit */}
+              <div className="flex items-center gap-2">
+                <select
+                  value={activeTournamentName || ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (setSelectedTournamentForEdit) {
+                      setSelectedTournamentForEdit(val || null);
+                    }
+                  }}
+                  className="bg-slate-950/80 border border-slate-700 hover:border-cyan-500/50 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-200 focus:outline-none focus:border-cyan-400 cursor-pointer shadow-inner min-w-[230px]"
+                >
+                  <option value="">-- Select Tournament to Edit Schedule --</option>
+                  {availableTournaments
+                    .filter(t => t.name && t.name.toLowerCase() !== "default")
+                    .map(t => (
+                      <option key={t.id || t.name} value={t.name}>
+                        {t.name} ({t.game || activeGame})
+                      </option>
+                    ))}
+                </select>
+                {activeTournamentName && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTournamentForEdit && setSelectedTournamentForEdit(null)}
+                    className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold transition-all border border-slate-700 cursor-pointer shadow-sm"
+                    title="Exit edit mode"
+                  >
+                    ✕ Exit
+                  </button>
+                )}
               </div>
 
-              <button 
-                onClick={onOpenCreateModal}
-                className="group relative flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-slate-950 text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-[0_0_25px_rgba(6,182,212,0.4)] hover:shadow-[0_0_35px_rgba(6,182,212,0.6)] hover:scale-105 active:scale-95 shrink-0"
-              >
-                <Plus size={16} strokeWidth={3} className="transition-transform group-hover:rotate-90" />
-                <span>+ Create Tournament</span>
-              </button>
+              {onOpenCreateModal && (
+                <button 
+                  onClick={onOpenCreateModal}
+                  className="group relative flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-slate-950 text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-[0_0_20px_rgba(6,182,212,0.35)] hover:scale-105 active:scale-95 shrink-0 cursor-pointer"
+                >
+                  <Plus size={15} strokeWidth={3} className="transition-transform group-hover:rotate-90" />
+                  <span>Create Tournament</span>
+                </button>
+              )}
             </div>
-          )}
+          </div>
+        )}
 
-          {/* ── Manage Schedule Form ── */}
-          {!readOnly && (
+        {/* ── TWO COLUMN MAIN AREA ── */}
+        <div className="flex flex-col lg:flex-row gap-6 w-full items-start">
+          
+          {/* LEFT COLUMN: SETUP & SCHEDULE FORM */}
+          <div className="flex-1 flex flex-col gap-6 w-full min-w-0">
+
+            {/* ── Manage Schedule Form or Selection Hub ── */}
+          {!readOnly && (!embedded && !activeTournamentName ? (
+            <div className="relative rounded-3xl bg-slate-900/60 border border-slate-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl p-8 sm:p-12 flex flex-col items-center justify-center text-center gap-6">
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent rounded-t-3xl" />
+              <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.25)]">
+                <Swords size={32} />
+              </div>
+              <div className="max-w-md">
+                <h3 className="text-xl sm:text-2xl font-black uppercase text-white font-['Outfit'] tracking-wider mb-2">
+                  Tournament Schedule Hub
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  To schedule matches and manage team rosters, click <span className="text-cyan-400 font-bold">+ Create Tournament</span> above or select an existing tournament from the <span className="text-cyan-400 font-bold">Edit Schedule</span> selector.
+                </p>
+              </div>
+
+              {availableTournaments.filter(t => t.name && t.name.toLowerCase() !== "default").length > 0 && (
+                <div className="w-full max-w-lg pt-4 border-t border-slate-800/80 flex flex-col items-center gap-3">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    Or select an existing tournament to edit its schedule:
+                  </span>
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    {availableTournaments
+                      .filter(t => t.name && t.name.toLowerCase() !== "default")
+                      .slice(0, 6)
+                      .map(t => (
+                        <button
+                          key={t.id || t.name}
+                          type="button"
+                          onClick={() => setSelectedTournamentForEdit && setSelectedTournamentForEdit(t.name)}
+                          className="px-3.5 py-1.5 rounded-xl bg-slate-950/70 border border-slate-700/80 hover:border-cyan-400 hover:bg-slate-800/80 text-xs font-bold text-slate-200 hover:text-cyan-400 transition-all shadow-sm cursor-pointer"
+                        >
+                          {t.name}
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
             <div className={`relative rounded-3xl bg-slate-900/60 border border-slate-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl flex flex-col w-full ${embedded ? 'px-6 pt-5 pb-6 gap-5' : 'px-6 sm:px-8 pt-6 sm:pt-7 pb-8 sm:pb-10 gap-6'}`}>
               {/* Top ambient highlight line */}
               <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-cyan-500/30 via-slate-700 to-rose-500/30 rounded-t-3xl" />
@@ -2399,7 +2779,7 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                   </div>
                   <div>
                     <h2 className="text-xl font-black uppercase text-white font-['Outfit'] tracking-wider">
-                      Schedule Match Showdown
+                      Schedule Match Showdown {activeTournamentName ? `• ${activeTournamentName}` : ""}
                     </h2>
                     <p className="text-xs text-slate-400">
                       Enter competing team details, customize team emblems, and set the battle time.
@@ -2734,7 +3114,7 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
               </div>
 
             </div>
-          )}
+          ))}
 
         </div>
 
@@ -2749,11 +3129,11 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
               <div className="flex items-center gap-2">
                 <Calendar size={16} className="text-cyan-400" />
                 <h3 className="text-sm font-black uppercase text-white font-['Outfit'] tracking-wider">
-                  Current Schedule
+                  Current Schedule {activeTournamentName ? `(${activeTournamentName})` : ""}
                 </h3>
               </div>
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-800 text-cyan-400 border border-slate-700/60">
-                {schedule.length} {schedule.length === 1 ? "Match" : "Matches"}
+                {activeTournamentName ? `${schedule.length} ${schedule.length === 1 ? "Match" : "Matches"}` : "0 Matches"}
               </span>
             </div>
 
@@ -2772,14 +3152,18 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
 
             {/* Schedule Items List */}
             <div className="flex flex-col gap-3 overflow-y-auto custom-scrollbar flex-1 pr-1 max-h-[620px]">
-              {filteredSchedule.length === 0 ? (
+              {(!activeTournamentName || filteredSchedule.length === 0) ? (
                 <div className="flex flex-col items-center justify-center text-center py-16 px-4 rounded-2xl border border-dashed border-slate-800/80 bg-slate-950/30">
                   <Calendar size={32} className="text-slate-600 mb-3" />
                   <div className="text-sm font-bold text-slate-300">
-                    {searchSchedule ? "No matching fixtures" : "No matches scheduled yet"}
+                    {!activeTournamentName
+                      ? "No Tournament Selected"
+                      : (searchSchedule ? "No matching fixtures" : "No matches scheduled yet")}
                   </div>
-                  <div className="text-xs text-slate-500 mt-1 max-w-[220px]">
-                    {searchSchedule ? "Try another team search." : "Add your first matchup using the form on the left!"}
+                  <div className="text-xs text-slate-500 mt-1 max-w-[240px]">
+                    {!activeTournamentName
+                      ? "Teams and match schedules will only appear here when you select an existing tournament to edit."
+                      : (searchSchedule ? "Try another team search." : "Add your first matchup using the form on the left!")}
                   </div>
                 </div>
               ) : (
@@ -2861,88 +3245,151 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
           </div>
         </div>
 
+        </div>
       </div>
     </div>
   );
 };
 
-const ScheduleTab = ({ game, globalTournament }) => {
+const ScheduleTab = ({ game, globalTournament, setGlobalTournament, availableTournaments = [] }) => {
   const d = DATA[game];
   const [activeGame, setActiveGame] = useState(game);
   const [filterByGame, setFilterByGame] = useState(true);
   const [reminders, setReminders] = useState({});
   const [selectedDay, setSelectedDay] = useState(null);
 
-  const safeFolder = globalTournament?.name
-    ? globalTournament.name.replace(/[^a-zA-Z0-9]/g, "_")
-    : "default";
-  const key = `tourney_schedule_${safeFolder}_${activeGame}`;
-  const [scheduleData, setScheduleData] = React.useState([]);
+  const [tournamentsList, setTournamentsList] = useState(availableTournaments || []);
 
-  React.useEffect(() => {
-    const fetchMatches = async () => {
-      try {
-        const res = await apiFetch(`/api/matches?tournament=${globalTournament?.name || "Default"}`);
-        if (res.ok) {
-          const data = await res.json();
-          const mapped = data.map((m) => {
-            let dayNum = 1;
-            if (m.match_day) {
-              if (m.match_day.includes("-")) {
-                dayNum = parseInt(m.match_day.split("-")[2], 10);
-              } else {
-                dayNum = parseInt(m.match_day, 10);
-              }
-            }
-            return {
-              id: m.match_id,
-              teamA: m.team_a?.team_name || "TBD",
-              teamALogo: m.team_a?.logo_url,
-              teamB: m.team_b?.team_name || "TBD",
-              teamBLogo: m.team_b?.logo_url,
-              score: `${m.score_a || 0}-${m.score_b || 0}`,
-              isLive: m.is_live,
-              day: dayNum,
-              time: m.match_time || "00:00",
-              timezone: m.match_timezone || "PST",
-              reminded: false,
-              stage: m.round || "Match",
-              map: m.map_info || "TBD",
-            };
-          });
-          setScheduleData(mapped);
+  useEffect(() => {
+    apiFetch('/api/tournaments')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setTournamentsList(data.filter((t) => t.name && t.name.toLowerCase() !== "default"));
         }
-      } catch (e) {
-        console.error(e);
-      }
-    };
-    fetchMatches();
-  }, [globalTournament?.name]);
+      })
+      .catch(console.error);
+  }, []);
 
-  const highlightDays = useMemo(
-    () => scheduleData.map((m) => m.day),
-    [scheduleData],
+  const initialTournName = typeof globalTournament === 'object' && globalTournament
+    ? (globalTournament.name || "")
+    : (globalTournament || "");
+
+  const [selectedTournament, setSelectedTournament] = useState(
+    initialTournName && initialTournName.toLowerCase() !== "default"
+      ? initialTournName
+      : "ALL"
   );
 
+  useEffect(() => {
+    if (initialTournName && initialTournName !== selectedTournament && initialTournName.toLowerCase() !== "default") {
+      setSelectedTournament(initialTournName);
+    }
+  }, [initialTournName]);
+
+  const [scheduleData, setScheduleData] = React.useState([]);
+
+  const visibleTournaments = useMemo(() => {
+    return tournamentsList.filter(
+      (t) => !filterByGame || (t.game || "VALORANT").toUpperCase() === activeGame.toUpperCase()
+    );
+  }, [tournamentsList, filterByGame, activeGame]);
+
+  const handleSelectTournament = (tournName) => {
+    setSelectedTournament(tournName);
+    setSelectedDay(null);
+    if (setGlobalTournament && tournName !== "ALL") {
+      setGlobalTournament(tournName);
+    }
+  };
+
+  const fetchMatches = async () => {
+    try {
+      let url = '/api/matches';
+      if (selectedTournament && selectedTournament !== "ALL") {
+        url += `?tournament=${encodeURIComponent(selectedTournament)}`;
+      }
+      const res = await apiFetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          const mapped = data
+            .filter((m) => !m.tournament_name || m.tournament_name.toLowerCase() !== "default")
+            .map((m) => {
+              let dayNum = 1;
+              if (m.match_day) {
+                if (m.match_day.includes("-")) {
+                  dayNum = parseInt(m.match_day.split("-")[2], 10);
+                } else {
+                  dayNum = parseInt(m.match_day, 10);
+                }
+              }
+              return {
+                id: m.match_id,
+                tournamentName: m.tournament_name || "Tournament",
+                gameTitle: (m.game_title || "VALORANT").toUpperCase(),
+                teamA: m.team_a?.team_name || "TBD",
+                teamALogo: m.team_a?.logo_url,
+                teamB: m.team_b?.team_name || "TBD",
+                teamBLogo: m.team_b?.logo_url,
+                score: `${m.score_a || 0}-${m.score_b || 0}`,
+                isLive: m.is_live,
+                day: dayNum,
+                dateStr: m.match_day || "",
+                time: m.match_time || "00:00",
+                timezone: m.match_timezone || "PST",
+                reminded: false,
+                stage: m.round || "Match",
+                map: m.map_info || "TBD",
+              };
+            });
+          setScheduleData(mapped);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    fetchMatches();
+  }, [selectedTournament, activeGame]);
+
   const filteredSchedule = useMemo(() => {
-    if (!selectedDay) return scheduleData;
-    return scheduleData.filter((m) => m.day === selectedDay);
-  }, [scheduleData, selectedDay]);
+    let list = scheduleData;
+    if (filterByGame) {
+      list = list.filter((m) => m.gameTitle === activeGame.toUpperCase());
+    }
+    if (selectedDay) {
+      list = list.filter((m) => m.day === selectedDay);
+    }
+    return list;
+  }, [scheduleData, selectedDay, filterByGame, activeGame]);
+
+  const highlightDays = useMemo(() => {
+    let list = scheduleData;
+    if (filterByGame) {
+      list = list.filter((m) => m.gameTitle === activeGame.toUpperCase());
+    }
+    return list.map((m) => m.day);
+  }, [scheduleData, filterByGame, activeGame]);
 
   const toggleReminder = (id) =>
     setReminders((prev) => ({ ...prev, [id]: !prev[id] }));
 
   return (
     <div className="dashboard-section flex flex-col lg:flex-row gap-8 h-full">
+      {/* ── LEFT PANEL: CALENDAR & FILTERS ── */}
       <div className="w-full lg:w-[380px] shrink-0 flex flex-col gap-6">
         <MiniCalendar
           highlightDays={highlightDays}
           selectedDay={selectedDay}
           onSelectDay={setSelectedDay}
         />
+
+        {/* Filter by Game */}
         <div className="glass-panel">
           <div className="filter-container">
-            {/* Header Row */}
             <div className="filter-header-row">
               <h3 className="filter-title">FILTER BY GAME</h3>
               <button
@@ -2955,7 +3402,6 @@ const ScheduleTab = ({ game, globalTournament }) => {
               </button>
             </div>
 
-            {/* Game List */}
             <div className="filter-list">
               {["VALORANT", "CROSSFIRE"].map((g) => {
                 const isActive = activeGame === g;
@@ -2978,19 +3424,131 @@ const ScheduleTab = ({ game, globalTournament }) => {
             </div>
           </div>
         </div>
+
+        {/* Filter by Tournament */}
+        <div className="glass-panel">
+          <div className="filter-container">
+            <div className="filter-header-row mb-3">
+              <div className="flex items-center gap-2">
+                <Trophy size={14} className="text-cyan-400" />
+                <h3 className="filter-title">FILTER BY TOURNAMENT</h3>
+              </div>
+              {selectedTournament !== "ALL" && (
+                <button
+                  type="button"
+                  onClick={() => handleSelectTournament("ALL")}
+                  className="text-[10px] font-bold text-cyan-400 hover:text-cyan-300 uppercase tracking-wider transition-colors cursor-pointer"
+                >
+                  Show All
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-1.5 max-h-[220px] overflow-y-auto custom-scrollbar pr-1">
+              <div
+                onClick={() => handleSelectTournament("ALL")}
+                className={`game-filter-item cursor-pointer transition-all ${selectedTournament === "ALL" ? "active" : ""}`}
+              >
+                <div
+                  className="w-2.5 h-2.5 rounded-full"
+                  style={{
+                    backgroundColor: selectedTournament === "ALL" ? "#06b6d4" : "#64748b",
+                    boxShadow: selectedTournament === "ALL" ? "0 0 8px #06b6d4" : "none",
+                  }}
+                />
+                <span
+                  className={`font-bold text-xs tracking-wide truncate ${selectedTournament === "ALL" ? "text-white font-black" : "text-slate-400"}`}
+                >
+                  All Tournaments
+                </span>
+              </div>
+
+              {visibleTournaments.map((t) => {
+                const isSelected = selectedTournament === t.name;
+                return (
+                  <div
+                    key={t.id || t.name}
+                    onClick={() => handleSelectTournament(t.name)}
+                    className={`game-filter-item cursor-pointer transition-all ${isSelected ? "active" : ""}`}
+                  >
+                    <div
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{
+                        backgroundColor: isSelected ? "#06b6d4" : "#475569",
+                        boxShadow: isSelected ? "0 0 8px #06b6d4" : "none",
+                      }}
+                    />
+                    <span
+                      className={`font-bold text-xs tracking-wide truncate ${isSelected ? "text-white font-black" : "text-slate-400"}`}
+                      title={t.name}
+                    >
+                      {t.name}
+                    </span>
+                  </div>
+                );
+              })}
+
+              {visibleTournaments.length === 0 && (
+                <div className="text-[11px] text-slate-500 py-3 text-center font-medium">
+                  No tournaments found for {activeGame}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* ── RIGHT PANEL: MATCHES SCHEDULE LIST ── */}
       <div className="glass-panel flex-1 min-w-0 flex flex-col gap-6">
-        <div className="flex items-center gap-4">
-          <div className="pb-1 border-b-2 border-slate-700/50 flex-1">
+        {/* Header with Game Title and Tournament Picker */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b-2 border-slate-700/50">
+          <div className="flex items-center gap-3 flex-wrap">
             <span
-              className="text-xl font-black uppercase tracking-widest"
+              className="text-xl font-black uppercase tracking-widest font-['Outfit']"
               style={{ color: DATA[activeGame].color }}
             >
               {activeGame}
             </span>
+            <span className="text-slate-500 font-bold">•</span>
+            <span className="text-xs font-bold px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 uppercase tracking-wider">
+              {selectedTournament === "ALL" ? "All Tournaments" : selectedTournament}
+            </span>
+            {selectedDay && (
+              <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                <span>Day {selectedDay}</span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDay(null)}
+                  className="text-amber-400 hover:text-white font-black ml-1"
+                  title="Clear day filter"
+                >
+                  ✕
+                </button>
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0">
+            <Trophy size={15} className="text-cyan-400 shrink-0" />
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider hidden sm:inline">
+              Tournament:
+            </span>
+            <select
+              value={selectedTournament}
+              onChange={(e) => handleSelectTournament(e.target.value)}
+              className="bg-slate-950/80 border border-slate-700 hover:border-cyan-400 rounded-xl px-3.5 py-2 text-xs font-bold text-white focus:outline-none focus:border-cyan-400 cursor-pointer shadow-inner min-w-[200px]"
+            >
+              <option value="ALL">All Tournaments</option>
+              {visibleTournaments.map((t) => (
+                <option key={t.id || t.name} value={t.name}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
-        { }
+
+        {/* Matches List */}
         <div className="flex flex-col gap-3">
           {filteredSchedule.map((s) => {
             const reminded =
@@ -2998,41 +3556,49 @@ const ScheduleTab = ({ game, globalTournament }) => {
             return (
               <div
                 key={s.id}
-                className="bg-[#0d131c] light:bg-white rounded-2xl border border-slate-800/50 light:border-slate-200 hover:border-slate-700/70 light:hover:border-slate-300 transition-all duration-300 p-4 flex items-center gap-4 group shadow-sm"
+                className="bg-[#0d131c] light:bg-white rounded-2xl border border-slate-800/50 light:border-slate-200 hover:border-slate-700/70 light:hover:border-slate-300 transition-all duration-300 p-4 flex items-center gap-4 group shadow-sm flex-wrap sm:flex-nowrap"
               >
-                { }
+                <div className="flex-1 min-w-0 flex flex-col md:flex-row md:items-center gap-2 md:gap-4 py-1">
+                  {/* Tournament Tag */}
+                  {selectedTournament === "ALL" && s.tournamentName && (
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg bg-slate-800 text-cyan-400 border border-slate-700/60 shrink-0 w-fit">
+                      {s.tournamentName}
+                    </span>
+                  )}
 
-                { }
-                <div className="flex-1 min-w-0 flex flex-col md:flex-row md:items-center gap-1 md:gap-3 py-1">
-                  <div className="flex items-center gap-2">
+                  {/* Team A */}
+                  <div className="flex items-center gap-2.5 min-w-0">
                     {s.teamALogo ? (
                       <img
                         src={s.teamALogo}
                         alt={s.teamA}
-                        className="w-6 h-6 object-contain drop-shadow-md"
+                        className="w-6 h-6 object-contain drop-shadow-md shrink-0 rounded"
                       />
                     ) : null}
-                    <span className="font-bold text-sm text-white light:text-slate-900 group-hover:text-slate-100">
+                    <span className="font-bold text-sm text-white light:text-slate-900 group-hover:text-slate-100 truncate">
                       {s.teamA}
                     </span>
                   </div>
+
                   <span className="text-[10px] text-slate-500 font-black px-1 hidden md:block">
                     VS
                   </span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-white light:text-slate-900 group-hover:text-slate-100">
+
+                  {/* Team B */}
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="font-bold text-sm text-white light:text-slate-900 group-hover:text-slate-100 truncate">
                       {s.teamB}
                     </span>
                     {s.teamBLogo ? (
                       <img
                         src={s.teamBLogo}
                         alt={s.teamB}
-                        className="w-6 h-6 object-contain drop-shadow-md"
+                        className="w-6 h-6 object-contain drop-shadow-md shrink-0 rounded"
                       />
                     ) : null}
                   </div>
                 </div>
-                { }
+
                 <div className="text-right shrink-0 hidden sm:block">
                   <div className="text-sm font-black text-white light:text-slate-900">
                     {s.time}
@@ -3041,10 +3607,11 @@ const ScheduleTab = ({ game, globalTournament }) => {
                     {s.timezone}
                   </div>
                 </div>
-                { }
+
                 <button
+                  type="button"
                   onClick={() => toggleReminder(s.id)}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-black tracking-wider uppercase transition-all active:scale-95 shrink-0 ${reminded
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-black tracking-wider uppercase transition-all active:scale-95 shrink-0 cursor-pointer ${reminded
                       ? "bg-cyan-500/15 border border-cyan-500/40 text-cyan-400"
                       : "bg-red-600 text-white hover:bg-red-500 shadow-[0_0_15px_rgba(220,38,38,0.3)] hover:shadow-[0_0_20px_rgba(220,38,38,0.5)]"
                     }`}
@@ -3056,10 +3623,26 @@ const ScheduleTab = ({ game, globalTournament }) => {
             );
           })}
         </div>
-        { }
-        {scheduleData.length === 0 && (
-          <div className="flex-1 flex items-center justify-center py-20 text-slate-600 text-sm font-bold tracking-widest uppercase">
-            No scheduled matches
+
+        {/* Empty State */}
+        {filteredSchedule.length === 0 && (
+          <div className="flex-1 flex flex-col items-center justify-center py-20 text-slate-500 text-sm font-bold tracking-widest uppercase gap-2">
+            <Calendar size={36} className="text-slate-600 mb-1" />
+            <span>No scheduled matches found</span>
+            <span className="text-xs text-slate-500 font-normal normal-case">
+              {selectedDay
+                ? `No fixtures scheduled for Day ${selectedDay} in ${selectedTournament === 'ALL' ? 'selected game' : selectedTournament}.`
+                : `No matches found for ${selectedTournament === 'ALL' ? 'all tournaments' : selectedTournament}.`}
+            </span>
+            {selectedDay && (
+              <button
+                type="button"
+                onClick={() => setSelectedDay(null)}
+                className="mt-2 text-xs font-bold text-cyan-400 hover:text-cyan-300 underline uppercase tracking-wider cursor-pointer"
+              >
+                Clear Day Filter
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -3414,6 +3997,22 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
   const currentTournamentName = typeof globalTournament === 'object' && globalTournament ? globalTournament.name : (globalTournament || '');
   const [activeTab, setActiveTab] = useState(initialTab || "LIVE & UPCOMING");
   const [hubSubTab, setHubSubTab] = useState(initialHubSubTab || "predictions");
+  const [selectedTournamentForEdit, setSelectedTournamentForEdit] = useState(null);
+  const [availableTournaments, setAvailableTournaments] = useState([]);
+
+  useEffect(() => {
+    apiFetch('/api/tournaments')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setAvailableTournaments(data);
+      })
+      .catch(console.error);
+  }, []);
+
+  const handleEditTournamentSchedule = (tournName) => {
+    setSelectedTournamentForEdit(tournName);
+    setActiveTab("CREATE TOURNAMENT");
+  };
 
   useEffect(() => {
     if (initialTab) {
@@ -3537,6 +4136,7 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
               if (setGlobalTournament) setGlobalTournament(tName);
               setActiveTab("TOURNAMENT HUB");
             }}
+            onEditTournamentSchedule={handleEditTournamentSchedule}
           />
         );
       case "TOURNAMENT HUB":
@@ -3553,11 +4153,16 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
         );
       case "RESULT":
         return (
-          <ResultTab game={activeGame} globalTournament={globalTournament} />
+          <ResultTab game={activeGame} globalTournament={globalTournament} setGlobalTournament={setGlobalTournament} availableTournaments={availableTournaments} />
         );
       case "SCHEDULE":
         return (
-          <ScheduleTab game={activeGame} globalTournament={globalTournament} />
+          <ScheduleTab
+            game={activeGame}
+            globalTournament={globalTournament}
+            setGlobalTournament={setGlobalTournament}
+            availableTournaments={availableTournaments}
+          />
         );
       case "OFFICIAL RULEBOOK":
         return (
@@ -3569,6 +4174,9 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
             globalGame={globalGame}
             globalTournament={globalTournament}
             onOpenCreateModal={handleOpenCreateModal}
+            selectedTournamentForEdit={selectedTournamentForEdit}
+            setSelectedTournamentForEdit={setSelectedTournamentForEdit}
+            availableTournaments={availableTournaments}
           />
         );
       case "BRACKET MANAGEMENT":

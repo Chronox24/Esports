@@ -119,7 +119,8 @@
 .projects-app-wrapper .status-badge { padding: 0.4rem 1rem; border-radius: 50px; font-size: 0.75rem; font-weight: bold; display: inline-block; }
 
 .projects-app-wrapper .status-active { background: rgba(0, 255, 136, 0.1); color: #00ff88; border: 1px solid rgba(0, 255, 136, 0.3); }
-.projects-app-wrapper .status-upcoming { background: rgba(0, 229, 255, 0.1); color: var(--accent-neon); border: 1px solid rgba(0, 229, 255, 0.3); }
+.projects-app-wrapper .status-upcoming,
+.projects-app-wrapper .status-map-veto { background: rgba(0, 229, 255, 0.1); color: var(--accent-neon); border: 1px solid rgba(0, 229, 255, 0.3); }
 .projects-app-wrapper .status-beta { background: rgba(255, 170, 0, 0.1); color: #ffaa00; border: 1px solid rgba(255, 170, 0, 0.3); }
 .projects-app-wrapper .status-planning { background: rgba(160, 32, 240, 0.1); color: #c466ff; border: 1px solid rgba(160, 32, 240, 0.3); }
 .projects-app-wrapper .status-recruiting { background: rgba(255, 0, 106, 0.1); color: #ff3377; border: 1px solid rgba(255, 0, 106, 0.3); }

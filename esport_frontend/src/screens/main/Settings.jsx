@@ -333,8 +333,6 @@ const Settings = ({ globalGame, themeBg, setThemeBg, themeAccent, setThemeAccent
   // Ban Action State
   const [isBanning, setIsBanning] = useState(false);
   const [banDuration, setBanDuration] = useState('7 Days');
-
-  const [admins, setAdmins] = useState([]);
   const [bans, setBans] = useState([]);
   const [reports, setReports] = useState([]);
   const [health, setHealth] = useState(null);
@@ -350,14 +348,6 @@ const Settings = ({ globalGame, themeBg, setThemeBg, themeAccent, setThemeAccent
   const [isDiagnosing, setIsDiagnosing] = useState(false);
   const [clientPing, setClientPing] = useState(null);
   const [lastHealthUpdate, setLastHealthUpdate] = useState(null);
-
-  const fetchAdmins = async () => {
-    try {
-      const res = await apiFetch('/api/settings/admins');
-      const data = await res.json();
-      if (Array.isArray(data)) setAdmins(data);
-    } catch (e) { console.error(e); }
-  };
   
   const fetchReports = async () => {
     try {
@@ -424,7 +414,6 @@ const Settings = ({ globalGame, themeBg, setThemeBg, themeAccent, setThemeAccent
   }, [activeModal]);
 
   useEffect(() => {
-    fetchAdmins();
     fetchReports();
     fetchBans();
     fetchHealth();
@@ -853,18 +842,8 @@ const Settings = ({ globalGame, themeBg, setThemeBg, themeAccent, setThemeAccent
             </Card>
           </div>
           {}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4">
-            <button onClick={() => setActiveModal('admins')} className="bg-bg-300 light:bg-white border border-blue-500/30 light:border-blue-200 rounded-xl p-4 flex flex-col items-center justify-center hover:bg-blue-900/20 light:hover:bg-blue-50 transition-all group shadow-lg light:shadow-sm">
-              <span className="text-xs font-black uppercase tracking-widest text-blue-400 light:text-blue-600 mb-2">
-                Match Admins
-              </span>
-              <div className="flex -space-x-2 opacity-80 group-hover:opacity-100 transition-opacity">
-                <div className="w-8 h-8 rounded-full bg-blue-600 border-2 border-[#0f1722] light:border-white"></div>
-                <div className="w-8 h-8 rounded-full bg-cyan-500 border-2 border-[#0f1722] light:border-white"></div>
-                <div className="w-8 h-8 rounded-full bg-purple-500 border-2 border-[#0f1722] light:border-white"></div>
-              </div>
-            </button>
-            <button onClick={() => setActiveModal('health')} className="bg-bg-300 light:bg-white border border-teal-500/30 light:border-teal-200 rounded-xl p-4 flex flex-col items-center justify-center hover:bg-teal-900/20 light:hover:bg-teal-50 transition-all group shadow-lg light:shadow-sm">
+          <div className="pt-4">
+            <button onClick={() => setActiveModal('health')} className="w-full bg-bg-300 light:bg-white border border-teal-500/30 light:border-teal-200 rounded-xl p-4 flex flex-col items-center justify-center hover:bg-teal-900/20 light:hover:bg-teal-50 transition-all group shadow-lg light:shadow-sm">
               <span className="text-xs font-black uppercase tracking-widest text-teal-400 light:text-teal-600 mb-2">
                 Regional Health
               </span>
@@ -885,35 +864,6 @@ const Settings = ({ globalGame, themeBg, setThemeBg, themeAccent, setThemeAccent
           </div>
         </div>
       </div>
-
-      <Modal isOpen={activeModal === 'admins'} onClose={() => setActiveModal(null)} title="Match Admins" maxWidth="max-w-3xl">
-        <div className="overflow-hidden rounded-lg border border-[#2a3648] light:border-slate-200">
-          <table className="min-w-full divide-y divide-[#2a3648] light:divide-slate-200">
-            <thead className="bg-bg-300 light:bg-slate-50">
-              <tr>
-                <th scope="col" className="text-left text-[10px] font-bold text-theme-text-muted light:text-theme-text-muted uppercase tracking-wider" style={{ padding: "16px 24px" }}>Admin Name</th>
-                <th scope="col" className="text-left text-[10px] font-bold text-theme-text-muted light:text-theme-text-muted uppercase tracking-wider" style={{ padding: "16px 24px" }}>Role</th>
-                <th scope="col" className="text-left text-[10px] font-bold text-theme-text-muted light:text-theme-text-muted uppercase tracking-wider" style={{ padding: "16px 24px" }}>Status</th>
-                <th scope="col" className="text-left text-[10px] font-bold text-theme-text-muted light:text-theme-text-muted uppercase tracking-wider" style={{ padding: "16px 24px" }}>Last Active</th>
-              </tr>
-            </thead>
-            <tbody className="bg-bg-300 light:bg-white divide-y divide-[#2a3648] light:divide-slate-200">
-              {admins.map((admin) => (
-                <tr key={admin.id} className="hover:bg-white/[0.02] light:hover:bg-slate-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-theme-text-base light:text-slate-900" style={{ padding: "16px 24px" }}>{admin.name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-400 light:text-blue-600" style={{ padding: "16px 24px" }}>{admin.role}</td>
-                  <td className="px-6 py-4 whitespace-nowrap" style={{ padding: "16px 24px" }}>
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${admin.status === 'Online' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                      {admin.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-theme-text-muted light:text-theme-text-muted" style={{ padding: "16px 24px" }}>{admin.lastActive}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Modal>
 
       <Modal isOpen={activeModal === 'reports'} onClose={() => setActiveModal(null)} title="Submitted Cheat Reports" maxWidth="max-w-4xl">
         <div className="overflow-hidden rounded-lg border border-[#2a3648] light:border-slate-200">

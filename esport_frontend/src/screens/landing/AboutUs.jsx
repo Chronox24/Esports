@@ -8,42 +8,10 @@ const navItems = [
   { key: 'Services', label: 'SERVICES', path: '/services' },
   { key: 'AboutUs', label: 'ABOUT US', path: '/about' },
 ];
-const IntegrityIcon = () => (
-  <svg width="45" height="45" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-    <path d="M9 12l2 2 4-4"></path>
-  </svg>
-);
-const InnovationIcon = () => (
-  <svg width="45" height="45" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="4"></circle>
-    <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"></path>
-  </svg>
-);
-const ExecutionIcon = () => (
-  <svg width="45" height="45" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10"></circle>
-    <path d="M8 12l2 2 4-4"></path>
-  </svg>
-);
-const CommunityIcon = () => (
-  <svg width="45" height="45" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-    <circle cx="9" cy="7" r="4"></circle>
-    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-  </svg>
-);
 const EmailIcon = () => (
   <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent-neon)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
     <polyline points="22,6 12,13 2,6"></polyline>
-  </svg>
-);
-const LocationIcon = () => (
-  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent-neon)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-    <circle cx="12" cy="10" r="3"></circle>
   </svg>
 );
 const AboutUs = ({ onLoginSuccess }) => {
@@ -90,29 +58,7 @@ const AboutUs = ({ onLoginSuccess }) => {
         </button>
       </header>
       <main className="maximized-main-content">
-        <div className="glass-about-panel fade-in-up">
-          <div className="about-header-glow" />
-          <h1 className="about-main-title">
-            STUDENT <span className="text-highlight">CAPSTONE PROJECT</span>
-          </h1>
-          <p className="about-sub-desc">
-            As students, our mission is to support our TNC Beneficiary by organizing tournaments, managing teams, and creating seamless content. This centralized dashboard helps us achieve those goals efficiently.
-          </p>
-          <div className="values-grid-modern">
-            {[
-              { icon: <IntegrityIcon />, label: 'INTEGRITY' },
-              { icon: <InnovationIcon />, label: 'INNOVATION' },
-              { icon: <ExecutionIcon />, label: 'EXECUTION' },
-              { icon: <CommunityIcon />, label: 'COMMUNITY' }
-            ].map((value, idx) => (
-              <div key={idx} className="value-card">
-                <div className="value-icon">{value.icon}</div>
-                <span>{value.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="contact-section-modern fade-in-up" style={{ animationDelay: '0.2s' }}>
+        <div className="contact-section-modern fade-in-up">
           <div className="contact-info-glass">
             <h2 className="contact-greeting-neon">GET IN TOUCH.</h2>
             <p className="contact-subtext">Have questions about our Capstone Project or want to collaborate? Send us a message.</p>

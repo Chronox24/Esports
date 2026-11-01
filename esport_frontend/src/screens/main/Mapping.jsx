@@ -148,10 +148,30 @@ const Mapping = ({ globalGame, globalTournament }) => {
       setToastMessage((prev) => (prev === msg ? null : prev));
     }, 3200);
   };
+  const [matchWeek, setMatchWeek] = useState(() => getStickyValue("de_week", "1"));
+  const [matchDay, setMatchDay] = useState(() => getStickyValue("de_day", "1"));
+  const [matchNumber, setMatchNumber] = useState(() => getStickyValue("de_match", "1"));
 
-  const matchWeek = getStickyValue("de_week", "1");
-  const matchDay = getStickyValue("de_day", "1");
-  const matchNumber = getStickyValue("de_match", "1");
+  const handleWeekChange = (val) => {
+    setMatchWeek(val);
+    try {
+      window.sessionStorage.setItem("de_week", JSON.stringify(val));
+    } catch (e) {}
+  };
+
+  const handleDayChange = (val) => {
+    setMatchDay(val);
+    try {
+      window.sessionStorage.setItem("de_day", JSON.stringify(val));
+    } catch (e) {}
+  };
+
+  const handleMatchChange = (val) => {
+    setMatchNumber(val);
+    try {
+      window.sessionStorage.setItem("de_match", JSON.stringify(val));
+    } catch (e) {}
+  };
   const [activeTab, setActiveTab] = useState("CURRENT MATCH");
   const game = globalGame === "CROSSFIRE" ? "Crossfire" : "Valorant";
   const [teamA, setTeamA] = useState("Team A");
@@ -555,15 +575,33 @@ const Mapping = ({ globalGame, globalTournament }) => {
             <div className="flex gap-6">
                <div className="flex flex-col">
                   <span className="text-[9px] text-theme-text-muted font-bold tracking-widest uppercase mb-2">Week</span>
-                  <div className="bg-slate-900 border border-slate-800/60 rounded-lg px-6 py-2 text-sm font-bold text-gray-300 shadow-inner">{matchWeek}</div>
+                  <input
+                    type="text"
+                    value={matchWeek}
+                    onChange={(e) => handleWeekChange(e.target.value)}
+                    className="w-16 bg-slate-900 border border-slate-800/60 rounded-lg px-2 py-2 text-sm font-bold text-gray-200 text-center shadow-inner focus:outline-none focus:border-cyan-400/80 focus:ring-1 focus:ring-cyan-400/40 transition-all hover:border-slate-700"
+                    placeholder="1"
+                  />
                </div>
                <div className="flex flex-col">
                   <span className="text-[9px] text-theme-text-muted font-bold tracking-widest uppercase mb-2">Day</span>
-                  <div className="bg-slate-900 border border-slate-800/60 rounded-lg px-6 py-2 text-sm font-bold text-gray-300 shadow-inner">{matchDay}</div>
+                  <input
+                    type="text"
+                    value={matchDay}
+                    onChange={(e) => handleDayChange(e.target.value)}
+                    className="w-16 bg-slate-900 border border-slate-800/60 rounded-lg px-2 py-2 text-sm font-bold text-gray-200 text-center shadow-inner focus:outline-none focus:border-cyan-400/80 focus:ring-1 focus:ring-cyan-400/40 transition-all hover:border-slate-700"
+                    placeholder="1"
+                  />
                </div>
                <div className="flex flex-col">
                   <span className="text-[9px] text-theme-text-muted font-bold tracking-widest uppercase mb-2">Match</span>
-                  <div className="bg-slate-900 border border-slate-800/60 rounded-lg px-6 py-2 text-sm font-bold text-gray-300 shadow-inner">{matchNumber}</div>
+                  <input
+                    type="text"
+                    value={matchNumber}
+                    onChange={(e) => handleMatchChange(e.target.value)}
+                    className="w-16 bg-slate-900 border border-slate-800/60 rounded-lg px-2 py-2 text-sm font-bold text-gray-200 text-center shadow-inner focus:outline-none focus:border-cyan-400/80 focus:ring-1 focus:ring-cyan-400/40 transition-all hover:border-slate-700"
+                    placeholder="1"
+                  />
                </div>
             </div>
           </div>

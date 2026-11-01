@@ -420,65 +420,32 @@ app.post('/api/refresh', async (req, res) => {
 const emailVerificationCache = new NodeCache({ stdTTL: 600, checkperiod: 60 });
 
 let mailTransporter = null;
-let isEthereal = false;
 
-async function getEmailTransporter() {
+function getEmailTransporter() {
   if (mailTransporter) {
-    return { transporter: mailTransporter, isEthereal };
+    return mailTransporter;
   }
 
-  const smtpHost = process.env.SMTP_HOST;
-  const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER || process.env.GMAIL_USER;
-  const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASS || process.env.GMAIL_PASS;
-  const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587;
-  const smtpSecure = process.env.SMTP_SECURE === 'true' || smtpPort === 465;
+  const gmailUser = (process.env.GMAIL_USER || process.env.EMAIL_USER || process.env.SMTP_USER || '').trim();
+  const rawPass = process.env.GMAIL_APP_PASSWORD || process.env.GMAIL_PASS || process.env.SMTP_PASS || process.env.EMAIL_PASS || '';
+  const gmailPass = rawPass.replace(/\s+/g, '');
 
-  if (smtpHost && smtpUser && smtpPass) {
-    mailTransporter = nodemailer.createTransport({
-      host: smtpHost,
-      port: smtpPort,
-      secure: smtpSecure,
-      auth: {
-        user: smtpUser,
-        pass: smtpPass
-      }
-    });
-    isEthereal = false;
-    console.log(`[Email] Custom SMTP transporter configured for ${smtpUser} via ${smtpHost}:${smtpPort}`);
-    return { transporter: mailTransporter, isEthereal };
+  if (!gmailUser || !gmailPass) {
+    const errorMsg = 'Gmail credentials missing: Please provide GMAIL_USER and GMAIL_APP_PASSWORD in esports_backend/.env to dispatch verification emails directly via Gmail.';
+    console.error(`[Email] ${errorMsg}`);
+    throw new Error(errorMsg);
   }
 
-  if ((process.env.EMAIL_SERVICE === 'gmail' || process.env.GMAIL_USER) && smtpUser && smtpPass) {
-    mailTransporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: smtpUser,
-        pass: smtpPass
-      }
-    });
-    isEthereal = false;
-    console.log(`[Email] Gmail transporter configured for ${smtpUser}`);
-    return { transporter: mailTransporter, isEthereal };
-  }
+  mailTransporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: gmailUser,
+      pass: gmailPass
+    }
+  });
 
-  try {
-    const testAccount = await nodemailer.createTestAccount();
-    mailTransporter = nodemailer.createTransport({
-      host: 'smtp.ethereal.email',
-      port: 587,
-      secure: false,
-      auth: {
-        user: testAccount.user,
-        pass: testAccount.pass
-      }
-    });
-    isEthereal = true;
-    console.log(`[Email] Ethereal testing email transporter initialized (${testAccount.user})`);
-    return { transporter: mailTransporter, isEthereal };
-  } catch (err) {
-    console.error('[Email] Failed to create Ethereal transporter:', err);
-    throw err;
-  }
+  console.log(`[Email] Direct Gmail transporter initialized for ${gmailUser}`);
+  return mailTransporter;
 }
 
 // ----------------------------------------------------
@@ -523,66 +490,50 @@ app.post('/api/admin/send-email-verification', authenticateToken, isAdmin, async
       role: role || 'Super Admin'
     });
 
-    // 4. Send email via Nodemailer
-    let previewUrl = null;
-    let isRealDelivery = false;
-    try {
-      const { transporter, isEthereal: isEth } = await getEmailTransporter();
-      isRealDelivery = !isEth;
-      const senderFrom = process.env.SMTP_FROM || (process.env.SMTP_USER ? `"TNC Esports Admin" <${process.env.SMTP_USER}>` : '"TNC Esports Platform" <security@tnc-esports.ph>');
+    // 4. Send email directly via Gmail
+    const gmailUser = (process.env.GMAIL_USER || process.env.EMAIL_USER || process.env.SMTP_USER || '').trim();
+    const senderFrom = `"TNC Esports Admin" <${gmailUser}>`;
+    const transporter = getEmailTransporter();
 
-      const mailInfo = await transporter.sendMail({
-        from: senderFrom,
-        to: cleanEmail,
-        subject: `TNC Esports — Verification Code: ${verificationCode}`,
-        text: `Your administrator verification code is: ${verificationCode}\n\nThis single-use code expires in 10 minutes.\n\nIf you did not request administrator access, please disregard this email.`,
-        html: `
-          <div style="background-color: #0b111a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 32px 24px; border-radius: 12px; border: 1px solid #1e293b;">
-            <div style="text-align: center; margin-bottom: 24px;">
-              <h2 style="color: #f97316; margin: 0 0 6px 0; font-size: 24px; font-weight: 800; letter-spacing: 0.5px;">TNC ESPORTS</h2>
-              <p style="color: #94a3b8; margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Administrator Verification</p>
-            </div>
-            <div style="background: #131d2e; border: 1px solid #1e293b; border-radius: 10px; padding: 24px; text-align: center;">
-              <p style="margin: 0 0 12px 0; color: #cbd5e1; font-size: 14px;">Here is your single-use verification code to authorize your administrator account:</p>
-              <div style="display: inline-block; background-color: #090e17; border: 2px solid #3b82f6; border-radius: 8px; padding: 14px 28px; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #60a5fa; font-family: monospace; margin: 12px 0;">
-                ${verificationCode}
-              </div>
-              <p style="margin: 12px 0 0 0; color: #94a3b8; font-size: 12px;">This code will expire in <strong>10 minutes</strong>.</p>
-            </div>
-            <div style="margin-top: 24px; border-top: 1px solid #1e293b; padding-top: 16px; color: #64748b; font-size: 11px; text-align: center; line-height: 1.5;">
-              Security Notice: Never share this verification code with anyone. If you did not request administrator access, please disregard this email.<br/>
-              &copy; ${new Date().getFullYear()} TNC Esports Platform. All rights reserved.
-            </div>
+    const mailInfo = await transporter.sendMail({
+      from: senderFrom,
+      to: cleanEmail,
+      subject: `TNC Esports — Verification Code: ${verificationCode}`,
+      text: `Your administrator verification code is: ${verificationCode}\n\nThis single-use code expires in 10 minutes.\n\nIf you did not request administrator access, please disregard this email.`,
+      html: `
+        <div style="background-color: #0b111a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 32px 24px; border-radius: 12px; border: 1px solid #1e293b;">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <h2 style="color: #f97316; margin: 0 0 6px 0; font-size: 24px; font-weight: 800; letter-spacing: 0.5px;">TNC ESPORTS</h2>
+            <p style="color: #94a3b8; margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Administrator Verification</p>
           </div>
-        `
-      });
+          <div style="background: #131d2e; border: 1px solid #1e293b; border-radius: 10px; padding: 24px; text-align: center;">
+            <p style="margin: 0 0 12px 0; color: #cbd5e1; font-size: 14px;">Here is your single-use verification code to authorize your administrator account:</p>
+            <div style="display: inline-block; background-color: #090e17; border: 2px solid #3b82f6; border-radius: 8px; padding: 14px 28px; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #60a5fa; font-family: monospace; margin: 12px 0;">
+              ${verificationCode}
+            </div>
+            <p style="margin: 12px 0 0 0; color: #94a3b8; font-size: 12px;">This code will expire in <strong>10 minutes</strong>.</p>
+          </div>
+          <div style="margin-top: 24px; border-top: 1px solid #1e293b; padding-top: 16px; color: #64748b; font-size: 11px; text-align: center; line-height: 1.5;">
+            Security Notice: Never share this verification code with anyone. If you did not request administrator access, please disregard this email.<br/>
+            &copy; ${new Date().getFullYear()} TNC Esports Platform. All rights reserved.
+          </div>
+        </div>
+      `
+    });
 
-      if (isEth) {
-        previewUrl = nodemailer.getTestMessageUrl(mailInfo);
-        console.log(`[Email] Verification sent to ${cleanEmail}. Test preview URL: ${previewUrl}`);
-      } else {
-        console.log(`[Email] Verification email delivered to ${cleanEmail}. Message ID: ${mailInfo.messageId}`);
-      }
-    } catch (mailErr) {
-      console.error('[Email] Error dispatching verification email:', mailErr.message);
-    }
-
+    console.log(`[Email] Verification email delivered directly via Gmail to ${cleanEmail}. Message ID: ${mailInfo.messageId}`);
     await logAudit('ADMIN_VERIFICATION_SENT', `Verification code sent to ${cleanEmail}`, { email: cleanEmail }, null, req);
 
     res.json({
       success: true,
-      message: isRealDelivery
-        ? `Verification code dispatched to ${cleanEmail}. Please check your inbox.`
-        : `Verification code generated and dispatched to ${cleanEmail}.`,
+      message: `Verification code sent directly to ${cleanEmail}. Please check your inbox (or spam folder).`,
       email: cleanEmail,
-      verificationCode,
-      previewUrl,
-      isRealDelivery,
+      isRealDelivery: true,
       expiresInSeconds: 600
     });
   } catch (err) {
-    console.error('Error in send-email-verification:', err);
-    res.status(500).json({ error: err.message || 'Failed to dispatch email verification.' });
+    console.error('[Email] Error in send-email-verification:', err);
+    res.status(500).json({ error: err.message || 'Failed to dispatch email verification via Gmail.' });
   }
 });
 
