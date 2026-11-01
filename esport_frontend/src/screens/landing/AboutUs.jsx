@@ -14,7 +14,8 @@ const EmailIcon = () => (
     <polyline points="22,6 12,13 2,6"></polyline>
   </svg>
 );
-const AboutUs = ({ onLoginSuccess }) => {
+const AboutUs = ({ onLoginSuccess, isLoggedIn }) => {
+  const userLoggedIn = isLoggedIn || (typeof window !== 'undefined' && localStorage.getItem('isLoggedIn') === 'true');
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ name: '', email: '', contact: '', message: '' });
   const [activePage, setActivePage] = useState('AboutUs');
@@ -53,9 +54,20 @@ const AboutUs = ({ onLoginSuccess }) => {
             </button>
           ))}
         </nav>
-        <button type="button" className="login-btn" onClick={() => setShowLogin(true)}>
-          LOGIN
-        </button>
+        {userLoggedIn ? (
+          <button 
+            type="button" 
+            className="login-btn glow-on-hover"
+            style={{ background: 'var(--accent-neon, #00e5ff)', color: '#040814', border: '1.5px solid var(--accent-neon, #00e5ff)', boxShadow: '0 0 16px rgba(0, 229, 255, 0.4)' }}
+            onClick={() => navigate('/dashboard')}
+          >
+            DASHBOARD →
+          </button>
+        ) : (
+          <button type="button" className="login-btn" onClick={() => setShowLogin(true)}>
+            LOGIN
+          </button>
+        )}
       </header>
       <main className="maximized-main-content">
         <div className="contact-section-modern fade-in-up">

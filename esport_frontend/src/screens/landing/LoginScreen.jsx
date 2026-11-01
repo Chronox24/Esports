@@ -18,6 +18,13 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
   const [successMsg, setSuccessMsg] = useState('');
   const [recoveryUrl, setRecoveryUrl] = useState('');
 
+  // If already logged in, automatically proceed without requiring re-authentication
+  useEffect(() => {
+    if (localStorage.getItem('isLoggedIn') === 'true') {
+      if (onLoginSuccess) onLoginSuccess();
+    }
+  }, [onLoginSuccess]);
+
   // Prevent background scrolling kapag bukas ang modal
   useEffect(() => {
     document.body.style.overflow = 'hidden';

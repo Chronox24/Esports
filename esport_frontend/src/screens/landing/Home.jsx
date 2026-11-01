@@ -80,7 +80,8 @@ const defaultHighlights = [
   }
 ];
 
-const Home = ({ onLoginSuccess }) => {
+const Home = ({ onLoginSuccess, isLoggedIn }) => {
+  const userLoggedIn = isLoggedIn || (typeof window !== 'undefined' && localStorage.getItem('isLoggedIn') === 'true');
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -245,24 +246,46 @@ const Home = ({ onLoginSuccess }) => {
 
         {/* Desktop Actions */}
         <div className="navbar-actions">
-          <button 
-            type="button" 
-            className="login-btn" 
-            onClick={() => setShowLogin(true)}
-          >
-            LOGIN
-          </button>
+          {userLoggedIn ? (
+            <button 
+              type="button" 
+              className="login-btn glow-on-hover"
+              style={{ background: 'var(--accent-neon, #00e5ff)', color: '#040814', border: '1.5px solid var(--accent-neon, #00e5ff)', boxShadow: '0 0 16px rgba(0, 229, 255, 0.4)' }}
+              onClick={() => navigate('/dashboard')}
+            >
+              DASHBOARD →
+            </button>
+          ) : (
+            <button 
+              type="button" 
+              className="login-btn" 
+              onClick={() => setShowLogin(true)}
+            >
+              LOGIN
+            </button>
+          )}
         </div>
 
         {/* Mobile Header Controls */}
         <div className="mobile-header-controls">
-          <button 
-            type="button" 
-            className="mobile-quick-login-btn"
-            onClick={() => setShowLogin(true)}
-          >
-            LOGIN
-          </button>
+          {userLoggedIn ? (
+            <button 
+              type="button" 
+              className="mobile-quick-login-btn"
+              style={{ background: 'var(--accent-neon, #00e5ff)', color: '#040814', border: '1px solid var(--accent-neon, #00e5ff)' }}
+              onClick={() => navigate('/dashboard')}
+            >
+              DASHBOARD
+            </button>
+          ) : (
+            <button 
+              type="button" 
+              className="mobile-quick-login-btn"
+              onClick={() => setShowLogin(true)}
+            >
+              LOGIN
+            </button>
+          )}
           <button 
             type="button" 
             className={`mobile-menu-toggle ${mobileMenuOpen ? 'open' : ''}`}
@@ -315,10 +338,14 @@ const Home = ({ onLoginSuccess }) => {
               className="mobile-login-drawer-btn"
               onClick={() => {
                 setMobileMenuOpen(false);
-                setShowLogin(true);
+                if (userLoggedIn) {
+                  navigate('/dashboard');
+                } else {
+                  setShowLogin(true);
+                }
               }}
             >
-              LOGIN TO PORTAL
+              {userLoggedIn ? 'GO TO DASHBOARD' : 'LOGIN TO PORTAL'}
             </button>
             <div className="mobile-drawer-badge">
               <span className="pulse-indicator" /> Official League Platform
@@ -346,7 +373,17 @@ const Home = ({ onLoginSuccess }) => {
             </p>
 
             {/* Mobile Call To Action Buttons */}
-            <div className="hero-actions-container">
+            <div className="hero-actions-container" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              {userLoggedIn && (
+                <button
+                  type="button"
+                  className="hero-cta-primary"
+                  style={{ background: 'linear-gradient(135deg, #00ffcc, #06b6d4)', color: '#040814', fontWeight: 900 }}
+                  onClick={() => navigate('/dashboard')}
+                >
+                  <span className="cta-icon">⚡</span> GO TO DASHBOARD
+                </button>
+              )}
               <button 
                 type="button" 
                 className="hero-cta-primary"
