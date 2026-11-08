@@ -724,60 +724,61 @@ const MatchCard = ({ match, showCountdown, game, index = 0 }) => {
   const isLive = match.isLive;
   return (
     <div
-      className="match-card snap-center animate-slide-in-right shrink-0 hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)] transition-all duration-300 cursor-pointer"
+      className="match-card hud-card hud-card-interactive snap-center animate-slide-in-right shrink-0 cursor-pointer group relative overflow-hidden"
       style={{ animationDelay: `${index * 0.08}s` }}
     >
+      <div className="hud-sweep-overlay" />
       {/* Header Row */}
-      <div className="flex justify-between items-center mb-4">
-        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-          Day {match.day || 2}
+      <div className="flex justify-between items-center mb-4 relative z-10">
+        <span className="font-tactical text-[10px] text-cyan-400/80 font-extrabold uppercase tracking-[0.18em]">
+          DAY // {match.day || 2}
         </span>
         {isLive ? (
-          <div className="live-indicator">
-            <span className="live-dot"></span> LIVE
+          <div className="hud-chamfer-sm flex items-center gap-1.5 bg-red-500/15 border border-red-500/40 px-2.5 py-0.5 text-[10px] font-tactical font-extrabold tracking-widest text-red-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span> LIVE
           </div>
         ) : showCountdown ? (
-          <div className="flex items-center gap-1.5 bg-slate-900/80 backdrop-blur-sm border border-slate-700/50 text-slate-200 text-[10px] font-black px-2.5 py-1 rounded-lg shadow-inner group-hover:text-white transition-all">
+          <div className="hud-chamfer-sm flex items-center gap-1.5 bg-slate-900/90 border border-slate-700/70 text-slate-200 font-tactical text-[10px] font-bold px-2.5 py-1 group-hover:text-cyan-300 transition-all">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             {match.countdown || getMatchCountdown(match)}
           </div>
         ) : match.status === 'finished' ? (
-          <div className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider">
+          <div className="hud-chamfer-sm flex items-center gap-1 bg-amber-500/15 border border-amber-500/35 text-amber-300 font-tactical text-[9px] font-extrabold px-2.5 py-0.5 uppercase tracking-[0.14em]">
             Concluded
           </div>
         ) : null}
       </div>
 
       {/* Team 1 Row */}
-      <div className="flex justify-between items-center mb-3">
+      <div className="flex justify-between items-center mb-3 relative z-10">
         <div className="flex items-center gap-3">
           {match.team1Logo ? (
             <img src={match.team1Logo} alt={match.team1} className="team-logo" />
           ) : (
-            <div className="w-8 h-8 flex items-center justify-center bg-slate-800 rounded-full font-bold text-white text-xs shadow-md">{match.team1?.[0]}</div>
+            <div className="w-8 h-8 hud-chamfer-sm flex items-center justify-center bg-slate-800 border border-cyan-500/30 font-tactical font-extrabold text-cyan-300 text-xs">{match.team1?.[0]}</div>
           )}
-          <span className="text-white font-semibold truncate max-w-[120px]">{match.team1}</span>
+          <span className="font-tactical text-sm text-white font-bold tracking-wide truncate max-w-[125px]">{match.team1}</span>
         </div>
-        <span className="text-xl text-white font-bold">{match.score?.split("–")[0] ?? match.score1 ?? 0}</span>
+        <span className="font-tactical text-xl text-cyan-300 font-extrabold">{match.score?.split("–")[0] ?? match.score1 ?? 0}</span>
       </div>
 
       {/* VS Divider */}
-      <div className="text-center text-[10px] text-slate-500 mb-3 font-semibold relative flex items-center justify-center">
-        <div className="absolute top-1/2 left-0 w-full h-px bg-slate-700/50 z-0"></div>
-        <span className="bg-[#182029] px-2 relative z-10">VS</span>
+      <div className="text-center font-tactical text-[10px] text-slate-500 mb-3 font-extrabold tracking-widest relative flex items-center justify-center z-10">
+        <div className="absolute top-1/2 left-0 w-full h-px bg-slate-800 z-0"></div>
+        <span className="bg-[#0d141f] px-2.5 relative z-10 text-cyan-400/70">VS</span>
       </div>
 
       {/* Team 2 Row */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center relative z-10">
         <div className="flex items-center gap-3">
           {match.team2Logo ? (
             <img src={match.team2Logo} alt={match.team2} className="team-logo" />
           ) : (
-            <div className="w-8 h-8 flex items-center justify-center bg-slate-800 rounded-full font-bold text-white text-xs shadow-md">{match.team2?.[0]}</div>
+            <div className="w-8 h-8 hud-chamfer-sm flex items-center justify-center bg-slate-800 border border-slate-700 font-tactical font-extrabold text-white text-xs">{match.team2?.[0]}</div>
           )}
-          <span className="text-white font-semibold truncate max-w-[120px]">{match.team2}</span>
+          <span className="font-tactical text-sm text-white font-bold tracking-wide truncate max-w-[125px]">{match.team2}</span>
         </div>
-        <span className="text-xl text-white font-bold">{match.score?.split("–")[1] ?? match.score2 ?? 0}</span>
+        <span className="font-tactical text-xl text-white font-extrabold">{match.score?.split("–")[1] ?? match.score2 ?? 0}</span>
       </div>
     </div>
   );
@@ -1019,44 +1020,44 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
     const third = sorted.find(s => s.placement_rank === 3);
 
     return (
-      <div className="mb-6 p-5 rounded-2xl bg-[#070b12] border border-amber-500/30 shadow-inner flex flex-col gap-4">
-        <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-amber-400">
+      <div className="hud-card mb-6 p-5 border-amber-500/35 flex flex-col gap-4">
+        <div className="flex items-center gap-2 font-tactical text-xs font-extrabold uppercase tracking-[0.18em] text-amber-400">
           <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
           </svg>
           Official Final Standings
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {first && (
-            <div className="flex items-center gap-3 p-3.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-amber-600/10 border border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
-              <div className="w-10 h-10 rounded-full bg-amber-500/30 border border-amber-400 flex items-center justify-center font-black text-amber-300 text-sm shrink-0">
+            <div className="hud-chamfer-sm flex items-center gap-3 p-3.5 bg-gradient-to-r from-amber-500/20 to-amber-600/10 border border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+              <div className="hud-chamfer-sm w-10 h-10 bg-amber-500/30 border border-amber-400 flex items-center justify-center font-black text-amber-300 text-sm shrink-0">
                 🥇
               </div>
               <div className="min-w-0">
-                <span className="text-[10px] font-black uppercase text-amber-400 tracking-wider block">Champion</span>
-                <span className="text-sm font-black text-white truncate block">{first.team_name}</span>
+                <span className="font-tactical text-[10px] font-extrabold uppercase text-amber-400 tracking-[0.16em] block">Champion</span>
+                <span className="font-tactical text-sm font-extrabold text-white truncate block uppercase tracking-wider">{first.team_name}</span>
               </div>
             </div>
           )}
           {second && (
-            <div className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-900/80 border border-slate-700 shadow-sm">
-              <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center font-black text-slate-300 text-sm shrink-0">
+            <div className="hud-chamfer-sm flex items-center gap-3 p-3.5 bg-slate-900/80 border border-slate-700 shadow-sm">
+              <div className="hud-chamfer-sm w-10 h-10 bg-slate-800 border border-slate-600 flex items-center justify-center font-black text-slate-300 text-sm shrink-0">
                 🥈
               </div>
               <div className="min-w-0">
-                <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Runner-Up</span>
-                <span className="text-sm font-bold text-white truncate block">{second.team_name}</span>
+                <span className="font-tactical text-[10px] font-extrabold uppercase text-slate-400 tracking-[0.16em] block">Runner-Up</span>
+                <span className="font-tactical text-sm font-bold text-white truncate block uppercase tracking-wider">{second.team_name}</span>
               </div>
             </div>
           )}
           {third && (
-            <div className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-900/80 border border-amber-900/40 shadow-sm">
-              <div className="w-10 h-10 rounded-full bg-amber-950/40 border border-amber-800/60 flex items-center justify-center font-black text-amber-600 text-sm shrink-0">
+            <div className="hud-chamfer-sm flex items-center gap-3 p-3.5 bg-slate-900/80 border border-amber-900/40 shadow-sm">
+              <div className="hud-chamfer-sm w-10 h-10 bg-amber-950/40 border border-amber-800/60 flex items-center justify-center font-black text-amber-600 text-sm shrink-0">
                 🥉
               </div>
               <div className="min-w-0">
-                <span className="text-[10px] font-black uppercase text-amber-600/90 tracking-wider block">3rd Place</span>
-                <span className="text-sm font-bold text-white truncate block">{third.team_name}</span>
+                <span className="font-tactical text-[10px] font-extrabold uppercase text-amber-600/90 tracking-[0.16em] block">3rd Place</span>
+                <span className="font-tactical text-sm font-bold text-white truncate block uppercase tracking-wider">{third.team_name}</span>
               </div>
             </div>
           )}
@@ -1073,21 +1074,21 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
       <div className="flex flex-col gap-6 w-full">
         {/* Section Header: Active Tournaments */}
         {liveTournaments.length > 0 && (
-          <div className="flex items-center justify-between px-1 mb-4">
+          <div className="flex items-center justify-between px-1 mb-2">
             <div className="flex items-center gap-3">
-              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_10px_rgba(6,182,212,0.7)]"></span>
-              <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-300">
+              <span className="hud-diamond" />
+              <h3 className="font-tactical text-xs sm:text-sm font-extrabold uppercase tracking-[0.2em] text-theme-text-base">
                 Active Tournaments
               </h3>
             </div>
-            <span style={{ padding: '4px 14px' }} className="text-[11px] font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/25 px-3.5 py-1 rounded-full uppercase tracking-wider shadow-sm">
+            <span style={{ padding: '5px 14px' }} className="hud-chamfer-sm font-tactical text-[11px] font-extrabold text-cyan-300 bg-cyan-500/15 border border-cyan-400/35 uppercase tracking-[0.16em]">
               {liveTournaments.length} Active
             </span>
           </div>
         )}
 
         {liveTournaments.length === 0 ? (
-          <div className="text-center py-14 text-slate-500 font-bold uppercase tracking-widest bg-[#0d131c] rounded-2xl border border-slate-800">
+          <div className="hud-card rounded-xl text-center py-14 font-tactical text-slate-400 font-bold uppercase tracking-[0.2em]">
             No live or upcoming tournaments found.
           </div>
         ) : (
@@ -1101,62 +1102,68 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
                 return (
                   <div
                     key={t.id || t.name}
-                    className={`flex-1 min-w-[250px] max-w-[360px] min-h-[250px] h-[250px] flex-1 shrink-0 snap-center rounded-2xl flex flex-col overflow-hidden cursor-pointer shadow-lg transition-all duration-300 group border-[2px] relative
+                    className={`hud-card hud-card-interactive flex-1 min-w-[260px] max-w-[360px] min-h-[245px] h-[245px] shrink-0 snap-center rounded-xl flex flex-col overflow-hidden cursor-pointer transition-all duration-300 group relative
                       ${isCurrent
-                        ? 'border-cyan-400 bg-slate-800/90 shadow-[0_0_25px_rgba(6,182,212,0.5)] ring-2 ring-cyan-400/50'
+                        ? 'border-cyan-400 bg-slate-900/95 shadow-[0_0_25px_rgba(0,229,255,0.35)] ring-1 ring-cyan-400/60'
                         : isExpanded
-                          ? 'border-cyan-500 bg-slate-800 shadow-[0_0_25px_rgba(6,182,212,0.3)]'
-                          : 'border-slate-700 bg-[#0d131c] hover:border-cyan-400 hover:bg-slate-800/80 hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]'}`}
+                          ? 'border-cyan-500 bg-slate-900/90 shadow-[0_0_25px_rgba(0,229,255,0.25)]'
+                          : ''}`}
                     onClick={() => handleLiveCardClick(t.name)}
                     title={`Open ${t.name} Tournament Hub`}
                   >
-                    <div style={{ padding: '22px 20px' }} className="flex-1 flex flex-col items-center justify-between p-5 text-center overflow-hidden">
+                    <div className="hud-sweep-overlay" />
+                    <div style={{ padding: '22px 20px' }} className="flex-1 flex flex-col items-center justify-between p-5 text-center overflow-hidden relative z-10">
                       <div className="h-6 flex items-center justify-center">
                         {isCurrent ? (
-                          <div style={{ padding: '4px 12px' }} className="flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400 text-cyan-300 text-[10px] font-black uppercase tracking-wider shadow-[0_0_12px_rgba(6,182,212,0.4)] animate-pulse">
-                            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
-                            Selected
+                          <div style={{ padding: '4px 12px' }} className="hud-chamfer-sm flex items-center gap-1.5 bg-cyan-400 text-slate-950 font-tactical text-[10px] font-extrabold uppercase tracking-[0.16em] shadow-[0_0_12px_rgba(0,229,255,0.5)]">
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-950"></span>
+                            Active Folder
                           </div>
-                        ) : null}
+                        ) : (
+                          <span className="font-mono text-[10px] text-cyan-400/60 uppercase tracking-widest">// LIVE STAGE</span>
+                        )}
                       </div>
 
                       <div style={{ padding: '0 8px' }} className="flex flex-col items-center justify-center my-auto px-2">
-                        <span className="text-[11px] font-semibold text-slate-400 tracking-wider uppercase mb-1">
-                          {(t.game || game).toLowerCase()}
+                        <span className="font-tactical text-[10px] font-bold text-cyan-400/80 tracking-[0.22em] uppercase mb-1.5">
+                          {(t.game || game).toUpperCase()}
                         </span>
-                        <h3 className="text-xs sm:text-sm font-bold text-white uppercase leading-relaxed line-clamp-2 px-2 text-center group-hover:text-cyan-400 transition-colors tracking-wide">
+                        <h3 className="font-tactical text-sm sm:text-base font-extrabold text-white uppercase leading-snug line-clamp-2 px-2 text-center group-hover:text-cyan-300 transition-colors tracking-[0.12em]">
                           {t.name}
                         </h3>
                       </div>
 
                       <div className="h-5 flex items-center justify-center">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-cyan-400/80 group-hover:text-cyan-300 transition-colors">
-                          Click to view hub
+                        <span className="font-tactical text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-400/80 group-hover:text-cyan-300 transition-colors">
+                          Open Command Hub →
                         </span>
                       </div>
                     </div>
 
                     <div
-                      className={`h-[44px] sm:h-[50px] border-t-[2px] flex items-center justify-center transition-colors shrink-0
+                      className={`h-[44px] border-t flex items-center justify-center gap-2 transition-colors shrink-0 relative z-10
                         ${isCurrent
-                          ? 'border-cyan-400 bg-cyan-950/60 text-cyan-300'
+                          ? 'border-cyan-400/50 bg-cyan-950/60 text-cyan-300'
                           : isExpanded
-                            ? 'border-cyan-500 bg-cyan-900/30 text-cyan-400'
-                            : 'border-slate-700 bg-[#0a0f16] group-hover:bg-slate-800 text-slate-400 group-hover:text-cyan-400'}`}
+                            ? 'border-cyan-500/40 bg-cyan-900/30 text-cyan-400'
+                            : 'border-slate-800 bg-slate-950/80 group-hover:bg-slate-900 text-slate-400 group-hover:text-cyan-400'}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         toggleLiveTournament(t.name);
                       }}
                       title="Toggle match dropdown preview"
                     >
+                      <span className="font-tactical text-[10px] font-bold uppercase tracking-[0.16em]">
+                        {isExpanded ? 'Hide Matches' : 'Preview Matches'}
+                      </span>
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className={`w-5 h-5 sm:w-6 sm:h-6 transition-transform duration-300 ${isExpanded ? 'text-cyan-400 rotate-180' : ''}`}
+                        className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? 'text-cyan-400 rotate-180' : ''}`}
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
                       >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
                       </svg>
                     </div>
                   </div>
@@ -1167,24 +1174,25 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
             {/* Expanded Live Tournament Container */}
             {expandedLiveTournament && (
               <div
-                style={{ padding: '28px 32px', marginTop: '16px', marginBottom: '24px' }}
-                className="p-6 sm:p-8 md:p-10 border border-slate-700/60 bg-[#0a0f16] rounded-3xl shadow-2xl animate-fade-in-up relative mt-4 mb-6"
+                style={{ padding: '26px 28px', marginTop: '12px', marginBottom: '20px' }}
+                className="hud-card rounded-xl shadow-2xl animate-fade-in-up relative"
               >
-                <div className="absolute -top-[9px] left-[60px] w-4 h-4 bg-[#0a0f16] border-t border-l border-slate-700/60 rotate-45 hidden md:block" />
-
                 <div
-                  style={{ marginBottom: '24px', padding: '4px 8px' }}
-                  className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 px-2 sm:px-4"
+                  style={{ marginBottom: '20px', padding: '4px 4px' }}
+                  className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800/80 pb-4"
                 >
-                  <h3 className="text-sm md:text-base font-bold text-white uppercase tracking-wide flex items-center gap-2 flex-wrap">
-                    <span>{expandedLiveTournament}</span>
-                    <span className="text-cyan-400 font-extrabold tracking-wider">MATCHES</span>
-                  </h3>
-                  <div className="flex items-center gap-3 flex-wrap">
+                  <div className="flex items-center gap-2.5">
+                    <span className="hud-diamond" />
+                    <h3 className="font-tactical text-sm md:text-base font-extrabold text-white uppercase tracking-[0.16em] flex items-center gap-2 flex-wrap">
+                      <span>{expandedLiveTournament}</span>
+                      <span className="text-cyan-400">// MATCHES</span>
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-2.5 flex-wrap">
                     <button
                       onClick={() => onNavigateToHub && onNavigateToHub(expandedLiveTournament)}
                       style={{ padding: '8px 16px' }}
-                      className="flex items-center justify-center text-center gap-2 px-4 py-2 rounded-xl border border-cyan-400/40 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 font-bold uppercase tracking-wider text-xs transition-all shadow-[0_0_12px_rgba(6,182,212,0.25)] cursor-pointer"
+                      className="hud-btn-primary flex items-center justify-center gap-2 font-tactical font-extrabold uppercase tracking-[0.14em] text-xs cursor-pointer"
                     >
                       <Layers size={13} /> Open Tournament Hub
                     </button>
@@ -1193,11 +1201,11 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
                       onClick={() => handleToggleCompletion(expandedLiveTournament, false)}
                       disabled={isTogglingStatus}
                       style={{ padding: '8px 16px' }}
-                      className="flex items-center justify-center text-center gap-2 px-4 py-2 rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-bold uppercase tracking-wider text-xs transition-all cursor-pointer disabled:opacity-50"
+                      className="hud-chamfer-sm flex items-center justify-center gap-2 border border-amber-500/40 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 font-tactical font-extrabold uppercase tracking-[0.14em] text-xs transition-all cursor-pointer disabled:opacity-50"
                       title="Move this tournament to Finished Tournaments"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                       </svg>
                       {isTogglingStatus ? 'Updating...' : 'Mark as Finished'}
                     </button>
@@ -1205,8 +1213,8 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
                     <button
                       onClick={() => setShowLiveBracket(!showLiveBracket)}
                       style={{ padding: '8px 16px' }}
-                      className={`flex items-center justify-center text-center gap-2 px-4 py-2 rounded-xl border font-bold uppercase tracking-wider transition-colors shadow-inner text-xs cursor-pointer
-                        ${showLiveBracket ? 'bg-cyan-500 text-white border-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.35)]' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-cyan-500 hover:text-cyan-400'}`}
+                      className={`hud-chamfer-sm flex items-center justify-center gap-2 border font-tactical font-extrabold uppercase tracking-[0.14em] transition-colors text-xs cursor-pointer
+                        ${showLiveBracket ? 'bg-cyan-400 text-slate-950 border-cyan-400 shadow-[0_0_12px_rgba(0,229,255,0.35)]' : 'bg-slate-900/90 text-slate-300 border-slate-700 hover:border-cyan-400/60 hover:text-cyan-300'}`}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         {showLiveBracket ? <path d="M18 15l-6-6-6 6" /> : <path d="M6 9l6 6 6-6" />}
@@ -1235,7 +1243,7 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
                 )}
 
                 {showLiveBracket && (
-                  <div className="w-full border border-slate-700/50 rounded-3xl overflow-hidden shadow-2xl mt-4 animate-fade-in-up">
+                  <div className="hud-card w-full overflow-hidden shadow-2xl mt-4 animate-fade-in-up">
                     <Bracket globalGame={game} globalTournament={{ name: expandedLiveTournament }} isReadOnly={true} />
                   </div>
                 )}
@@ -1249,22 +1257,20 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
       {/* LAYER 2: FINISHED TOURNAMENTS */}
       {/* ========================================================================= */}
       <div className="flex flex-col gap-6 w-full pt-4">
-        <div className="flex items-center justify-between px-1 pt-6 mb-4">
+        <div className="flex items-center justify-between px-1 pt-6 mb-2">
           <div className="flex items-center gap-3">
-            <span className="text-amber-400">
-              <IconTrophy />
-            </span>
-            <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-300">
+            <span className="hud-diamond" style={{ backgroundColor: '#f59e0b', boxShadow: '0 0 10px #f59e0b' }} />
+            <h3 className="font-tactical text-xs sm:text-sm font-extrabold uppercase tracking-[0.2em] text-theme-text-base">
               Finished Tournaments
             </h3>
           </div>
-          <span style={{ padding: '4px 14px' }} className="text-[11px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/25 px-3.5 py-1 rounded-full uppercase tracking-wider">
+          <span style={{ padding: '5px 14px' }} className="hud-chamfer-sm font-tactical text-[11px] font-extrabold text-amber-300 bg-amber-500/15 border border-amber-500/35 uppercase tracking-[0.16em]">
             {finishedTournaments.length} Concluded
           </span>
         </div>
 
         {finishedTournaments.length === 0 ? (
-          <div className="text-center py-14 text-slate-500 font-bold uppercase tracking-widest bg-[#0d131c] rounded-2xl border border-slate-800">
+          <div className="hud-card text-center py-14 font-tactical text-slate-400 font-bold uppercase tracking-[0.2em]">
             No completed tournaments found yet.
           </div>
         ) : (
@@ -1278,26 +1284,27 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
                 return (
                   <div
                     key={t.id || t.name}
-                    className={`flex-1 min-w-[250px] max-w-[360px] min-h-[250px] h-[250px] flex-1 shrink-0 snap-center rounded-2xl flex flex-col overflow-hidden cursor-pointer shadow-lg hover:shadow-[0_0_20px_rgba(245,158,11,0.35)] transition-all duration-300 group border-[2px]
+                    className={`hud-card hud-card-interactive flex-1 min-w-[260px] max-w-[360px] min-h-[245px] h-[245px] shrink-0 snap-center flex flex-col overflow-hidden cursor-pointer transition-all duration-300 group relative
                       ${isCurrent
-                        ? 'border-amber-400 bg-slate-800/90 shadow-[0_0_25px_rgba(245,158,11,0.5)] ring-2 ring-amber-400/50'
+                        ? 'border-amber-400 bg-slate-900/95 shadow-[0_0_25px_rgba(245,158,11,0.35)] ring-1 ring-amber-400/60'
                         : isExpanded
-                          ? 'border-amber-400 bg-slate-800 shadow-[0_0_25px_rgba(245,158,11,0.35)]'
-                          : 'border-slate-700 bg-[#0d131c] hover:border-amber-400/80 hover:bg-slate-800/80'}`}
+                          ? 'border-amber-400 bg-slate-900/90 shadow-[0_0_25px_rgba(245,158,11,0.25)]'
+                          : ''}`}
                     onClick={() => handleFinishedCardClick(t.name)}
                     title={`Open ${t.name} Tournament Hub`}
                   >
-                    <div style={{ padding: '22px 20px' }} className="flex-1 flex flex-col items-center justify-between p-5 text-center overflow-hidden">
+                    <div className="hud-sweep-overlay" />
+                    <div style={{ padding: '22px 20px' }} className="flex-1 flex flex-col items-center justify-between p-5 text-center overflow-hidden relative z-10">
                       <div className="h-6 flex items-center justify-center">
                         {isCurrent ? (
-                          <div style={{ padding: '4px 12px' }} className="flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-500/20 border border-amber-400 text-amber-300 text-[10px] font-black uppercase tracking-wider shadow-[0_0_12px_rgba(245,158,11,0.4)] animate-pulse">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                            Selected
+                          <div style={{ padding: '4px 12px' }} className="hud-chamfer-sm flex items-center gap-1.5 bg-amber-400 text-slate-950 font-tactical text-[10px] font-extrabold uppercase tracking-[0.16em] shadow-[0_0_12px_rgba(245,158,11,0.4)]">
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-950"></span>
+                            Active Folder
                           </div>
                         ) : (
-                          <div style={{ padding: '4px 12px' }} className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[10px] font-black uppercase tracking-wider shadow-sm">
+                          <div style={{ padding: '4px 12px' }} className="hud-chamfer-sm flex items-center gap-1 bg-amber-500/15 border border-amber-500/40 text-amber-300 font-tactical text-[10px] font-extrabold uppercase tracking-[0.16em]">
                             <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                             </svg>
                             Concluded
                           </div>
@@ -1305,42 +1312,45 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
                       </div>
 
                       <div style={{ padding: '0 8px' }} className="flex flex-col items-center justify-center my-auto px-2">
-                        <span className="text-[11px] font-semibold text-slate-400 tracking-wider uppercase mb-1">
-                          {(t.game || game).toLowerCase()}
+                        <span className="font-tactical text-[10px] font-bold text-amber-400/80 tracking-[0.22em] uppercase mb-1.5">
+                          {(t.game || game).toUpperCase()}
                         </span>
-                        <h3 className="text-xs sm:text-sm font-bold text-white uppercase leading-relaxed line-clamp-2 px-2 text-center group-hover:text-amber-400 transition-colors tracking-wide">
+                        <h3 className="font-tactical text-sm sm:text-base font-extrabold text-white uppercase leading-snug line-clamp-2 px-2 text-center group-hover:text-amber-400 transition-colors tracking-[0.12em]">
                           {t.name}
                         </h3>
                       </div>
 
                       <div className="h-5 flex items-center justify-center">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400/80 group-hover:text-amber-300 transition-colors">
-                          Click to view hub
+                        <span className="font-tactical text-[10px] font-bold uppercase tracking-[0.18em] text-amber-400/80 group-hover:text-amber-300 transition-colors">
+                          Open Command Hub →
                         </span>
                       </div>
                     </div>
 
                     <div
-                      className={`h-[42px] sm:h-[48px] border-t-[2px] flex items-center justify-center transition-colors shrink-0
+                      className={`h-[44px] border-t flex items-center justify-center gap-2 transition-colors shrink-0 relative z-10
                         ${isCurrent
-                          ? 'border-amber-400 bg-amber-950/60 text-amber-300'
+                          ? 'border-amber-400/50 bg-amber-950/60 text-amber-300'
                           : isExpanded
-                            ? 'border-amber-400 bg-amber-950/40'
-                            : 'border-slate-700 bg-[#0a0f16] group-hover:bg-slate-800 text-slate-400 group-hover:text-amber-400'}`}
+                            ? 'border-amber-400/40 bg-amber-950/40 text-amber-400'
+                            : 'border-slate-800 bg-slate-950/80 group-hover:bg-slate-900 text-slate-400 group-hover:text-amber-400'}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         toggleFinishedTournament(t.name);
                       }}
                       title="Toggle match dropdown preview"
                     >
+                      <span className="font-tactical text-[10px] font-bold uppercase tracking-[0.16em]">
+                        {isExpanded ? 'Hide Results' : 'Preview Results'}
+                      </span>
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className={`w-6 h-6 md:w-8 md:h-8 transition-transform duration-300 ${isExpanded ? 'text-amber-400 rotate-180' : ''}`}
+                        className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? 'text-amber-400 rotate-180' : ''}`}
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
                       >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
                       </svg>
                     </div>
                   </div>
@@ -1351,30 +1361,31 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
             {/* Expanded Finished Tournament Container */}
             {expandedFinishedTournament && (
               <div
-                style={{ padding: '28px 32px', marginTop: '16px', marginBottom: '24px' }}
-                className="p-6 sm:p-8 md:p-10 border border-amber-500/50 bg-[#0a0f16] rounded-3xl shadow-2xl animate-fade-in-up relative mt-4 mb-6"
+                style={{ padding: '26px 28px', marginTop: '12px', marginBottom: '20px' }}
+                className="hud-card border-amber-500/40 shadow-2xl animate-fade-in-up relative"
               >
-                <div className="absolute -top-[9px] left-[60px] w-4 h-4 bg-[#0a0f16] border-t border-l border-amber-500/50 rotate-45 hidden md:block" />
-
                 <div
-                  style={{ marginBottom: '24px', padding: '4px 8px' }}
-                  className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 gap-4 px-2 sm:px-4"
+                  style={{ marginBottom: '20px', padding: '4px 4px' }}
+                  className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-800/80 pb-4 gap-4"
                 >
                   <div>
-                    <h3 className="text-sm md:text-base font-bold text-white uppercase tracking-wide flex items-center gap-2 flex-wrap">
-                      <span>{expandedFinishedTournament}</span>
-                      <span className="text-amber-400 font-extrabold tracking-wider">RESULTS & BRACKET</span>
-                    </h3>
-                    <p className="text-[11px] text-slate-400 mt-0.5 uppercase tracking-wider">
+                    <div className="flex items-center gap-2.5">
+                      <span className="hud-diamond" style={{ backgroundColor: '#f59e0b', boxShadow: '0 0 10px #f59e0b' }} />
+                      <h3 className="font-tactical text-sm md:text-base font-extrabold text-white uppercase tracking-[0.16em] flex items-center gap-2 flex-wrap">
+                        <span>{expandedFinishedTournament}</span>
+                        <span className="text-amber-400">// RESULTS & BRACKET</span>
+                      </h3>
+                    </div>
+                    <p className="font-tactical text-[11px] text-slate-400 mt-1 uppercase tracking-[0.12em]">
                       Tournament finalized and recorded in archives
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-3 flex-wrap">
+                  <div className="flex items-center gap-2.5 flex-wrap">
                     <button
                       onClick={() => onNavigateToHub && onNavigateToHub(expandedFinishedTournament)}
                       style={{ padding: '8px 16px' }}
-                      className="flex items-center justify-center text-center gap-2 px-3.5 py-2 rounded-xl border border-amber-500/50 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold uppercase tracking-wider text-xs transition-all shadow-[0_0_12px_rgba(245,158,11,0.25)] cursor-pointer"
+                      className="hud-chamfer-sm flex items-center justify-center text-center gap-2 border border-amber-500/50 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-tactical font-extrabold uppercase tracking-[0.14em] text-xs transition-all shadow-[0_0_12px_rgba(245,158,11,0.25)] cursor-pointer"
                     >
                       <Layers size={13} /> Open Tournament Hub
                     </button>
@@ -1383,7 +1394,7 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
                       onClick={() => handleToggleCompletion(expandedFinishedTournament, true)}
                       disabled={isTogglingStatus}
                       style={{ padding: '8px 16px' }}
-                      className="flex items-center justify-center text-center gap-2 px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-300 font-bold uppercase tracking-wider text-xs transition-all cursor-pointer disabled:opacity-50"
+                      className="hud-chamfer-sm flex items-center justify-center text-center gap-2 border border-slate-700 bg-slate-900/90 hover:bg-slate-800 text-slate-300 font-tactical font-extrabold uppercase tracking-[0.14em] text-xs transition-all cursor-pointer disabled:opacity-50"
                       title="Reopen tournament into Live & Upcoming"
                     >
                       <RefreshCw size={12} className={isTogglingStatus ? 'animate-spin' : ''} />
@@ -1393,8 +1404,8 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
                     <button
                       onClick={() => setShowFinishedBracket(!showFinishedBracket)}
                       style={{ padding: '8px 16px' }}
-                      className={`flex items-center justify-center text-center gap-2 px-4 py-2 rounded-xl border font-bold uppercase tracking-wider transition-colors shadow-inner text-xs cursor-pointer
-                        ${showFinishedBracket ? 'bg-amber-500 text-slate-950 font-black border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.35)]' : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-amber-400 hover:text-amber-400'}`}
+                      className={`hud-chamfer-sm flex items-center justify-center text-center gap-2 border font-tactical font-extrabold uppercase tracking-[0.14em] transition-colors text-xs cursor-pointer
+                        ${showFinishedBracket ? 'bg-amber-400 text-slate-950 border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.35)]' : 'bg-slate-900/90 text-slate-300 border-slate-700 hover:border-amber-400 hover:text-amber-400'}`}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         {showFinishedBracket ? <path d="M18 15l-6-6-6 6" /> : <path d="M6 9l6 6 6-6" />}
@@ -1409,12 +1420,12 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
 
                 {/* Concluded Matches Section */}
                 <div className="flex flex-col gap-3">
-                  <h4 className="text-xs font-black uppercase text-slate-400 tracking-widest flex items-center gap-2 mb-2">
+                  <h4 className="font-tactical text-xs font-extrabold uppercase text-slate-300 tracking-[0.18em] flex items-center gap-2 mb-2">
                     <Clock size={14} className="text-amber-400" /> Concluded Match Records
                   </h4>
 
                   {(!matchesByTournament[expandedFinishedTournament] || matchesByTournament[expandedFinishedTournament].length === 0) ? (
-                    <div className="text-center py-12 text-slate-500 font-bold tracking-widest uppercase bg-slate-900/40 rounded-2xl border border-slate-800">
+                    <div className="hud-chamfer-sm text-center py-12 font-tactical text-slate-400 font-bold tracking-[0.18em] uppercase bg-slate-900/40 border border-slate-800">
                       No match scores recorded for this finished tournament
                     </div>
                   ) : (
@@ -1434,7 +1445,7 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
 
                 {/* Read-Only Interactive Bracket */}
                 {showFinishedBracket && (
-                  <div className="w-full border border-amber-500/40 rounded-3xl overflow-hidden shadow-2xl mt-6 animate-fade-in-up">
+                  <div className="hud-card w-full border-amber-500/40 overflow-hidden shadow-2xl mt-6 animate-fade-in-up">
                     <Bracket globalGame={game} globalTournament={{ name: expandedFinishedTournament }} isReadOnly={true} />
                   </div>
                 )}
@@ -1490,72 +1501,92 @@ const ResultTab = ({ game, globalTournament }) => {
   }, {});
 
   return (
-    <div className="dashboard-wrapper" style={{ gridTemplateColumns: '1fr' }}>
+    <div className="dashboard-wrapper flex flex-col gap-8" style={{ gridTemplateColumns: '1fr' }}>
 
       {/* Top Left: Leaderboard Panel */}
-      <div className="glass-panel">
-        <h2 className="text-white font-bold text-lg mb-6 flex items-center gap-2">
-          <span className="text-yellow-500"><IconTrophy /></span> FINAL RESULTS & KEY STATS
-        </h2>
+      <div className="hud-card p-6 sm:p-8">
+        <div className="flex items-center justify-between border-b border-slate-800/80 pb-4 mb-6">
+          <h2 className="font-tactical text-white font-extrabold text-base sm:text-lg tracking-[0.16em] uppercase flex items-center gap-3">
+            <span className="hud-diamond" />
+            <span className="text-amber-400"><IconTrophy /></span>
+            <span>FINAL RESULTS & KEY STATS</span>
+          </h2>
+          <span className="hud-chamfer-sm px-3 py-1 bg-cyan-500/15 border border-cyan-500/35 font-tactical text-[10px] font-extrabold text-cyan-300 uppercase tracking-[0.16em]">
+            {globalTournament?.name || game}
+          </span>
+        </div>
 
-        <table className="stats-table">
-          <thead>
-            <tr>
-              <th className="text-left w-16">RANK</th>
-              <th className="text-left">TEAM</th>
-              <th className="text-center">PRIZE</th>
-              <th className="text-center">RECORD</th>
-              <th className="text-center">PTS</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(bracketResults.length > 0 ? bracketResults : d.results.table).map((row, i) => {
-              const rank = row.placement_rank || row.rank;
-              const teamName = row.team_name || row.team;
-              const abbr = row.abbr || teamName.substring(0, 2).toUpperCase();
-              const logo = row.logo_url;
-              const prize = row.prize_money || row.prize || '—';
-              const record = row.series_score || row.record || '—';
-              const pts = row.total_points || row.pts || '—';
-              const rankClass = rank <= 3 ? `rank-${rank}` : 'text-gray-400';
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="stats-table">
+            <thead>
+              <tr>
+                <th className="text-left w-16 font-tactical tracking-[0.16em]">RANK</th>
+                <th className="text-left font-tactical tracking-[0.16em]">TEAM</th>
+                <th className="text-center font-tactical tracking-[0.16em]">PRIZE</th>
+                <th className="text-center font-tactical tracking-[0.16em]">RECORD</th>
+                <th className="text-center font-tactical tracking-[0.16em]">PTS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(bracketResults.length > 0 ? bracketResults : d.results.table).map((row, i) => {
+                const rank = row.placement_rank || row.rank;
+                const teamName = row.team_name || row.team;
+                const abbr = row.abbr || teamName.substring(0, 2).toUpperCase();
+                const logo = row.logo_url;
+                const prize = row.prize_money || row.prize || '—';
+                const record = row.series_score || row.record || '—';
+                const pts = row.total_points || row.pts || '—';
+                const rankClass = rank <= 3 ? `rank-${rank}` : 'text-slate-400 border-slate-700/60 bg-slate-900/80';
 
-              return (
-                <tr key={row.id || row.rank || i} className="rounded-lg">
-                  <td>
-                    <div className="flex items-center gap-2">
-                      <span className={`rank-pill ${rankClass}`}>{rank}</span>
-                      {rank === 1 && <span className="text-yellow-500 text-sm">🏆</span>}
-                      {rank === 2 && <span className="text-gray-300 text-sm">🥈</span>}
-                      {rank === 3 && <span className="text-orange-400 text-sm">🥉</span>}
-                    </div>
-                  </td>
-                  <td className="text-white font-semibold flex items-center gap-3">
-                    {logo ? (
-                      <img src={logo} alt={teamName} className="w-8 h-8 rounded-full border border-slate-600 object-cover" />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-[10px] shadow-sm">
-                        {abbr}
+                return (
+                  <tr key={row.id || row.rank || i} className="transition-colors">
+                    <td>
+                      <div className="flex items-center gap-2.5">
+                        <span className={`rank-pill hud-chamfer-sm font-tactical ${rankClass}`}>{rank}</span>
+                        {rank === 1 && <span className="text-yellow-500 text-sm">🏆</span>}
+                        {rank === 2 && <span className="text-gray-300 text-sm">🥈</span>}
+                        {rank === 3 && <span className="text-orange-400 text-sm">🥉</span>}
                       </div>
-                    )}
-                    {teamName}
-                  </td>
-                  <td className="text-center text-emerald-400 font-mono">
-                    {prize}
-                  </td>
-                  <td className="text-center text-slate-300 font-mono">{record}</td>
-                  <td className="text-center text-white font-bold">{pts}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    </td>
+                    <td className="text-white font-bold flex items-center gap-3">
+                      <div className="hud-chamfer-sm w-8 h-8 bg-slate-900 border border-cyan-500/30 flex items-center justify-center font-tactical text-[10px] font-extrabold text-cyan-300 shadow-sm overflow-hidden shrink-0">
+                        {logo ? (
+                          <img
+                            src={logo}
+                            alt={teamName}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              if (e.currentTarget.parentElement) {
+                                e.currentTarget.parentElement.textContent = abbr;
+                              }
+                            }}
+                          />
+                        ) : (
+                          abbr
+                        )}
+                      </div>
+                      <span className="font-tactical uppercase tracking-[0.08em]">{teamName}</span>
+                    </td>
+                    <td className="text-center text-emerald-400 font-tactical font-bold tracking-wider">
+                      {prize}
+                    </td>
+                    <td className="text-center text-slate-300 font-tactical font-bold tracking-wider">{record}</td>
+                    <td className="text-center text-cyan-300 font-tactical font-extrabold text-base">{pts}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Bottom Full Width: Timeline Section */}
-      <div className="glass-panel w-full">
-        <div className="flex justify-between items-center" style={{ marginBottom: "40px" }}>
-          <h2 className="text-white font-bold text-lg flex items-center gap-2">
-            <span className="text-purple-400">🗓️</span> TOURNAMENT MATCH TIMELINE
+      <div className="hud-card p-6 sm:p-8 w-full">
+        <div className="flex justify-between items-center border-b border-slate-800/80 pb-4 mb-6">
+          <h2 className="font-tactical text-white font-extrabold text-base sm:text-lg tracking-[0.16em] uppercase flex items-center gap-3">
+            <span className="hud-diamond-crimson" />
+            <span>TOURNAMENT MATCH TIMELINE</span>
           </h2>
         </div>
 
@@ -1566,7 +1597,7 @@ const ResultTab = ({ game, globalTournament }) => {
               {/* League Header */}
               <div className="flex items-center gap-3 mb-3">
                 <span className={`league-indicator indicator-${league.toLowerCase()}`}></span>
-                <h3 className="text-sm text-slate-300 font-bold uppercase tracking-widest">
+                <h3 className="font-tactical text-xs sm:text-sm text-slate-300 font-extrabold uppercase tracking-[0.18em]">
                   {league} Timeline
                 </h3>
               </div>
@@ -1574,18 +1605,19 @@ const ResultTab = ({ game, globalTournament }) => {
               {/* Independent Horizontal Scroll */}
               <div className="timeline-scroll-row">
                 {matches.map((match, idx) => (
-                  <div key={idx} className="timeline-card">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase mb-2 block">
+                  <div key={idx} className="hud-card hud-card-interactive min-w-[260px] p-4 relative group">
+                    <div className="hud-sweep-overlay" />
+                    <span className="font-tactical text-[10px] text-cyan-400/80 font-extrabold uppercase tracking-[0.16em] mb-2.5 block relative z-10">
                       {match.stage}
                     </span>
-                    <div className="flex items-center gap-4 text-white font-bold text-xl">
-                      <div className="team-circle">{match.team1[0]}</div>
-                      <span className="text-cyan-400">{match.score}</span>
-                      <div className="team-circle">{match.team2[0]}</div>
+                    <div className="flex items-center justify-between gap-4 text-white font-tactical font-extrabold text-xl relative z-10">
+                      <div className="hud-chamfer-sm w-9 h-9 bg-slate-900 border border-cyan-500/30 flex items-center justify-center text-xs text-cyan-300">{match.team1[0]}</div>
+                      <span className="text-cyan-400 tracking-wider">{match.score}</span>
+                      <div className="hud-chamfer-sm w-9 h-9 bg-slate-900 border border-rose-500/30 flex items-center justify-center text-xs text-rose-300">{match.team2[0]}</div>
                     </div>
-                    <div className="text-right text-[10px] text-slate-500 mt-2 flex flex-col items-end">
-                      <span>{match.team1} vs {match.team2}</span>
-                      <span>Map: {match.map}</span>
+                    <div className="text-right font-tactical text-[10px] text-slate-400 mt-3 pt-2 border-t border-slate-800/70 flex items-center justify-between uppercase tracking-wider relative z-10">
+                      <span className="text-slate-300 font-bold">{match.team1} vs {match.team2}</span>
+                      <span className="text-cyan-400/80">Map: {match.map}</span>
                     </div>
                   </div>
                 ))}
@@ -1622,26 +1654,28 @@ const MiniCalendar = ({ highlightDays = [], selectedDay, onSelectDay }) => {
   const today = month === todayObj.getMonth() && year === todayObj.getFullYear() ? todayObj.getDate() : null;
 
   return (
-    <div className="calendar-card">
+    <div className="hud-card p-6 sm:p-7 w-full">
       <div className="calendar-header-wrapper">
         {/* Subtitle */}
-        <div className="calendar-subtitle">
-          <IconCalendar /> SCHEDULE
+        <div className="calendar-subtitle font-tactical">
+          <span className="hud-diamond" />
+          <IconCalendar />
+          <span>SCHEDULE CALENDAR</span>
         </div>
 
         {/* Month Navigation */}
         <div className="calendar-month-nav">
-          <button onClick={prevMonth} className="nav-arrow">
+          <button onClick={prevMonth} className="hud-chamfer-sm nav-arrow bg-slate-900/80 border border-slate-800 hover:border-cyan-400/50">
             <IconChevronLeft />
           </button>
-          <h2 className="calendar-month-title">{monthName} {year}</h2>
-          <button onClick={nextMonth} className="nav-arrow">
+          <h2 className="calendar-month-title font-tactical uppercase tracking-[0.14em]">{monthName} {year}</h2>
+          <button onClick={nextMonth} className="hud-chamfer-sm nav-arrow bg-slate-900/80 border border-slate-800 hover:border-cyan-400/50">
             <IconChevronRight />
           </button>
         </div>
 
         {/* Days of the Week */}
-        <div className="calendar-days-row">
+        <div className="calendar-days-row font-tactical">
           {daysOfWeek.map((day, idx) => (
             <span key={idx}>{day}</span>
           ))}
@@ -1649,7 +1683,7 @@ const MiniCalendar = ({ highlightDays = [], selectedDay, onSelectDay }) => {
       </div>
 
       {/* Dates Grid */}
-      <div className="calendar-grid">
+      <div className="calendar-grid font-tactical">
         {cells.map((date, idx) => {
           if (!date) return <div key={idx} className="date-cell empty"></div>;
 
@@ -1661,7 +1695,7 @@ const MiniCalendar = ({ highlightDays = [], selectedDay, onSelectDay }) => {
             <div
               key={idx}
               onClick={() => onSelectDay(date === selectedDay ? null : date)}
-              className={`date-cell ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''}`}
+              className={`date-cell hud-chamfer-sm ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''}`}
             >
               {date}
               {isMatchDay && <div className="match-dot"></div>}
@@ -1671,20 +1705,20 @@ const MiniCalendar = ({ highlightDays = [], selectedDay, onSelectDay }) => {
       </div>
 
       {/* Divider */}
-      <div className="w-full h-px bg-slate-700/50 my-4"></div>
+      <div className="w-full h-px bg-slate-800/80 my-4"></div>
 
       {/* Legend */}
-      <div className="flex flex-col gap-3">
-        <div className="legend-item">
-          <div className="legend-dot bg-blue-500 shadow-[0_0_8px_#3b82f6]"></div>
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="legend-item font-tactical">
+          <div className="hud-diamond" style={{ backgroundColor: '#3b82f6', boxShadow: '0 0 8px #3b82f6' }}></div>
           TODAY
         </div>
-        <div className="legend-item">
-          <div className="legend-dot bg-[#ff0055] shadow-[0_0_8px_#ff0055]"></div>
+        <div className="legend-item font-tactical">
+          <div className="hud-diamond-crimson"></div>
           MATCH DAY
         </div>
-        <div className="legend-item">
-          <div className="legend-dot bg-cyan-400 shadow-[0_0_8px_#22d3ee]"></div>
+        <div className="legend-item font-tactical">
+          <div className="hud-diamond"></div>
           SELECTED
         </div>
       </div>
@@ -2233,7 +2267,7 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
         const res = await fetch(teamLogoUrl);
         const blob = await res.blob();
         formData.append("logo", blob, "logo.png");
-      } catch (e) {}
+      } catch (e) { }
     }
 
     try {
@@ -2335,38 +2369,38 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
     <div className={`flex justify-center w-full relative ${embedded ? 'mb-2' : 'mb-10'}`}>
       {/* Toast Notification */}
       {successToast && (
-        <div className="fixed top-6 right-8 z-50 animate-bounce flex items-center gap-3 px-5 py-3 rounded-2xl bg-slate-900/95 border border-cyan-500/50 shadow-[0_10px_35px_rgba(6,182,212,0.3)] backdrop-blur-md text-sm font-bold text-cyan-300">
+        <div className="hud-chamfer-sm fixed top-6 right-8 z-50 animate-bounce flex items-center gap-3 px-5 py-3 bg-slate-900/95 border border-cyan-500/50 shadow-[0_10px_35px_rgba(6,182,212,0.3)] backdrop-blur-md font-tactical text-sm font-extrabold uppercase tracking-wider text-cyan-300">
           <CheckCircle2 size={18} className="text-cyan-400" />
           <span>{successToast}</span>
         </div>
       )}
 
-      <div className={`flex flex-col lg:flex-row gap-6 w-full items-start ${embedded ? 'max-w-full px-0 mt-0' : 'max-w-[1400px] px-2 sm:px-4 lg:px-8 mt-4'}`}>
-        
+      <div className={`flex flex-col lg:flex-row gap-6 w-full items-start ${embedded ? 'max-w-full px-0 mt-0' : 'max-w-[1400px] px-0 mt-2'}`}>
+
         {/* LEFT COLUMN: SETUP & SCHEDULE FORM */}
         <div className="flex-1 flex flex-col gap-6 w-full min-w-0">
 
           {/* ── Top Tournament Setup Banner ── */}
           {!readOnly && !embedded && onOpenCreateModal && (
-            <div className="relative overflow-hidden rounded-3xl bg-slate-900/60 border border-slate-800/80 p-6 sm:p-7 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.45)] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5">
+            <div className="hud-card p-6 sm:p-7 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-5 flex-wrap">
               {/* Top ambient highlight line */}
-              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-500 to-transparent pointer-events-none" />
 
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.25)] shrink-0">
-                  <Trophy size={28} />
+              <div className="flex items-center gap-4 min-w-0 flex-1">
+                <div className="hud-chamfer-sm w-14 h-14 bg-gradient-to-br from-cyan-500/20 to-blue-500/10 border border-cyan-500/35 flex items-center justify-center text-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.25)] shrink-0">
+                  <Trophy size={26} />
                 </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-cyan-500/15 text-cyan-400 border border-cyan-500/25">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="hud-chamfer-sm px-2.5 py-0.5 font-tactical text-[10px] font-extrabold uppercase tracking-[0.16em] bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
                       Tournament Hub
                     </span>
                     <span className="text-xs font-bold text-slate-500">•</span>
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    <span className="font-tactical text-xs font-bold text-slate-300 uppercase tracking-[0.14em] truncate">
                       {globalTournament?.name || "Default Tournament"}
                     </span>
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-black uppercase text-white font-['Outfit'] tracking-wider">
+                  <h2 className="font-tactical text-xl sm:text-2xl font-extrabold uppercase text-white tracking-[0.14em]">
                     Tournament Setup
                   </h2>
                   <p className="text-xs text-slate-400 mt-0.5">
@@ -2375,58 +2409,59 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                 </div>
               </div>
 
-              <button 
+              <button
                 onClick={onOpenCreateModal}
-                className="group relative flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-slate-950 text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-[0_0_25px_rgba(6,182,212,0.4)] hover:shadow-[0_0_35px_rgba(6,182,212,0.6)] hover:scale-105 active:scale-95 shrink-0"
+                style={{ padding: '12px 22px' }}
+                className="hud-btn-primary group relative flex items-center justify-center gap-2 text-xs font-extrabold uppercase tracking-[0.15em] shrink-0 whitespace-nowrap"
               >
                 <Plus size={16} strokeWidth={3} className="transition-transform group-hover:rotate-90" />
-                <span>+ Create Tournament</span>
+                <span>Create Tournament</span>
               </button>
             </div>
           )}
 
           {/* ── Manage Schedule Form ── */}
           {!readOnly && (
-            <div className={`relative rounded-3xl bg-slate-900/60 border border-slate-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl flex flex-col w-full ${embedded ? 'px-6 pt-5 pb-6 gap-5' : 'px-6 sm:px-8 pt-6 sm:pt-7 pb-8 sm:pb-10 gap-6'}`}>
+            <div className={`hud-card flex flex-col w-full ${embedded ? 'px-6 pt-5 pb-6 gap-5' : 'px-6 sm:px-8 pt-6 sm:pt-7 pb-8 sm:pb-10 gap-6'}`}>
               {/* Top ambient highlight line */}
-              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-cyan-500/30 via-slate-700 to-rose-500/30 rounded-t-3xl" />
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-cyan-500/40 via-slate-700 to-rose-500/40 pointer-events-none" />
 
               {/* Form Title & Subtitle */}
-              <div className="flex items-center justify-between border-b border-slate-800/80 pb-5">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-cyan-400 shadow-inner">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-5">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="hud-chamfer-sm w-11 h-11 bg-slate-900/90 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-inner shrink-0">
                     <Swords size={20} />
                   </div>
-                  <div>
-                    <h2 className="text-xl font-black uppercase text-white font-['Outfit'] tracking-wider">
+                  <div className="min-w-0">
+                    <h2 className="font-tactical text-lg sm:text-xl font-extrabold uppercase text-white tracking-[0.14em]">
                       Schedule Match Showdown
                     </h2>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-slate-400 mt-0.5">
                       Enter competing team details, customize team emblems, and set the battle time.
                     </p>
                   </div>
                 </div>
 
-                <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-slate-800/60 text-slate-300 border border-slate-700/60">
-                  <Sparkles size={12} className="text-cyan-400" />
-                  Auto-Syncs With Predictions
+                <span style={{ padding: '5px 12px' }} className="hud-chamfer-sm inline-flex items-center gap-1.5 font-tactical text-[10px] font-extrabold uppercase tracking-[0.14em] bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 whitespace-nowrap shrink-0 self-start sm:self-center">
+                  <Sparkles size={12} className="text-cyan-400 shrink-0" />
+                  <span>Auto-Syncs With Predictions</span>
                 </span>
               </div>
 
               {/* ── Versus Teams Arena (Team A vs Team B) ── */}
               <div className={`grid grid-cols-1 md:grid-cols-2 relative ${embedded ? 'gap-4' : 'gap-6'}`}>
-                
+
                 {/* TEAM A CARD */}
-                <div className={`relative rounded-2xl bg-slate-950/50 border border-slate-800/90 hover:border-cyan-500/40 flex flex-col transition-all shadow-inner ${embedded ? 'p-4 gap-3' : 'p-5 gap-4'}`}>
-                  <div className="flex items-center justify-between">
+                <div className={`hud-chamfer relative bg-slate-950/65 border border-cyan-500/25 hover:border-cyan-400/50 flex flex-col transition-all shadow-inner ${embedded ? 'p-4 gap-3' : 'p-5 gap-4'}`}>
+                  <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.8)]" />
-                      <span className="text-xs font-black uppercase tracking-wider text-cyan-400">
+                      <span className="hud-diamond" />
+                      <span className="font-tactical text-xs font-extrabold uppercase tracking-[0.14em] text-cyan-400">
                         Team A (Home / Blue)
                       </span>
                     </div>
                     {teamALogo && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                      <span className="hud-chamfer-sm font-tactical text-[10px] font-extrabold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 border border-emerald-500/25">
                         Emblem Loaded
                       </span>
                     )}
@@ -2434,7 +2469,7 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
 
                   {/* Team A Name Input */}
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                    <label className="block font-tactical text-[11px] font-extrabold text-slate-400 uppercase tracking-[0.14em] mb-1.5">
                       Team Name *
                     </label>
                     <input
@@ -2443,17 +2478,16 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                       onChange={(e) => setTeamA(e.target.value)}
                       placeholder="e.g. Sentinels, All Gamers..."
                       disabled={isSubmitting}
-                      className={`w-full bg-[#060a12] border rounded-xl px-4 py-3 text-white text-sm placeholder:text-slate-600 focus:outline-none transition-all ${
-                        showErrors && !teamA.trim()
+                      className={`hud-chamfer-sm w-full bg-[#060a12] border px-4 py-3 text-white text-sm placeholder:text-slate-600 focus:outline-none transition-all ${showErrors && !teamA.trim()
                           ? "border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]"
                           : "border-slate-800 focus:border-cyan-400 focus:shadow-[0_0_20px_rgba(6,182,212,0.2)]"
-                      }`}
+                        }`}
                     />
                   </div>
 
                   {/* Team A Custom Logo Uploader */}
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                    <label className="block font-tactical text-[11px] font-extrabold text-slate-400 uppercase tracking-[0.14em] mb-1.5">
                       Team Logo (Optional)
                     </label>
                     <input
@@ -2474,14 +2508,14 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                     />
 
                     {teamALogo ? (
-                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-slate-700/80">
+                      <div className="hud-chamfer-sm flex items-center justify-between p-2.5 bg-slate-900 border border-slate-700/80">
                         <div className="flex items-center gap-3 overflow-hidden">
                           <img
                             src={teamALogo}
                             alt="Team A"
-                            className="w-10 h-10 object-contain rounded-lg bg-slate-950 p-1 border border-slate-700 shrink-0"
+                            className="hud-chamfer-sm w-10 h-10 object-contain bg-slate-950 p-1 border border-slate-700 shrink-0"
                           />
-                          <div className="truncate text-xs font-bold text-slate-200">
+                          <div className="truncate font-tactical text-xs font-bold text-slate-200 uppercase">
                             {teamAFile ? teamAFile.name : "Custom Logo"}
                           </div>
                         </div>
@@ -2489,7 +2523,7 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                           <button
                             type="button"
                             onClick={() => teamAInputRef.current?.click()}
-                            className="px-2.5 py-1 text-[11px] font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
+                            className="hud-chamfer-sm px-2.5 py-1 font-tactical text-[11px] font-bold uppercase text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 transition-colors cursor-pointer"
                           >
                             Change
                           </button>
@@ -2499,7 +2533,7 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                               setTeamALogo("");
                               setTeamAFile(null);
                             }}
-                            className="p-1 text-slate-400 hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-colors cursor-pointer"
+                            className="hud-chamfer-sm p-1 text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
                           >
                             <X size={15} />
                           </button>
@@ -2508,7 +2542,7 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                     ) : (
                       <div
                         onClick={() => teamAInputRef.current?.click()}
-                        className="cursor-pointer border border-dashed border-slate-800 hover:border-cyan-400/60 bg-slate-900/40 hover:bg-cyan-500/5 rounded-xl p-3 flex items-center justify-center gap-2.5 transition-all text-slate-400 hover:text-cyan-300 text-xs font-bold"
+                        className="hud-chamfer-sm cursor-pointer border border-dashed border-slate-700 hover:border-cyan-400/60 bg-slate-900/50 hover:bg-cyan-500/10 p-3 flex items-center justify-center gap-2.5 transition-all text-slate-400 hover:text-cyan-300 font-tactical text-xs font-extrabold uppercase tracking-[0.12em]"
                       >
                         <Upload size={15} className="text-cyan-400" />
                         <span>Upload Team A Emblem</span>
@@ -2518,16 +2552,16 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                 </div>
 
                 {/* TEAM B CARD */}
-                <div className={`relative rounded-2xl bg-slate-950/50 border border-slate-800/90 hover:border-rose-500/40 flex flex-col transition-all shadow-inner ${embedded ? 'p-4 gap-3' : 'p-5 gap-4'}`}>
-                  <div className="flex items-center justify-between">
+                <div className={`hud-chamfer relative bg-slate-950/65 border border-rose-500/25 hover:border-rose-400/50 flex flex-col transition-all shadow-inner ${embedded ? 'p-4 gap-3' : 'p-5 gap-4'}`}>
+                  <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.8)]" />
-                      <span className="text-xs font-black uppercase tracking-wider text-rose-400">
+                      <span className="hud-diamond-crimson" />
+                      <span className="font-tactical text-xs font-extrabold uppercase tracking-[0.14em] text-rose-400">
                         Team B (Away / Red)
                       </span>
                     </div>
                     {teamBLogo && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                      <span className="hud-chamfer-sm font-tactical text-[10px] font-extrabold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 border border-emerald-500/25">
                         Emblem Loaded
                       </span>
                     )}
@@ -2535,7 +2569,7 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
 
                   {/* Team B Name Input */}
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                    <label className="block font-tactical text-[11px] font-extrabold text-slate-400 uppercase tracking-[0.14em] mb-1.5">
                       Team Name *
                     </label>
                     <input
@@ -2544,17 +2578,16 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                       onChange={(e) => setTeamB(e.target.value)}
                       placeholder="e.g. Fnatic, BaiSha Gaming..."
                       disabled={isSubmitting}
-                      className={`w-full bg-[#060a12] border rounded-xl px-4 py-3 text-white text-sm placeholder:text-slate-600 focus:outline-none transition-all ${
-                        showErrors && !teamB.trim()
+                      className={`hud-chamfer-sm w-full bg-[#060a12] border px-4 py-3 text-white text-sm placeholder:text-slate-600 focus:outline-none transition-all ${showErrors && !teamB.trim()
                           ? "border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]"
                           : "border-slate-800 focus:border-rose-400 focus:shadow-[0_0_20px_rgba(244,63,94,0.2)]"
-                      }`}
+                        }`}
                     />
                   </div>
 
                   {/* Team B Custom Logo Uploader */}
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                    <label className="block font-tactical text-[11px] font-extrabold text-slate-400 uppercase tracking-[0.14em] mb-1.5">
                       Team Logo (Optional)
                     </label>
                     <input
@@ -2575,14 +2608,14 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                     />
 
                     {teamBLogo ? (
-                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-slate-700/80">
+                      <div className="hud-chamfer-sm flex items-center justify-between p-2.5 bg-slate-900 border border-slate-700/80">
                         <div className="flex items-center gap-3 overflow-hidden">
                           <img
                             src={teamBLogo}
                             alt="Team B"
-                            className="w-10 h-10 object-contain rounded-lg bg-slate-950 p-1 border border-slate-700 shrink-0"
+                            className="hud-chamfer-sm w-10 h-10 object-contain bg-slate-950 p-1 border border-slate-700 shrink-0"
                           />
-                          <div className="truncate text-xs font-bold text-slate-200">
+                          <div className="truncate font-tactical text-xs font-bold text-slate-200 uppercase">
                             {teamBFile ? teamBFile.name : "Custom Logo"}
                           </div>
                         </div>
@@ -2590,7 +2623,7 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                           <button
                             type="button"
                             onClick={() => teamBInputRef.current?.click()}
-                            className="px-2.5 py-1 text-[11px] font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
+                            className="hud-chamfer-sm px-2.5 py-1 font-tactical text-[11px] font-bold uppercase text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 transition-colors cursor-pointer"
                           >
                             Change
                           </button>
@@ -2600,7 +2633,7 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                               setTeamBLogo("");
                               setTeamBFile(null);
                             }}
-                            className="p-1 text-slate-400 hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-colors cursor-pointer"
+                            className="hud-chamfer-sm p-1 text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
                           >
                             <X size={15} />
                           </button>
@@ -2609,7 +2642,7 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                     ) : (
                       <div
                         onClick={() => teamBInputRef.current?.click()}
-                        className="cursor-pointer border border-dashed border-slate-800 hover:border-rose-400/60 bg-slate-900/40 hover:bg-rose-500/5 rounded-xl p-3 flex items-center justify-center gap-2.5 transition-all text-slate-400 hover:text-rose-300 text-xs font-bold"
+                        className="hud-chamfer-sm cursor-pointer border border-dashed border-slate-700 hover:border-rose-400/60 bg-slate-900/50 hover:bg-rose-500/10 p-3 flex items-center justify-center gap-2.5 transition-all text-slate-400 hover:text-rose-300 font-tactical text-xs font-extrabold uppercase tracking-[0.12em]"
                       >
                         <Upload size={15} className="text-rose-400" />
                         <span>Upload Team B Emblem</span>
@@ -2625,7 +2658,7 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                 {/* Date Input */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
-                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <label className="font-tactical text-[11px] font-extrabold text-slate-400 uppercase tracking-[0.14em] flex items-center gap-1.5">
                       <Calendar size={13} className="text-cyan-400" />
                       <span>Match Date *</span>
                     </label>
@@ -2633,21 +2666,21 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                       <button
                         type="button"
                         onClick={() => setDateOffset(0)}
-                        className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition-colors cursor-pointer"
+                        className="hud-chamfer-sm font-tactical text-[10px] font-extrabold uppercase px-2.5 py-1 bg-slate-800/90 hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-slate-700/60 hover:border-cyan-500/40 transition-colors cursor-pointer"
                       >
                         Today
                       </button>
                       <button
                         type="button"
                         onClick={() => setDateOffset(1)}
-                        className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition-colors cursor-pointer"
+                        className="hud-chamfer-sm font-tactical text-[10px] font-extrabold uppercase px-2.5 py-1 bg-slate-800/90 hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-slate-700/60 hover:border-cyan-500/40 transition-colors cursor-pointer"
                       >
                         Tomorrow
                       </button>
                       <button
                         type="button"
                         onClick={() => setDateOffset(2)}
-                        className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition-colors cursor-pointer"
+                        className="hud-chamfer-sm font-tactical text-[10px] font-extrabold uppercase px-2.5 py-1 bg-slate-800/90 hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-slate-700/60 hover:border-cyan-500/40 transition-colors cursor-pointer"
                       >
                         +2 Days
                       </button>
@@ -2658,18 +2691,17 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                     value={day}
                     onChange={(e) => setDay(e.target.value)}
                     disabled={isSubmitting}
-                    className={`w-full bg-[#060a12] border rounded-xl px-4 py-3 text-white text-sm [color-scheme:dark] focus:outline-none transition-all ${
-                      showErrors && !day
+                    className={`hud-chamfer-sm w-full bg-[#060a12] border px-4 py-3 text-white text-sm [color-scheme:dark] focus:outline-none transition-all ${showErrors && !day
                         ? "border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]"
                         : "border-slate-800 focus:border-cyan-400"
-                    }`}
+                      }`}
                   />
                 </div>
 
                 {/* Time Input */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
-                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <label className="font-tactical text-[11px] font-extrabold text-slate-400 uppercase tracking-[0.14em] flex items-center gap-1.5">
                       <Clock size={13} className="text-cyan-400" />
                       <span>Kickoff Time *</span>
                     </label>
@@ -2679,7 +2711,7 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                           key={preset}
                           type="button"
                           onClick={() => setTime(preset)}
-                          className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition-colors cursor-pointer"
+                          className="hud-chamfer-sm font-tactical text-[10px] font-extrabold uppercase px-2.5 py-1 bg-slate-800/90 hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-slate-700/60 hover:border-cyan-500/40 transition-colors cursor-pointer"
                         >
                           {preset === "14:00" ? "2 PM" : preset === "17:00" ? "5 PM" : "8 PM"}
                         </button>
@@ -2691,18 +2723,17 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                     value={time}
                     onChange={(e) => setTime(e.target.value)}
                     disabled={isSubmitting}
-                    className={`w-full bg-[#060a12] border rounded-xl px-4 py-3 text-white text-sm [color-scheme:dark] cursor-pointer focus:outline-none transition-all ${
-                      showErrors && !time
+                    className={`hud-chamfer-sm w-full bg-[#060a12] border px-4 py-3 text-white text-sm [color-scheme:dark] cursor-pointer focus:outline-none transition-all ${showErrors && !time
                         ? "border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]"
                         : "border-slate-800 focus:border-cyan-400"
-                    }`}
+                      }`}
                   />
                 </div>
               </div>
 
               {/* Validation Error Feedback */}
               {showErrors && (!teamA.trim() || !teamB.trim() || !day || !time) && (
-                <div className="flex items-center justify-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold uppercase tracking-wider animate-pulse">
+                <div className="hud-chamfer-sm flex items-center justify-center gap-2 p-3 bg-red-500/10 border border-red-500/30 text-red-400 font-tactical text-xs font-extrabold uppercase tracking-wider animate-pulse">
                   <AlertCircle size={15} />
                   <span>Please fill in both Team Names, Match Date, and Kickoff Time.</span>
                 </div>
@@ -2714,7 +2745,7 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                   type="button"
                   onClick={addMatch}
                   disabled={isSubmitting}
-                  className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-slate-950 text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] hover:scale-[1.01] active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                  className="hud-btn-primary w-full py-3.5 px-6 text-xs font-extrabold uppercase tracking-[0.16em] disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isSubmitting ? (
                     <>
@@ -2728,7 +2759,7 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                     </>
                   )}
                 </button>
-                <p className="text-[11px] text-slate-400 text-center font-medium">
+                <p className="font-tactical text-[11px] text-slate-400 text-center font-bold uppercase tracking-[0.12em]">
                   Both teams and match timing will be locked into schedule fixtures.
                 </p>
               </div>
@@ -2740,19 +2771,20 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
 
         {/* ── RIGHT COLUMN: CURRENT SCHEDULE SIDEBAR ── */}
         <div className="w-full lg:w-[420px] xl:w-[460px] shrink-0">
-          <div className={`relative overflow-hidden rounded-3xl bg-slate-900/60 border border-slate-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-6 sm:p-7 backdrop-blur-xl flex flex-col ${embedded ? 'min-h-[420px]' : 'min-h-[520px] h-full'}`}>
+          <div className={`hud-card p-6 sm:p-7 flex flex-col ${embedded ? 'min-h-[420px]' : 'min-h-[520px] h-full'}`}>
             {/* Top ambient highlight line */}
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent pointer-events-none" />
 
             {/* Sidebar Header */}
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800/80">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
+                <span className="hud-diamond" />
                 <Calendar size={16} className="text-cyan-400" />
-                <h3 className="text-sm font-black uppercase text-white font-['Outfit'] tracking-wider">
+                <h3 className="font-tactical text-sm font-extrabold uppercase text-white tracking-[0.16em]">
                   Current Schedule
                 </h3>
               </div>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-800 text-cyan-400 border border-slate-700/60">
+              <span className="hud-chamfer-sm px-2.5 py-0.5 font-tactical text-[10px] font-extrabold uppercase tracking-[0.14em] bg-cyan-500/15 text-cyan-300 border border-cyan-500/35">
                 {schedule.length} {schedule.length === 1 ? "Match" : "Matches"}
               </span>
             </div>
@@ -2766,16 +2798,16 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                 onChange={(e) => setSearchSchedule(e.target.value)}
                 placeholder="Filter by team..."
                 style={{ paddingLeft: '38px' }}
-                className="w-full bg-[#060a12] border border-slate-800 rounded-xl pr-4 py-2.5 text-xs font-medium text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/50 transition-all"
+                className="hud-chamfer-sm w-full bg-[#060a12] border border-slate-800 pr-4 py-2.5 text-xs font-medium text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/50 transition-all"
               />
             </div>
 
             {/* Schedule Items List */}
             <div className="flex flex-col gap-3 overflow-y-auto custom-scrollbar flex-1 pr-1 max-h-[620px]">
               {filteredSchedule.length === 0 ? (
-                <div className="flex flex-col items-center justify-center text-center py-16 px-4 rounded-2xl border border-dashed border-slate-800/80 bg-slate-950/30">
+                <div className="hud-chamfer-sm flex flex-col items-center justify-center text-center py-16 px-4 border border-dashed border-slate-800/80 bg-slate-950/30">
                   <Calendar size={32} className="text-slate-600 mb-3" />
-                  <div className="text-sm font-bold text-slate-300">
+                  <div className="font-tactical text-sm font-bold text-slate-300 uppercase tracking-[0.14em]">
                     {searchSchedule ? "No matching fixtures" : "No matches scheduled yet"}
                   </div>
                   <div className="text-xs text-slate-500 mt-1 max-w-[220px]">
@@ -2786,15 +2818,15 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                 filteredSchedule.map((m, index) => (
                   <div
                     key={m.id}
-                    className="group relative flex flex-col bg-slate-950/50 p-4 rounded-2xl border border-slate-800/80 hover:border-slate-700 transition-all shadow-md hover:shadow-xl gap-3.5"
+                    className="hud-chamfer-sm group relative flex flex-col bg-slate-950/65 p-4 border border-slate-800/90 hover:border-cyan-500/40 transition-all shadow-md hover:shadow-xl gap-3.5"
                   >
                     {/* Top Meta Strip */}
-                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                      <span className="px-2 py-0.5 rounded bg-slate-800/60 text-slate-300 border border-slate-700/40">
+                    <div className="flex items-center justify-between font-tactical text-[10px] font-extrabold text-slate-400 uppercase tracking-[0.14em]">
+                      <span className="hud-chamfer-sm px-2.5 py-0.5 bg-slate-900 text-cyan-300 border border-cyan-500/30">
                         Match #{index + 1}
                       </span>
-                      <span className="text-slate-400 flex items-center gap-1 font-semibold">
-                        <Clock size={11} className="text-slate-500" />
+                      <span className="text-slate-400 flex items-center gap-1 font-bold">
+                        <Clock size={11} className="text-cyan-400" />
                         {formatScheduleDay(m.day)} • {formatScheduleTime(m.time)}
                       </span>
                     </div>
@@ -2803,43 +2835,55 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                     <div className="flex items-center justify-between w-full gap-2">
                       {/* Team A */}
                       <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                        {m.teamALogo ? (
-                          <img
-                            src={m.teamALogo}
-                            alt={m.teamA}
-                            className="w-8 h-8 object-contain rounded-lg bg-slate-900 border border-slate-700/60 p-0.5 shrink-0"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-[10px] font-black text-cyan-400 shrink-0">
-                            {getTeamInitials(m.teamA)}
-                          </div>
-                        )}
-                        <span className="text-white font-bold text-xs truncate" title={m.teamA}>
+                        <div className="hud-chamfer-sm w-8 h-8 bg-cyan-500/10 border border-cyan-500/35 flex items-center justify-center font-tactical text-[10px] font-extrabold text-cyan-400 shrink-0 overflow-hidden">
+                          {m.teamALogo ? (
+                            <img
+                              src={m.teamALogo}
+                              alt={m.teamA}
+                              className="w-full h-full object-contain p-0.5"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                if (e.currentTarget.parentElement) {
+                                  e.currentTarget.parentElement.textContent = getTeamInitials(m.teamA);
+                                }
+                              }}
+                            />
+                          ) : (
+                            getTeamInitials(m.teamA)
+                          )}
+                        </div>
+                        <span className="font-tactical text-white font-extrabold text-xs uppercase tracking-wider truncate" title={m.teamA}>
                           {m.teamA}
                         </span>
                       </div>
 
                       {/* VS Center */}
-                      <div className="px-2 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-[10px] font-black text-cyan-400 tracking-wider shrink-0">
+                      <div className="hud-chamfer-sm px-2.5 py-0.5 bg-slate-900 border border-cyan-500/30 font-tactical text-[10px] font-extrabold text-cyan-400 tracking-[0.16em] shrink-0">
                         VS
                       </div>
 
                       {/* Team B */}
                       <div className="flex items-center gap-2.5 flex-1 min-w-0 justify-end">
-                        <span className="text-white font-bold text-xs truncate text-right" title={m.teamB}>
+                        <span className="font-tactical text-white font-extrabold text-xs uppercase tracking-wider truncate text-right" title={m.teamB}>
                           {m.teamB}
                         </span>
-                        {m.teamBLogo ? (
-                          <img
-                            src={m.teamBLogo}
-                            alt={m.teamB}
-                            className="w-8 h-8 object-contain rounded-lg bg-slate-900 border border-slate-700/60 p-0.5 shrink-0"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-[10px] font-black text-rose-400 shrink-0">
-                            {getTeamInitials(m.teamB)}
-                          </div>
-                        )}
+                        <div className="hud-chamfer-sm w-8 h-8 bg-rose-500/10 border border-rose-500/35 flex items-center justify-center font-tactical text-[10px] font-extrabold text-rose-400 shrink-0 overflow-hidden">
+                          {m.teamBLogo ? (
+                            <img
+                              src={m.teamBLogo}
+                              alt={m.teamB}
+                              className="w-full h-full object-contain p-0.5"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                if (e.currentTarget.parentElement) {
+                                  e.currentTarget.parentElement.textContent = getTeamInitials(m.teamB);
+                                }
+                              }}
+                            />
+                          ) : (
+                            getTeamInitials(m.teamB)
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -2848,7 +2892,7 @@ const ManageScheduleTab = ({ readOnly, globalGame, globalTournament, embedded, o
                       <button
                         type="button"
                         onClick={() => removeMatch(m.id)}
-                        className="flex items-center gap-1.5 text-slate-500 hover:text-red-400 text-[11px] font-bold uppercase tracking-wider transition-colors px-2.5 py-1 rounded-lg hover:bg-red-500/10"
+                        className="hud-chamfer-sm flex items-center gap-1.5 text-slate-400 hover:text-red-400 font-tactical text-[10px] font-extrabold uppercase tracking-[0.14em] transition-colors px-2.5 py-1 hover:bg-red-500/10 border border-transparent hover:border-red-500/30"
                       >
                         <Trash2 size={12} />
                         <span>Remove</span>
@@ -2933,24 +2977,27 @@ const ScheduleTab = ({ game, globalTournament }) => {
     setReminders((prev) => ({ ...prev, [id]: !prev[id] }));
 
   return (
-    <div className="dashboard-section flex flex-col lg:flex-row gap-8 h-full">
+    <div className="flex flex-col lg:flex-row gap-8 h-full w-full">
       <div className="w-full lg:w-[380px] shrink-0 flex flex-col gap-6">
         <MiniCalendar
           highlightDays={highlightDays}
           selectedDay={selectedDay}
           onSelectDay={setSelectedDay}
         />
-        <div className="glass-panel">
+        <div className="hud-card p-6 sm:p-7">
           <div className="filter-container">
             {/* Header Row */}
-            <div className="filter-header-row">
-              <h3 className="filter-title">FILTER BY GAME</h3>
+            <div className="filter-header-row border-b border-slate-800/80 pb-3 mb-4">
+              <div className="flex items-center gap-2">
+                <span className="hud-diamond" />
+                <h3 className="filter-title font-tactical tracking-[0.16em]">FILTER BY GAME</h3>
+              </div>
               <button
                 onClick={() => setFilterByGame(!filterByGame)}
-                className={`w-11 h-6 rounded-full p-0.5 transition-all duration-300 ${filterByGame ? "bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.5)]" : "bg-slate-700 light:bg-slate-300"}`}
+                className={`hud-chamfer-sm w-11 h-6 p-0.5 transition-all duration-300 ${filterByGame ? "bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.5)]" : "bg-slate-700 light:bg-slate-300"}`}
               >
                 <div
-                  className={`w-5 h-5 bg-white rounded-full shadow transition-transform duration-300 ${filterByGame ? "translate-x-5" : "translate-x-0"}`}
+                  className={`hud-chamfer-sm w-5 h-5 bg-slate-950 shadow transition-transform duration-300 ${filterByGame ? "translate-x-5" : "translate-x-0"}`}
                 />
               </button>
             </div>
@@ -2963,13 +3010,13 @@ const ScheduleTab = ({ game, globalTournament }) => {
                   <div
                     key={g}
                     onClick={() => setActiveGame(g)}
-                    className={`game-filter-item ${isActive ? "active" : ""}`}
+                    className={`game-filter-item hud-chamfer-sm ${isActive ? "active" : ""}`}
                   >
                     <div
-                      className="w-3 h-3 rounded-full"
+                      className="w-2.5 h-2.5 rotate-45"
                       style={{ backgroundColor: DATA[g].color, boxShadow: `0 0 8px ${DATA[g].color}` }}
                     />
-                    <span className={`font-bold text-sm tracking-wide ${isActive ? "text-white" : "text-slate-400"}`}>
+                    <span className={`font-tactical font-extrabold text-sm tracking-[0.14em] ${isActive ? "text-white" : "text-slate-400"}`}>
                       {g}
                     </span>
                   </div>
@@ -2979,86 +3026,118 @@ const ScheduleTab = ({ game, globalTournament }) => {
           </div>
         </div>
       </div>
-      <div className="glass-panel flex-1 min-w-0 flex flex-col gap-6">
-        <div className="flex items-center gap-4">
-          <div className="pb-1 border-b-2 border-slate-700/50 flex-1">
+      <div className="hud-card p-6 sm:p-8 flex-1 min-w-0 flex flex-col gap-6">
+        <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
+          <div className="flex items-center gap-3">
             <span
-              className="text-xl font-black uppercase tracking-widest"
+              className="w-2.5 h-2.5 rotate-45 shrink-0"
+              style={{ backgroundColor: DATA[activeGame].color, boxShadow: `0 0 10px ${DATA[activeGame].color}` }}
+            />
+            <span
+              className="font-tactical text-lg sm:text-xl font-extrabold uppercase tracking-[0.2em]"
               style={{ color: DATA[activeGame].color }}
             >
-              {activeGame}
+              {activeGame} SCHEDULE
             </span>
           </div>
+          <span className="hud-chamfer-sm px-3 py-1 bg-slate-900 border border-cyan-500/30 font-tactical text-[10px] font-extrabold text-cyan-300 uppercase tracking-[0.16em]">
+            {filteredSchedule.length} {filteredSchedule.length === 1 ? "Match" : "Matches"}
+          </span>
         </div>
-        { }
-        <div className="flex flex-col gap-3">
+
+        <div className="flex flex-col gap-3.5">
           {filteredSchedule.map((s) => {
             const reminded =
               reminders[s.id] !== undefined ? reminders[s.id] : s.reminded;
+            const abbrA = (s.teamA || "TB").substring(0, 2).toUpperCase();
+            const abbrB = (s.teamB || "TB").substring(0, 2).toUpperCase();
+
             return (
               <div
                 key={s.id}
-                className="bg-[#0d131c] light:bg-white rounded-2xl border border-slate-800/50 light:border-slate-200 hover:border-slate-700/70 light:hover:border-slate-300 transition-all duration-300 p-4 flex items-center gap-4 group shadow-sm"
+                className="hud-card hud-card-interactive p-4 sm:p-5 flex items-center justify-between gap-4 group relative"
               >
-                { }
+                <div className="hud-sweep-overlay" />
 
-                { }
-                <div className="flex-1 min-w-0 flex flex-col md:flex-row md:items-center gap-1 md:gap-3 py-1">
-                  <div className="flex items-center gap-2">
-                    {s.teamALogo ? (
-                      <img
-                        src={s.teamALogo}
-                        alt={s.teamA}
-                        className="w-6 h-6 object-contain drop-shadow-md"
-                      />
-                    ) : null}
-                    <span className="font-bold text-sm text-white light:text-slate-900 group-hover:text-slate-100">
+                <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 py-1 relative z-10">
+                  <div className="flex items-center gap-2.5">
+                    <div className="hud-chamfer-sm w-8 h-8 bg-cyan-500/10 border border-cyan-500/35 flex items-center justify-center font-tactical text-[10px] font-extrabold text-cyan-300 shrink-0 overflow-hidden">
+                      {s.teamALogo ? (
+                        <img
+                          src={s.teamALogo}
+                          alt={s.teamA}
+                          className="w-full h-full object-contain p-0.5"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            if (e.currentTarget.parentElement) {
+                              e.currentTarget.parentElement.textContent = abbrA;
+                            }
+                          }}
+                        />
+                      ) : (
+                        abbrA
+                      )}
+                    </div>
+                    <span className="font-tactical font-extrabold text-sm text-white uppercase tracking-[0.08em] group-hover:text-cyan-300 transition-colors">
                       {s.teamA}
                     </span>
                   </div>
-                  <span className="text-[10px] text-slate-500 font-black px-1 hidden md:block">
+
+                  <span className="hud-chamfer-sm px-2.5 py-0.5 bg-slate-900 border border-cyan-500/30 font-tactical text-[10px] text-cyan-400 font-extrabold tracking-[0.16em] self-start sm:self-center">
                     VS
                   </span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-white light:text-slate-900 group-hover:text-slate-100">
+
+                  <div className="flex items-center gap-2.5">
+                    <span className="font-tactical font-extrabold text-sm text-white uppercase tracking-[0.08em] group-hover:text-rose-300 transition-colors">
                       {s.teamB}
                     </span>
-                    {s.teamBLogo ? (
-                      <img
-                        src={s.teamBLogo}
-                        alt={s.teamB}
-                        className="w-6 h-6 object-contain drop-shadow-md"
-                      />
-                    ) : null}
+                    <div className="hud-chamfer-sm w-8 h-8 bg-rose-500/10 border border-rose-500/35 flex items-center justify-center font-tactical text-[10px] font-extrabold text-rose-300 shrink-0 overflow-hidden">
+                      {s.teamBLogo ? (
+                        <img
+                          src={s.teamBLogo}
+                          alt={s.teamB}
+                          className="w-full h-full object-contain p-0.5"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            if (e.currentTarget.parentElement) {
+                              e.currentTarget.parentElement.textContent = abbrB;
+                            }
+                          }}
+                        />
+                      ) : (
+                        abbrB
+                      )}
+                    </div>
                   </div>
                 </div>
-                { }
-                <div className="text-right shrink-0 hidden sm:block">
-                  <div className="text-sm font-black text-white light:text-slate-900">
+
+                <div className="text-right shrink-0 hidden sm:block relative z-10 px-2">
+                  <div className="font-tactical text-sm font-extrabold text-white tracking-wider">
                     {s.time}
                   </div>
-                  <div className="text-[9px] text-slate-500 light:text-slate-400 font-mono">
+                  <div className="font-tactical text-[10px] text-cyan-400/75 font-bold uppercase tracking-[0.14em]">
                     {s.timezone}
                   </div>
                 </div>
-                { }
+
                 <button
                   onClick={() => toggleReminder(s.id)}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-black tracking-wider uppercase transition-all active:scale-95 shrink-0 ${reminded
-                      ? "bg-cyan-500/15 border border-cyan-500/40 text-cyan-400"
-                      : "bg-red-600 text-white hover:bg-red-500 shadow-[0_0_15px_rgba(220,38,38,0.3)] hover:shadow-[0_0_20px_rgba(220,38,38,0.5)]"
+                  style={{ padding: '8px 14px' }}
+                  className={`hud-chamfer-sm flex items-center gap-1.5 font-tactical text-[10px] font-extrabold tracking-[0.14em] uppercase transition-all active:scale-95 shrink-0 relative z-10 cursor-pointer ${reminded
+                    ? "bg-cyan-500/20 border border-cyan-400/50 text-cyan-300 shadow-[0_0_12px_rgba(0,229,255,0.25)]"
+                    : "bg-[#ff4655] text-white hover:bg-rose-500 shadow-[0_0_15px_rgba(255,70,85,0.35)] hover:shadow-[0_0_22px_rgba(255,70,85,0.55)]"
                     }`}
                 >
                   <IconBell />
-                  {reminded ? "Reminded" : "Set Reminder"}
+                  <span>{reminded ? "Reminded" : "Set Reminder"}</span>
                 </button>
               </div>
             );
           })}
         </div>
-        { }
+
         {scheduleData.length === 0 && (
-          <div className="flex-1 flex items-center justify-center py-20 text-slate-600 text-sm font-bold tracking-widest uppercase">
+          <div className="hud-chamfer-sm flex-1 flex items-center justify-center py-20 bg-slate-950/40 border border-dashed border-slate-800 font-tactical text-slate-500 text-sm font-bold tracking-[0.2em] uppercase">
             No scheduled matches
           </div>
         )}
@@ -3104,25 +3183,25 @@ const TournamentRulebookTab = ({ globalGame, globalTournament }) => {
   return (
     <div className="w-full flex flex-col gap-6 animate-fade-in">
       {/* Rulebook Top Banner */}
-      <div className="bg-[#0b121c] border border-cyan-500/20 rounded-3xl p-6 sm:p-8 flex flex-wrap items-center justify-between gap-6 shadow-2xl relative overflow-hidden">
+      <div className="hud-card p-6 sm:p-8 flex flex-wrap items-center justify-between gap-6 shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="flex items-center gap-5 z-10">
-          <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.25)] shrink-0">
+        <div className="flex items-center gap-5 z-10 min-w-0">
+          <div className="hud-chamfer-sm w-16 h-16 bg-cyan-500/10 border border-cyan-500/35 flex items-center justify-center text-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.25)] shrink-0">
             <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2.5 mb-1.5 flex-wrap">
-              <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-300">
+              <span className="hud-chamfer-sm font-tactical text-[10px] font-extrabold uppercase tracking-[0.16em] px-2.5 py-0.5 bg-cyan-500/15 border border-cyan-500/35 text-cyan-300">
                 Official League Regulations
               </span>
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center gap-1.5">
+              <span className="hud-chamfer-sm font-tactical text-[10px] font-extrabold uppercase tracking-[0.14em] px-2.5 py-0.5 bg-emerald-500/10 border border-emerald-500/35 text-emerald-400 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 Live Database Record
               </span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-white uppercase font-['Outfit'] tracking-wider">
+            <h2 className="font-tactical text-xl sm:text-2xl font-extrabold uppercase text-white tracking-[0.14em] truncate">
               {tourneyName ? `${tourneyName} Rulebook` : 'Official League Rulebook'}
             </h2>
             <p className="text-xs text-slate-400 mt-1">
@@ -3132,11 +3211,11 @@ const TournamentRulebookTab = ({ globalGame, globalTournament }) => {
         </div>
 
         {resolvedUrl && (
-          <div className="flex items-center gap-3 z-10">
+          <div className="flex items-center gap-3 z-10 flex-wrap">
             <button
               onClick={loadRulebook}
               disabled={loading}
-              className="p-2.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+              className="hud-chamfer-sm p-2.5 bg-slate-900 border border-slate-700 text-slate-300 hover:text-cyan-300 hover:border-cyan-500/40 hover:bg-slate-800 transition-colors"
               title="Reload Rulebook"
             >
               <RefreshCw size={16} className={loading ? 'animate-spin text-cyan-400' : ''} />
@@ -3145,7 +3224,7 @@ const TournamentRulebookTab = ({ globalGame, globalTournament }) => {
               href={resolvedUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-slate-950 font-black text-xs uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:scale-105 active:scale-95 flex items-center gap-2 cursor-pointer"
+              className="hud-btn-primary px-6 py-2.5 font-extrabold text-xs uppercase tracking-[0.14em] flex items-center gap-2 cursor-pointer"
             >
               <span>Open in New Tab</span>
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
@@ -3155,7 +3234,7 @@ const TournamentRulebookTab = ({ globalGame, globalTournament }) => {
               download
               target="_blank"
               rel="noopener noreferrer"
-              className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs uppercase tracking-wider transition-all"
+              className="hud-btn-secondary px-5 py-2.5 font-extrabold text-xs uppercase tracking-[0.14em] transition-all"
             >
               Download PDF
             </a>
@@ -3165,31 +3244,31 @@ const TournamentRulebookTab = ({ globalGame, globalTournament }) => {
 
       {/* Main Content Area */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center p-20 bg-slate-950/40 rounded-3xl border border-slate-800/80 gap-3">
+        <div className="hud-card flex flex-col items-center justify-center p-20 gap-3">
           <RefreshCw size={28} className="animate-spin text-cyan-400" />
-          <span className="text-xs uppercase font-bold tracking-widest text-slate-400">Loading Official Rulebook from Database...</span>
+          <span className="font-tactical text-xs uppercase font-bold tracking-[0.2em] text-slate-400">Loading Official Rulebook from Database...</span>
         </div>
       ) : resolvedUrl ? (
-        <div className="bg-[#060a12] rounded-3xl border border-slate-800 p-3 sm:p-4 shadow-2xl flex flex-col gap-3">
-          <div className="flex items-center justify-between px-3 py-1 text-slate-400 text-xs font-mono">
+        <div className="hud-card p-3 sm:p-4 shadow-2xl flex flex-col gap-3">
+          <div className="flex items-center justify-between px-3 py-1 text-slate-400 font-tactical text-xs uppercase tracking-wider">
             <span>File: {resolvedUrl.split('/').pop()}</span>
             <span>Last Updated: {rulebook?.created_at ? new Date(rulebook.created_at).toLocaleDateString() : 'Active'}</span>
           </div>
           <iframe
             src={resolvedUrl}
             title="Tournament Official Rulebook"
-            className="w-full h-[78vh] rounded-2xl border border-slate-800/80 bg-slate-950 shadow-inner"
+            className="w-full h-[78vh] border border-slate-800/80 bg-slate-950 shadow-inner"
           />
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center p-20 bg-slate-950/40 rounded-3xl border-2 border-dashed border-slate-800 text-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-700 flex items-center justify-center text-slate-500">
+        <div className="hud-card flex flex-col items-center justify-center p-20 text-center gap-4">
+          <div className="hud-chamfer-sm w-16 h-16 bg-slate-900 border border-cyan-500/30 flex items-center justify-center text-cyan-400/70">
             <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
           </div>
           <div>
-            <h3 className="text-lg font-black uppercase text-white tracking-wider">No Rulebook Uploaded Yet</h3>
+            <h3 className="font-tactical text-lg font-extrabold uppercase text-white tracking-[0.16em]">No Rulebook Uploaded Yet</h3>
             <p className="text-xs text-slate-400 mt-1 max-w-md">
               The tournament administrator has not yet published an official rulebook for {tourneyName || 'this tournament'}.
             </p>
@@ -3238,11 +3317,11 @@ const TournamentHubTab = ({
 
   if (!tournamentName) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 md:p-16 text-center max-w-4xl mx-auto animate-fade-in text-white">
-        <div className="w-20 h-20 rounded-3xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-6 shadow-[0_0_30px_rgba(6,182,212,0.25)]">
+      <div className="hud-card flex flex-col items-center justify-center p-8 md:p-14 text-center max-w-4xl mx-auto animate-fade-in text-white">
+        <div className="hud-chamfer w-20 h-20 bg-cyan-500/10 border border-cyan-500/35 flex items-center justify-center text-cyan-400 mb-6 shadow-[0_0_30px_rgba(6,182,212,0.25)]">
           <Layers size={36} />
         </div>
-        <h2 className="text-2xl md:text-3xl font-black uppercase text-white tracking-widest mb-3">
+        <h2 className="font-tactical text-2xl md:text-3xl font-extrabold uppercase text-white tracking-[0.18em] mb-3">
           Select a Tournament Hub
         </h2>
         <p className="text-sm text-slate-400 max-w-lg mb-8 leading-relaxed">
@@ -3257,17 +3336,18 @@ const TournamentHubTab = ({
                 <div
                   key={t.id || t.name}
                   onClick={() => setGlobalTournament && setGlobalTournament(t.name)}
-                  className="p-5 rounded-2xl bg-slate-900/70 border border-slate-700/60 hover:border-cyan-400 hover:bg-slate-800/80 cursor-pointer transition-all duration-200 group text-left shadow-lg hover:shadow-[0_0_20px_rgba(6,182,212,0.3)] flex flex-col justify-between"
+                  className="hud-card hud-card-interactive p-5 cursor-pointer group text-left flex flex-col justify-between relative"
                 >
-                  <div>
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block">
+                  <div className="hud-sweep-overlay" />
+                  <div className="relative z-10">
+                    <span className="font-tactical text-[10px] font-extrabold text-cyan-400/80 uppercase tracking-[0.2em] block">
                       {t.game || game}
                     </span>
-                    <h3 className="text-base font-black text-white uppercase group-hover:text-cyan-400 mt-1 line-clamp-2">
+                    <h3 className="font-tactical text-base font-extrabold text-white uppercase group-hover:text-cyan-400 mt-1 line-clamp-2 tracking-[0.1em]">
                       {t.name}
                     </h3>
                   </div>
-                  <div className="mt-4 flex items-center gap-1.5 text-xs font-bold text-cyan-400 uppercase tracking-wider">
+                  <div className="mt-4 flex items-center gap-1.5 font-tactical text-xs font-extrabold text-cyan-400 uppercase tracking-[0.14em] relative z-10">
                     Enter Hub <ChevronRight size={14} />
                   </div>
                 </div>
@@ -3277,7 +3357,7 @@ const TournamentHubTab = ({
 
         <button
           onClick={onBackToTournaments}
-          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold uppercase tracking-wider text-xs border border-slate-600 transition-all cursor-pointer"
+          className="hud-btn-secondary flex items-center gap-2 px-6 py-3 font-extrabold uppercase tracking-[0.14em] text-xs cursor-pointer"
         >
           <ArrowLeft size={16} /> Back to Live & Upcoming
         </button>
@@ -3309,7 +3389,7 @@ const TournamentHubTab = ({
         return <RawRecords globalGame={game} globalTournament={tournamentName} />;
       case "bracket":
         return (
-          <div className="w-full border border-slate-700/50 rounded-3xl overflow-hidden shadow-2xl animate-fade-in">
+          <div className="hud-card w-full overflow-hidden shadow-2xl animate-fade-in">
             <Bracket globalGame={game} globalTournament={tournamentName} isReadOnly={false} />
           </div>
         );
@@ -3321,33 +3401,33 @@ const TournamentHubTab = ({
   return (
     <div className="flex flex-col gap-6 w-full animate-fade-in pb-12">
       {/* ── Hub Banner Header ── */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center bg-[#0d131c] rounded-3xl p-6 md:p-8 border border-slate-700/60 shadow-2xl relative overflow-hidden gap-6">
+      <div className="hud-card flex flex-col lg:flex-row justify-between items-start lg:items-center p-6 md:p-8 shadow-2xl relative overflow-hidden gap-6">
         <div className="absolute top-0 right-0 w-[350px] h-[350px] bg-cyan-500/10 blur-[90px] rounded-full pointer-events-none translate-x-1/3 -translate-y-1/3" />
 
-        <div className="flex items-center gap-5 relative z-10">
+        <div className="flex items-center gap-5 relative z-10 min-w-0">
           <button
             onClick={onBackToTournaments}
-            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-900/80 hover:bg-slate-800 hover:border-cyan-400 text-slate-300 hover:text-cyan-300 font-bold uppercase tracking-wider text-xs transition-all cursor-pointer shrink-0 shadow-sm"
+            className="hud-btn-secondary flex items-center gap-2 px-3.5 py-2.5 font-tactical font-extrabold uppercase tracking-[0.14em] text-xs transition-all cursor-pointer shrink-0"
             title="Return to tournament cards"
           >
             <ArrowLeft size={16} />
             <span className="hidden sm:inline">Tournaments</span>
           </button>
 
-          <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/10 border border-cyan-400/40 flex items-center justify-center text-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.3)] shrink-0">
+          <div className="hud-chamfer-sm w-12 h-12 md:w-14 md:h-14 bg-gradient-to-br from-cyan-500/20 to-blue-500/10 border border-cyan-400/40 flex items-center justify-center text-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.3)] shrink-0">
             <Layers size={26} />
           </div>
 
           <div className="min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="text-[11px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/50 shadow-[0_0_10px_rgba(6,182,212,0.3)]">
+              <span className="hud-chamfer-sm font-tactical text-[10px] font-extrabold uppercase tracking-[0.18em] px-2.5 py-0.5 bg-cyan-500/20 text-cyan-300 border border-cyan-400/50 shadow-[0_0_10px_rgba(6,182,212,0.3)]">
                 {game}
               </span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                Tournament Workspace
+              <span className="font-tactical text-[10px] font-bold text-slate-400 uppercase tracking-[0.18em]">
+                // Tournament Workspace
               </span>
             </div>
-            <h1 className="text-xl md:text-3xl font-black text-white uppercase tracking-wider drop-shadow-md truncate mt-1">
+            <h1 className="font-tactical text-xl md:text-2xl font-extrabold text-white uppercase tracking-[0.14em] drop-shadow-md truncate mt-1">
               {tournamentName}
             </h1>
           </div>
@@ -3356,13 +3436,13 @@ const TournamentHubTab = ({
         {/* Quick Tournament Switcher */}
         {availableTournaments.length > 0 && (
           <div className="flex items-center gap-3 relative z-10 w-full lg:w-auto justify-end">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider hidden sm:inline">
+            <span className="font-tactical text-xs font-extrabold text-slate-400 uppercase tracking-[0.14em] hidden sm:inline">
               Switch:
             </span>
             <select
               value={tournamentName}
               onChange={(e) => setGlobalTournament && setGlobalTournament(e.target.value)}
-              className="bg-slate-900 border border-slate-700 hover:border-cyan-400 text-white text-xs font-bold uppercase tracking-wider rounded-xl px-4 py-2.5 outline-none transition-colors cursor-pointer w-full sm:w-auto"
+              className="hud-chamfer-sm bg-slate-900 border border-cyan-500/35 hover:border-cyan-400 text-white font-tactical text-xs font-extrabold uppercase tracking-[0.14em] px-4 py-2.5 outline-none transition-colors cursor-pointer w-full sm:w-auto"
             >
               {availableTournaments
                 .filter(t => !game || (t.game || 'VALORANT').toUpperCase() === game.toUpperCase())
@@ -3377,7 +3457,7 @@ const TournamentHubTab = ({
       </div>
 
       {/* ── Sub-Navigation Ribbon ── */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-1 px-1 custom-scrollbar border-b border-slate-800/80">
+      <div className="flex flex-wrap items-center gap-2 pb-3 pt-1 px-0.5 border-b border-cyan-500/20">
         {subTabs.map(st => {
           const isActive = activeSubTab === st.key;
           const Icon = st.icon;
@@ -3385,14 +3465,15 @@ const TournamentHubTab = ({
           return (
             <button
               key={st.key}
+              type="button"
               onClick={() => setActiveSubTab(st.key)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold uppercase tracking-wider transition-all duration-200 shrink-0 cursor-pointer border ${
-                isActive
-                  ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-[0_0_18px_rgba(6,182,212,0.35)]'
-                  : 'bg-[#0d131c]/60 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 hover:bg-slate-800/60'
-              }`}
+              style={{ padding: '8px 14px' }}
+              className={`hud-chamfer-sm flex items-center gap-1.5 font-tactical text-[11px] font-extrabold uppercase tracking-[0.12em] transition-all duration-200 shrink-0 cursor-pointer border focus:outline-none focus-visible:outline-none ${isActive
+                  ? 'bg-cyan-400 text-slate-950 border-cyan-400 shadow-[0_0_16px_rgba(0,229,255,0.4)]'
+                  : 'bg-slate-950/80 border-slate-800 text-slate-400 hover:text-white hover:border-cyan-500/40 hover:bg-slate-900'
+                }`}
             >
-              <Icon size={16} className={isActive ? 'text-cyan-400' : 'text-slate-400'} />
+              <Icon size={14} className={isActive ? 'text-slate-950' : 'text-cyan-400/80'} />
               <span>{st.label}</span>
             </button>
           );
@@ -3441,6 +3522,7 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
 
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
   const tabsRef = useRef({});
+  const tabsBarRef = useRef(null);
 
   const updateIndicator = useCallback(() => {
     const activeTabElement = tabsRef.current[activeTab];
@@ -3456,9 +3538,17 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
     updateIndicator();
     window.addEventListener('resize', updateIndicator);
     const timer = setTimeout(updateIndicator, 100);
+    let ro = null;
+    if (typeof ResizeObserver !== 'undefined' && tabsBarRef.current) {
+      ro = new ResizeObserver(() => {
+        updateIndicator();
+      });
+      ro.observe(tabsBarRef.current);
+    }
     return () => {
       window.removeEventListener('resize', updateIndicator);
       clearTimeout(timer);
+      if (ro) ro.disconnect();
     };
   }, [updateIndicator]);
 
@@ -3488,10 +3578,10 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
       icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>,
       label: "SCHEDULE"
     },
-    { 
-      key: "BRACKET MANAGEMENT", 
+    {
+      key: "BRACKET MANAGEMENT",
       icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>,
-      label: "BRACKET MANAGEMENT" 
+      label: "BRACKET MANAGEMENT"
     },
     {
       key: "OFFICIAL RULEBOOK",
@@ -3573,15 +3663,15 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
         );
       case "BRACKET MANAGEMENT":
         if (!globalTournament) {
-           return (
-             <div className="flex flex-col items-center justify-center p-16 text-slate-500 font-bold uppercase tracking-widest text-lg">
-               Select a tournament first to manage its bracket
-             </div>
-           );
+          return (
+            <div className="hud-card flex flex-col items-center justify-center p-16 text-slate-400 font-tactical font-bold uppercase tracking-widest text-sm">
+              Select a tournament first to manage its bracket
+            </div>
+          );
         }
         return (
-          <div className="w-full border border-slate-700/50 rounded-3xl overflow-hidden shadow-2xl mt-4 animate-fade-in-up">
-             <Bracket globalGame={activeGame} globalTournament={globalTournament} isReadOnly={false} />
+          <div className="w-full hud-card overflow-hidden shadow-2xl mt-2 hud-enter">
+            <Bracket globalGame={activeGame} globalTournament={globalTournament} isReadOnly={false} />
           </div>
         );
 
@@ -3591,7 +3681,7 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
   };
 
   return (
-    <div className="flex-1 bg-[#090e14] light:bg-[#f8fafc] text-white light:text-slate-900 flex flex-col h-full overflow-hidden">
+    <div className="flex-1 text-white light:text-slate-900 flex flex-col h-full overflow-hidden">
       <style>{`
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
@@ -3600,29 +3690,31 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 9999px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #334155; }
       `}</style>
-      { }
-      {/* Top Tab Navigation Bar - Full Width, Flexible, Solid Background (No Component Overlapping) */}
-      <div className="shrink-0 w-full bg-[#090e14] border-b border-slate-800/80 z-20 shadow-md relative" style={{ padding: '6px 36px 0 36px' }}>
-        <div className="w-full max-w-[1440px] mx-auto relative flex items-center justify-between overflow-x-auto scrollbar-hide py-1">
+      {/* Top Tab Navigation Bar - Tactical HUD Ribbon */}
+      <div className="shrink-0 w-full bg-slate-950/95 backdrop-blur-xl border-b border-cyan-500/20 z-20 shadow-md relative px-2 sm:px-4 pt-1">
+        <div
+          ref={tabsBarRef}
+          className="w-full max-w-[1440px] mx-auto relative flex items-center justify-between overflow-x-auto scrollbar-hide py-0.5 gap-0.5"
+        >
           {tabs.map((tab) => (
             <button
               key={tab.key}
+              type="button"
               ref={(el) => (tabsRef.current[tab.key] = el)}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 min-w-max flex items-center justify-center gap-2 px-3 sm:px-4 py-3 text-xs sm:text-[0.84rem] font-bold tracking-wider uppercase border-none bg-transparent cursor-pointer transition-colors duration-200 shrink-0 z-10 ${
-                activeTab === tab.key
-                  ? "text-cyan-400"
+              className={`flex-1 min-w-max flex items-center justify-center gap-1.5 px-1.5 lg:px-2 py-2.5 font-tactical text-[10px] xl:text-[11px] font-extrabold tracking-[0.05em] xl:tracking-[0.08em] uppercase border-none bg-transparent cursor-pointer transition-colors duration-200 shrink-0 z-10 whitespace-nowrap focus:outline-none focus-visible:outline-none ${activeTab === tab.key
+                  ? "text-cyan-400 drop-shadow-[0_0_8px_rgba(0,229,255,0.45)]"
                   : "text-slate-400 hover:text-white"
-              }`}
+                }`}
             >
-              <span className="opacity-80 shrink-0">{tab.icon}</span>
-              <span className="truncate">{tab.label}</span>
+              <span className="opacity-90 shrink-0">{tab.icon}</span>
+              <span>{tab.label}</span>
             </button>
           ))}
 
           {/* The Sliding Bar */}
           <div
-            className="absolute bottom-0 h-[2.5px] bg-cyan-400 rounded-full shadow-[0_0_12px_rgba(0,240,255,1)] pointer-events-none transition-all duration-300 ease-out"
+            className="absolute bottom-0 h-[2.5px] bg-cyan-400 shadow-[0_0_12px_rgba(0,240,255,1)] pointer-events-none transition-all duration-300 ease-out"
             style={{
               left: `${indicatorStyle.left}px`,
               width: `${indicatorStyle.width}px`,
@@ -3630,25 +3722,25 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
           />
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col items-center w-full" style={{ padding: '28px 36px' }}>
-        <div className="w-full max-w-[1440px] flex flex-col gap-8">{renderTab()}</div>
+      <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col items-center w-full px-3 sm:px-5 lg:px-6 py-5">
+        <div className="w-full max-w-[1440px] flex flex-col gap-6">{renderTab()}</div>
       </div>
 
       {/* 4-Step Create Tournament Modal */}
       {showCreateModal && typeof document !== "undefined" && createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md animate-fade-in overflow-hidden">
-          <div className="bg-[#090e17] border border-slate-800/90 rounded-3xl w-full max-w-5xl 2xl:max-w-6xl shadow-[0_25px_60px_rgba(0,0,0,0.85)] flex flex-col relative overflow-hidden max-h-[88vh]">
+          <div className="hud-card w-full max-w-5xl 2xl:max-w-6xl shadow-[0_25px_60px_rgba(0,0,0,0.85)] flex flex-col relative overflow-hidden max-h-[88vh] border-cyan-500/30">
             {/* Top glowing ambient line */}
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-500 to-transparent z-20 pointer-events-none" />
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent z-20 pointer-events-none" />
 
             {/* Modal Header Bar with Close Button */}
-            <div className="px-6 sm:px-8 py-4 border-b border-slate-800/80 bg-slate-950/70 flex items-center justify-between shrink-0 z-10">
+            <div className="px-6 sm:px-8 py-4 border-b border-cyan-500/15 bg-slate-950/90 flex items-center justify-between shrink-0 z-10">
               <div className="flex items-center gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
+                <div className="w-10 h-10 hud-chamfer-sm bg-cyan-500/10 border border-cyan-500/35 flex items-center justify-center text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
                   <Trophy size={20} />
                 </div>
                 <div>
-                  <h2 className="text-xl font-black uppercase text-white font-['Outfit'] tracking-wider leading-tight">
+                  <h2 className="text-xl font-black uppercase text-white font-tactical tracking-wider leading-tight">
                     Create Tournament
                   </h2>
                   <p className="text-xs text-slate-400 font-medium">
@@ -3664,7 +3756,7 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
               <button
                 type="button"
                 onClick={() => setShowCreateModal(false)}
-                className="w-9 h-9 rounded-full bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 text-slate-400 hover:text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-md cursor-pointer"
+                className="w-9 h-9 hud-chamfer-sm bg-slate-900/90 hover:bg-red-500/20 border border-slate-700/80 hover:border-red-500/50 text-slate-400 hover:text-red-400 flex items-center justify-center transition-all shadow-md cursor-pointer"
                 title="Close modal"
               >
                 <X size={17} strokeWidth={2.5} />
@@ -3672,7 +3764,7 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
             </div>
 
             {/* Stepper Progress Bar */}
-            <div className="px-6 sm:px-12 pt-4 pb-3.5 bg-slate-950/40 border-b border-slate-800/60 shrink-0">
+            <div className="px-6 sm:px-12 pt-4 pb-3.5 bg-slate-950/60 border-b border-cyan-500/15 shrink-0">
               <div className="flex items-center justify-between w-full max-w-2xl mx-auto relative">
                 {/* Background Connecting Line */}
                 <div className="absolute top-5 left-0 w-full h-[2px] bg-slate-800 -translate-y-1/2 z-0" />
@@ -3690,20 +3782,18 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
                 ].map(({ s, label }) => (
                   <div key={s} className="flex flex-col items-center z-10">
                     <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-xs transition-all duration-300 ${
-                        step > s
+                      className={`w-10 h-10 hud-chamfer-sm flex items-center justify-center font-tactical font-black text-xs transition-all duration-300 ${step > s
                           ? "bg-slate-900 border-2 border-cyan-400 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.3)]"
                           : step === s
-                          ? "bg-gradient-to-br from-cyan-400 to-cyan-500 text-slate-950 shadow-[0_0_20px_rgba(6,182,212,0.6)] font-black scale-110"
-                          : "bg-slate-900 border-2 border-slate-800 text-slate-500"
-                      }`}
+                            ? "bg-gradient-to-br from-cyan-400 to-cyan-500 text-slate-950 shadow-[0_0_20px_rgba(6,182,212,0.6)] font-black scale-110"
+                            : "bg-slate-900 border border-slate-800 text-slate-500"
+                        }`}
                     >
                       {step > s ? <Check size={16} strokeWidth={3} /> : s}
                     </div>
                     <span
-                      className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider mt-2 transition-colors ${
-                        step === s ? "text-cyan-400 font-black" : step > s ? "text-slate-300" : "text-slate-500"
-                      }`}
+                      className={`font-tactical text-[10px] sm:text-xs font-bold uppercase tracking-wider mt-2 transition-colors ${step === s ? "text-cyan-400 font-black" : step > s ? "text-slate-300" : "text-slate-500"
+                        }`}
                     >
                       {label}
                     </span>
@@ -3715,9 +3805,9 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
             {/* Modal Body (Scrollable) */}
             <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar w-full p-4 sm:p-6 flex flex-col items-center">
               {step === 1 && (
-                <div className="w-full max-w-2xl bg-slate-950/60 border border-slate-800/80 rounded-2xl p-6 sm:p-8 shadow-inner flex flex-col gap-5">
-                  <div className="text-center pb-2 border-b border-slate-800/60">
-                    <h3 className="text-lg font-black uppercase text-white font-['Outfit'] tracking-wider">
+                <div className="w-full max-w-2xl hud-card p-6 sm:p-8 shadow-inner flex flex-col gap-5">
+                  <div className="text-center pb-3 border-b border-cyan-500/15">
+                    <h3 className="text-lg font-black uppercase text-white font-tactical tracking-wider">
                       Tournament Specifications
                     </h3>
                     <p className="text-xs text-slate-400 mt-0.5">
@@ -3727,7 +3817,7 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
 
                   {/* Tournament Name */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                    <label className="block font-tactical text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
                       Tournament Name *
                     </label>
                     <input
@@ -3735,21 +3825,21 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
                       value={tournData.name}
                       onChange={(e) => setTournData({ ...tournData, name: e.target.value })}
                       disabled={isCreated}
-                      className="w-full bg-[#060a12] border border-slate-800 focus:border-cyan-400 focus:shadow-[0_0_15px_rgba(6,182,212,0.2)] rounded-xl px-4 py-3 text-white text-sm placeholder:text-slate-600 focus:outline-none transition-all disabled:opacity-50"
+                      className="w-full bg-[#060a12] border border-cyan-500/25 focus:border-cyan-400 focus:shadow-[0_0_15px_rgba(6,182,212,0.2)] hud-chamfer-sm px-4 py-3 text-white text-sm placeholder:text-slate-600 focus:outline-none transition-all disabled:opacity-50"
                       placeholder="e.g. VCT Champions 2026, CFS Masters..."
                     />
                   </div>
 
                   {/* Game Title */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                    <label className="block font-tactical text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
                       Game Title *
                     </label>
                     <select
                       value={tournData.game}
                       onChange={(e) => setTournData({ ...tournData, game: e.target.value })}
                       disabled={isCreated}
-                      className="w-full bg-[#060a12] border border-slate-800 focus:border-cyan-400 rounded-xl px-4 py-3 text-white text-sm focus:outline-none transition-all cursor-pointer disabled:opacity-50"
+                      className="w-full bg-[#060a12] border border-cyan-500/25 focus:border-cyan-400 hud-chamfer-sm px-4 py-3 text-white text-sm focus:outline-none transition-all cursor-pointer disabled:opacity-50"
                     >
                       <option value="VALORANT" className="bg-[#0b1017] text-white">VALORANT</option>
                       <option value="CROSSFIRE" className="bg-[#0b1017] text-white">CROSSFIRE</option>
@@ -3759,39 +3849,39 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
                   {/* Prize Pool & Start Date */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                      <label className="block font-tactical text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
                         Prize Pool
                       </label>
                       <input
                         type="text"
                         value={tournData.prizePool}
                         onChange={(e) => setTournData({ ...tournData, prizePool: e.target.value })}
-                        className="w-full bg-[#060a12] border border-slate-800 focus:border-cyan-400 rounded-xl px-4 py-3 text-white text-sm placeholder:text-slate-600 focus:outline-none transition-all"
+                        className="w-full bg-[#060a12] border border-cyan-500/25 focus:border-cyan-400 hud-chamfer-sm px-4 py-3 text-white text-sm placeholder:text-slate-600 focus:outline-none transition-all"
                         placeholder="e.g. $10,000"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                      <label className="block font-tactical text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
                         Start Date
                       </label>
                       <input
                         type="date"
                         value={tournData.startDate}
                         onChange={(e) => setTournData({ ...tournData, startDate: e.target.value })}
-                        className="w-full bg-[#060a12] border border-slate-800 focus:border-cyan-400 rounded-xl px-4 py-3 text-white text-sm [color-scheme:dark] focus:outline-none transition-all"
+                        className="w-full bg-[#060a12] border border-cyan-500/25 focus:border-cyan-400 hud-chamfer-sm px-4 py-3 text-white text-sm [color-scheme:dark] focus:outline-none transition-all"
                       />
                     </div>
                   </div>
 
                   {/* Region */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                    <label className="block font-tactical text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
                       Region
                     </label>
                     <select
                       value={tournData.region}
                       onChange={(e) => setTournData({ ...tournData, region: e.target.value })}
-                      className="w-full bg-[#060a12] border border-slate-800 focus:border-cyan-400 rounded-xl px-4 py-3 text-white text-sm focus:outline-none transition-all cursor-pointer"
+                      className="w-full bg-[#060a12] border border-cyan-500/25 focus:border-cyan-400 hud-chamfer-sm px-4 py-3 text-white text-sm focus:outline-none transition-all cursor-pointer"
                     >
                       <option value="NA" className="bg-[#0b1017] text-white">North America (NA)</option>
                       <option value="EU" className="bg-[#0b1017] text-white">Europe (EU)</option>
@@ -3817,7 +3907,7 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
               {step === 4 && (
                 <div className="flex flex-col gap-6 w-full max-w-3xl">
                   <div className="text-center mb-2">
-                    <h3 className="text-2xl font-black text-white uppercase font-['Outfit'] tracking-wider">
+                    <h3 className="text-2xl font-black text-white uppercase font-tactical tracking-wider">
                       Review Tournament Configuration
                     </h3>
                     <p className="text-slate-400 text-sm mt-1">
@@ -3826,62 +3916,62 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+                    <div className="hud-card p-6 shadow-xl relative overflow-hidden">
                       <div className="absolute top-0 left-0 w-full h-1 bg-cyan-500" />
-                      <h4 className="text-[10px] font-black text-cyan-400 uppercase tracking-widest mb-5 border-b border-slate-800 pb-3 flex items-center gap-1.5">
+                      <h4 className="font-tactical text-[11px] font-black text-cyan-400 uppercase tracking-widest mb-5 border-b border-cyan-500/15 pb-3 flex items-center gap-1.5">
                         <Trophy size={13} />
                         <span>Basic Information</span>
                       </h4>
                       <div className="flex flex-col gap-4">
                         <div>
-                          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest block mb-1">
+                          <span className="font-tactical text-[10px] text-slate-500 font-bold uppercase tracking-widest block mb-1">
                             Tournament Name
                           </span>
-                          <span className="text-lg font-black text-white font-['Outfit']">
+                          <span className="text-lg font-black text-white font-tactical">
                             {tournData.name || "N/A"}
                           </span>
                         </div>
                         <div>
-                          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest block mb-1">
+                          <span className="font-tactical text-[10px] text-slate-500 font-bold uppercase tracking-widest block mb-1">
                             Game Title
                           </span>
-                          <span className="text-xs font-black text-cyan-400 px-3 py-1 bg-cyan-500/10 border border-cyan-500/25 rounded-md inline-block uppercase tracking-wider">
+                          <span className="font-tactical text-xs font-black text-cyan-400 px-3 py-1 bg-cyan-500/10 border border-cyan-500/30 hud-chamfer-sm inline-block uppercase tracking-wider">
                             {tournData.game}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+                    <div className="hud-card p-6 shadow-xl relative overflow-hidden">
                       <div className="absolute top-0 left-0 w-full h-1 bg-blue-500" />
-                      <h4 className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-5 border-b border-slate-800 pb-3 flex items-center gap-1.5">
+                      <h4 className="font-tactical text-[11px] font-black text-blue-400 uppercase tracking-widest mb-5 border-b border-cyan-500/15 pb-3 flex items-center gap-1.5">
                         <Sparkles size={13} />
                         <span>Tournament Details</span>
                       </h4>
                       <div className="flex flex-col gap-4">
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest block mb-1">
+                            <span className="font-tactical text-[10px] text-slate-500 font-bold uppercase tracking-widest block mb-1">
                               Prize Pool
                             </span>
-                            <span className="text-sm font-black text-emerald-400">
+                            <span className="font-tactical text-sm font-black text-emerald-400">
                               {tournData.prizePool || "None"}
                             </span>
                           </div>
                           <div>
-                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest block mb-1">
+                            <span className="font-tactical text-[10px] text-slate-500 font-bold uppercase tracking-widest block mb-1">
                               Region
                             </span>
-                            <span className="text-sm font-bold text-slate-200">
+                            <span className="font-tactical text-sm font-bold text-slate-200">
                               {tournData.region}
                             </span>
                           </div>
                         </div>
                         <div>
-                          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest block mb-1">
+                          <span className="font-tactical text-[10px] text-slate-500 font-bold uppercase tracking-widest block mb-1">
                             Start Date
                           </span>
-                          <span className="text-sm font-bold text-slate-200">
+                          <span className="font-tactical text-sm font-bold text-slate-200">
                             {tournData.startDate || "TBD"}
                           </span>
                         </div>
@@ -3889,9 +3979,9 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
                     </div>
                   </div>
 
-                  <label className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/25 rounded-2xl p-6 shadow-lg flex items-center justify-between cursor-pointer group transition-all hover:bg-cyan-500/15">
+                  <label className="hud-card p-6 shadow-lg flex items-center justify-between cursor-pointer group transition-all hover:border-cyan-400/50">
                     <div className="flex flex-col">
-                      <span className="text-sm font-black text-white group-hover:text-cyan-400 transition-colors">
+                      <span className="font-tactical text-sm font-black text-white uppercase tracking-wider group-hover:text-cyan-400 transition-colors">
                         Make Tournament Public
                       </span>
                       <span className="text-xs text-slate-400 font-medium mt-0.5">
@@ -3899,14 +3989,14 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
                       </span>
                     </div>
                     <div className="relative">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         checked={tournData.isPublic}
                         onChange={(e) => setTournData({ ...tournData, isPublic: e.target.checked })}
                         className="sr-only"
                       />
-                      <div className={`block w-14 h-8 rounded-full transition-colors ${tournData.isPublic ? 'bg-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.5)]' : 'bg-slate-800'}`}></div>
-                      <div className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${tournData.isPublic ? 'transform translate-x-6' : ''}`}></div>
+                      <div className={`block w-14 h-8 hud-chamfer-sm transition-colors ${tournData.isPublic ? 'bg-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.5)]' : 'bg-slate-800'}`}></div>
+                      <div className={`dot absolute left-1 top-1 bg-white w-6 h-6 hud-chamfer-sm transition-transform ${tournData.isPublic ? 'transform translate-x-6' : ''}`}></div>
                     </div>
                   </label>
 
@@ -3919,27 +4009,27 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
             </div>
 
             {/* Sticky Fixed Modal Footer */}
-            <div className="bg-[#060a12] border-t border-slate-800/80 px-6 sm:px-8 py-3.5 sm:py-4 flex items-center justify-between shrink-0 z-20 shadow-xl">
+            <div className="bg-[#060a12] border-t border-cyan-500/20 px-6 sm:px-8 py-3.5 sm:py-4 flex items-center justify-between shrink-0 z-20 shadow-xl">
               {step > 1 ? (
-                <button 
+                <button
                   type="button"
                   onClick={() => setStep(step - 1)}
-                  className="px-6 py-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700/80 text-slate-300 hover:text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-sm hover:scale-[1.02] active:scale-95"
+                  className="hud-btn-secondary px-6 py-2.5 text-slate-300 hover:text-white font-tactical font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
                 >
                   Previous Step
                 </button>
               ) : (
-                <button 
+                <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-6 py-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700/80 text-slate-300 hover:text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-sm hover:scale-[1.02] active:scale-95"
+                  className="hud-btn-secondary px-6 py-2.5 text-slate-300 hover:text-white font-tactical font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
                 >
                   Cancel
                 </button>
               )}
 
               {step < 4 ? (
-                <button 
+                <button
                   type="button"
                   onClick={async () => {
                     if (step === 1 && !isCreated) {
@@ -3949,8 +4039,8 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
                       }
                       try {
                         await apiFetch("/api/tournaments", {
-                           method: "POST",
-                           body: JSON.stringify({ name: tournData.name, game: tournData.game }),
+                          method: "POST",
+                          body: JSON.stringify({ name: tournData.name, game: tournData.game }),
                         });
                         setIsCreated(true);
                         setStep(2);
@@ -3962,20 +4052,20 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
                       setStep(step + 1);
                     }
                   }}
-                  className="px-8 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-slate-950 font-black text-xs uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-2"
+                  className="hud-btn-primary px-8 py-2.5 text-xs uppercase tracking-wider cursor-pointer flex items-center gap-2"
                 >
                   <span>Next Step</span>
                   <ChevronRight size={15} strokeWidth={2.5} />
                 </button>
               ) : (
-                <button 
+                <button
                   type="button"
                   onClick={() => {
                     setShowCreateModal(false);
                     setStep(1);
                     alert("Tournament creation finalized! Refresh the page to see it in the sidebar.");
                   }}
-                  className="px-8 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-slate-950 font-black text-xs uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-2"
+                  className="hud-btn-primary px-8 py-2.5 text-xs uppercase tracking-wider cursor-pointer flex items-center gap-2"
                 >
                   <span>Submit & Finalize</span>
                   <Check size={15} strokeWidth={3} />

@@ -103,32 +103,29 @@ const IconSave = () => (
 );
 const SectionHeader = ({ icon, label, sub, accent = "#06b6d4" }) => (
   <div
-    className="border-b border-slate-800/60 light:border-slate-200 flex items-center bg-slate-900/40 light:bg-slate-50"
-    style={{ padding: "24px 32px", gap: "20px" }}
+    className="border-b border-cyan-500/20 light:border-slate-200 flex items-center bg-slate-950/70 light:bg-slate-50 px-5 sm:px-7 py-4 gap-4"
   >
     <div
-      className="rounded-xl flex-shrink-0 flex items-center justify-center shadow-sm"
+      className="hud-chamfer-sm flex-shrink-0 flex items-center justify-center shadow-sm"
       style={{
-        width: "44px",
-        height: "44px",
+        width: "42px",
+        height: "42px",
         backgroundColor: accent + "20",
-        border: `1.5px solid ${accent}40`,
+        border: `1.5px solid ${accent}45`,
       }}
     >
       <span style={{ color: accent, display: "flex", alignItems: "center", justifyContent: "center" }}>{icon}</span>
     </div>
-    <div className="flex flex-col" style={{ gap: "6px" }}>
+    <div className="flex flex-col gap-1">
       {sub && (
         <div
-          className="text-[11px] font-black uppercase text-slate-400 light:text-slate-500"
-          style={{ letterSpacing: "0.22em" }}
+          className="font-tactical text-[10px] font-extrabold uppercase text-slate-400 light:text-slate-500 tracking-[0.2em]"
         >
-          {sub}
+          // {sub}
         </div>
       )}
       <h2
-        className="text-base font-black text-white light:text-slate-900 uppercase"
-        style={{ letterSpacing: "0.18em", margin: 0 }}
+        className="font-tactical text-sm sm:text-base font-extrabold text-white light:text-slate-900 uppercase tracking-[0.16em] m-0"
       >
         {label}
       </h2>
@@ -1137,29 +1134,30 @@ const DataEntry = ({ globalGame, globalTournament }) => {
       `}</style>
       {/* ── Content ── */}
       <div className="w-full flex flex-col items-center">
-        <div className="w-full max-w-[1720px] flex flex-col p-4 sm:p-6 lg:p-8 gap-6">
+        <div className="w-full max-w-[1720px] flex flex-col py-2 px-0 gap-6">
           {/* ── Top Bar: Broadcast Toggle ── */}
-          <div className="flex items-center justify-end gap-3">
-            <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 rounded-lg shadow-sm" title="Your edits are instantly saved and synced with other admins">
+          <div className="flex items-center justify-end gap-3 flex-wrap">
+            <div className="hud-chamfer-sm flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/35 px-3.5 py-2 shadow-sm" title="Your edits are instantly saved and synced with other admins">
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">
+              <span className="font-tactical text-[10px] font-extrabold uppercase tracking-[0.16em] text-emerald-400">
                 Live Auto-Saving
               </span>
             </div>
-            <div className="flex items-center gap-3 bg-slate-800/40 light:bg-white border border-slate-700/50 light:border-slate-200 px-4 py-2.5 rounded-xl shadow-sm">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+            <div className="hud-chamfer-sm flex items-center gap-3 bg-slate-900/80 light:bg-white border border-cyan-500/30 light:border-slate-200 px-4 py-2 shadow-sm">
+              <span className="font-tactical text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-300">
                 Broadcast
               </span>
               <button
+                type="button"
                 onClick={() => setBroadcast(!broadcast)}
-                className={`w-11 h-10 rounded-full p-0.5 transition-all duration-300 ${broadcast ? "bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.5)]" : "bg-slate-700"}`}
+                className={`w-11 h-6 rounded-full p-0.5 transition-all duration-300 cursor-pointer ${broadcast ? "bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.5)]" : "bg-slate-700"}`}
               >
                 <div
                   className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ${broadcast ? "translate-x-5" : "translate-x-0"}`}
                 />
               </button>
               <span
-                className={`text-[9px] font-black uppercase tracking-widest transition-colors ${broadcast ? "text-emerald-400" : "text-slate-600"}`}
+                className={`font-tactical text-[10px] font-extrabold uppercase tracking-[0.16em] transition-colors ${broadcast ? "text-emerald-400" : "text-slate-500"}`}
               >
                 {broadcast ? "ON AIR" : "OFF"}
               </span>
@@ -1516,10 +1514,10 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                     <span style={{ fontWeight: 900, fontSize: '13px', color: '#93c5fd', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{teamA.name || 'Team A'}</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <select value={sideA} onChange={(e) => setSideA(e.target.value)} style={{ background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(96,165,250,0.3)', color: '#93c5fd', fontSize: '10px', fontWeight: 900, borderRadius: '999px', padding: '4px 12px', outline: 'none', cursor: 'pointer', letterSpacing: '0.1em', textTransform: 'uppercase', appearance: 'none' }}>
+                    <select value={sideA} onChange={(e) => setSideA(e.target.value)} className="hud-chamfer-sm font-tactical" style={{ background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(96,165,250,0.4)', color: '#93c5fd', fontSize: '10px', fontWeight: 800, padding: '5px 12px', outline: 'none', cursor: 'pointer', letterSpacing: '0.12em', textTransform: 'uppercase', appearance: 'none' }}>
                       {game === 'Valorant' ? (<><option>ATK</option><option>DEF</option></>) : (<><option>GR</option><option>BL</option></>)}
                     </select>
-                    <button onClick={() => setMatchWin(matchWin === 'A' ? 'B' : 'A')} style={{ background: matchWin === 'A' ? 'rgba(34,197,94,0.2)' : 'rgba(100,116,139,0.15)', border: matchWin === 'A' ? '1px solid rgba(34,197,94,0.5)' : '1px solid rgba(100,116,139,0.3)', color: matchWin === 'A' ? '#4ade80' : '#64748b', fontSize: '10px', fontWeight: 900, borderRadius: '999px', padding: '4px 14px', cursor: 'pointer', letterSpacing: '0.1em', textTransform: 'uppercase', transition: 'all 0.2s' }}>
+                    <button type="button" onClick={() => setMatchWin(matchWin === 'A' ? 'B' : 'A')} className="hud-chamfer-sm font-tactical" style={{ background: matchWin === 'A' ? 'rgba(34,197,94,0.2)' : 'rgba(100,116,139,0.15)', border: matchWin === 'A' ? '1px solid rgba(34,197,94,0.55)' : '1px solid rgba(100,116,139,0.35)', color: matchWin === 'A' ? '#4ade80' : '#94a3b8', fontSize: '10px', fontWeight: 800, padding: '5px 14px', cursor: 'pointer', letterSpacing: '0.12em', textTransform: 'uppercase', transition: 'all 0.2s' }}>
                       {matchWin === 'A' ? 'WIN' : 'LOSS'}
                     </button>
                     <div style={{ minWidth: '40px', textAlign: 'center', fontSize: '22px', fontWeight: 900, color: '#4ade80', textShadow: '0 0 12px rgba(74,222,128,0.5)' }}>{autoScoreA}</div>
@@ -1751,10 +1749,10 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                     <span style={{ fontWeight: 900, fontSize: '13px', color: '#fca5a5', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{teamB.name || 'Team B'}</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <select value={sideB} onChange={(e) => setSideB(e.target.value)} style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(248,113,113,0.3)', color: '#fca5a5', fontSize: '10px', fontWeight: 900, borderRadius: '999px', padding: '4px 12px', outline: 'none', cursor: 'pointer', letterSpacing: '0.1em', textTransform: 'uppercase', appearance: 'none' }}>
+                    <select value={sideB} onChange={(e) => setSideB(e.target.value)} className="hud-chamfer-sm font-tactical" style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(248,113,113,0.4)', color: '#fca5a5', fontSize: '10px', fontWeight: 800, padding: '5px 12px', outline: 'none', cursor: 'pointer', letterSpacing: '0.12em', textTransform: 'uppercase', appearance: 'none' }}>
                       {game === 'Valorant' ? (<><option>ATK</option><option>DEF</option></>) : (<><option>GR</option><option>BL</option></>)}
                     </select>
-                    <button onClick={() => setMatchWin(matchWin === 'B' ? 'A' : 'B')} style={{ background: matchWin === 'B' ? 'rgba(34,197,94,0.2)' : 'rgba(100,116,139,0.15)', border: matchWin === 'B' ? '1px solid rgba(34,197,94,0.5)' : '1px solid rgba(100,116,139,0.3)', color: matchWin === 'B' ? '#4ade80' : '#64748b', fontSize: '10px', fontWeight: 900, borderRadius: '999px', padding: '4px 14px', cursor: 'pointer', letterSpacing: '0.1em', textTransform: 'uppercase', transition: 'all 0.2s' }}>
+                    <button type="button" onClick={() => setMatchWin(matchWin === 'B' ? 'A' : 'B')} className="hud-chamfer-sm font-tactical" style={{ background: matchWin === 'B' ? 'rgba(34,197,94,0.2)' : 'rgba(100,116,139,0.15)', border: matchWin === 'B' ? '1px solid rgba(34,197,94,0.55)' : '1px solid rgba(100,116,139,0.35)', color: matchWin === 'B' ? '#4ade80' : '#94a3b8', fontSize: '10px', fontWeight: 800, padding: '5px 14px', cursor: 'pointer', letterSpacing: '0.12em', textTransform: 'uppercase', transition: 'all 0.2s' }}>
                       {matchWin === 'B' ? 'WIN' : 'LOSS'}
                     </button>
                     <div style={{ minWidth: '40px', textAlign: 'center', fontSize: '22px', fontWeight: 900, color: '#f87171', textShadow: '0 0 12px rgba(248,113,113,0.5)' }}>{autoScoreB}</div>
@@ -1979,43 +1977,43 @@ const DataEntry = ({ globalGame, globalTournament }) => {
               </div>
 
               {/* Legend + Timeouts + Special Rows */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginTop: '4px' }}>
-                <div style={{ borderRadius: '12px', border: '1px solid rgba(51,65,85,0.5)', background: 'rgba(15,23,42,0.5)', padding: '16px' }}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-1">
+                <div style={{ border: '1px solid rgba(51,65,85,0.5)', background: 'rgba(15,23,42,0.5)', padding: '16px' }}>
                   <div style={{ fontSize: '9px', fontWeight: 900, letterSpacing: '0.2em', color: 'rgba(100,116,139,0.8)', textTransform: 'uppercase', marginBottom: '12px' }}>Key Legend</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {[['K', '#4ade80', 'Kill / Round Win'], ['D', '#f87171', 'Death / Round Loss'], ['P', '#a78bfa', 'Plant'], ['T', '#fbbf24', 'Time']].map(([key, color, label]) => (
                       <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: `${color}22`, border: `1px solid ${color}88`, display: 'flex', alignItems: 'center', justifyContent: 'center', color, fontSize: '12px', fontWeight: 900, flexShrink: 0 }}>{key}</div>
+                        <div className="hud-chamfer-sm" style={{ width: '28px', height: '28px', background: `${color}22`, border: `1px solid ${color}88`, display: 'flex', alignItems: 'center', justifyContent: 'center', color, fontSize: '12px', fontWeight: 900, flexShrink: 0 }}>{key}</div>
                         <span style={{ fontSize: '10px', color: 'rgba(148,163,184,0.8)', fontWeight: 600 }}>{label}</span>
                       </div>
                     ))}
                   </div>
                 </div>
-                <div style={{ borderRadius: '12px', border: '1px solid rgba(245,158,11,0.25)', background: 'rgba(251,191,36,0.04)', padding: '16px' }}>
+                <div style={{ border: '1px solid rgba(245,158,11,0.25)', background: 'rgba(251,191,36,0.04)', padding: '16px' }}>
                   <div style={{ fontSize: '9px', fontWeight: 900, letterSpacing: '0.2em', color: 'rgba(251,191,36,0.7)', textTransform: 'uppercase', marginBottom: '12px' }}>Timeout Status</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {[['A', timeoutA, teamA.name || 'Team A'], ['B', timeoutB, teamB.name || 'Team B']].map(([team, tval, tname]) => (
                       <div key={team} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                         <span style={{ fontSize: '10px', fontWeight: 700, color: team === 'A' ? '#93c5fd' : '#fca5a5', textTransform: 'uppercase', letterSpacing: '0.05em', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tname}</span>
-                        <button onClick={() => handleTimeoutChange(team, tval === 'AVAILABLE' ? 'USED' : 'AVAILABLE')} style={{ flexShrink: 0, borderRadius: '999px', padding: '5px 14px', fontSize: '9px', fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', border: tval === 'AVAILABLE' ? '1px solid rgba(34,197,94,0.5)' : '1px solid rgba(239,68,68,0.5)', background: tval === 'AVAILABLE' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)', color: tval === 'AVAILABLE' ? '#4ade80' : '#f87171', transition: 'all 0.2s' }}>
+                        <button type="button" onClick={() => handleTimeoutChange(team, tval === 'AVAILABLE' ? 'USED' : 'AVAILABLE')} className="hud-chamfer-sm font-tactical" style={{ flexShrink: 0, padding: '5px 14px', fontSize: '9px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', border: tval === 'AVAILABLE' ? '1px solid rgba(34,197,94,0.5)' : '1px solid rgba(239,68,68,0.5)', background: tval === 'AVAILABLE' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)', color: tval === 'AVAILABLE' ? '#4ade80' : '#f87171', transition: 'all 0.2s' }}>
                           {tval}
                         </button>
                       </div>
                     ))}
                   </div>
                 </div>
-                <div style={{ borderRadius: '12px', border: '1px solid rgba(167,139,250,0.2)', background: 'rgba(167,139,250,0.03)', padding: '16px' }}>
+                <div style={{ border: '1px solid rgba(167,139,250,0.2)', background: 'rgba(167,139,250,0.03)', padding: '16px' }}>
                   <div style={{ fontSize: '9px', fontWeight: 900, letterSpacing: '0.2em', color: 'rgba(167,139,250,0.7)', textTransform: 'uppercase', marginBottom: '12px' }}>Special Rounds</div>
                   <div style={{ marginBottom: '10px' }}>
                     <div style={{ fontSize: '9px', fontWeight: 700, color: 'rgba(251,191,36,0.6)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '6px' }}>Timeouts</div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                      {Array.from({ length: 12 }, (_, i) => { const val = timeoutRowLogs[i] || ''; return (<div key={i} style={{ width: '26px', height: '26px', borderRadius: '6px', background: val ? 'rgba(251,191,36,0.2)' : 'rgba(30,41,59,0.5)', border: val ? '1px solid rgba(251,191,36,0.5)' : '1px solid rgba(51,65,85,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><input id={`round-input-T-${i}`} className="round-dot-input" type="text" maxLength="1" value={val} onChange={(e) => { const logs = [...timeoutRowLogs]; logs[i] = e.target.value.toUpperCase().slice(-1); setTimeoutRowLogs(logs); }} onFocus={(e) => e.target.select()} onKeyDown={(e) => handleRoundInputKeyDown(e, 'T', i)} style={{ width: '100%', height: '100%', textAlign: 'center', background: 'transparent', color: val ? '#fbbf24' : 'transparent', fontSize: '11px', fontWeight: 900, border: 'none', outline: 'none', cursor: 'text', borderRadius: '6px' }} /></div>); })}
+                      {Array.from({ length: 12 }, (_, i) => { const val = timeoutRowLogs[i] || ''; return (<div key={i} style={{ width: '26px', height: '26px', background: val ? 'rgba(251,191,36,0.2)' : 'rgba(30,41,59,0.5)', border: val ? '1px solid rgba(251,191,36,0.5)' : '1px solid rgba(51,65,85,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><input id={`round-input-T-${i}`} className="round-dot-input" type="text" maxLength="1" value={val} onChange={(e) => { const logs = [...timeoutRowLogs]; logs[i] = e.target.value.toUpperCase().slice(-1); setTimeoutRowLogs(logs); }} onFocus={(e) => e.target.select()} onKeyDown={(e) => handleRoundInputKeyDown(e, 'T', i)} style={{ width: '100%', height: '100%', textAlign: 'center', background: 'transparent', color: val ? '#fbbf24' : 'transparent', fontSize: '11px', fontWeight: 900, border: 'none', outline: 'none', cursor: 'text' }} /></div>); })}
                     </div>
                   </div>
                   <div>
                     <div style={{ fontSize: '9px', fontWeight: 700, color: 'rgba(167,139,250,0.6)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '6px' }}>Dead Rounds</div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                      {Array.from({ length: 12 }, (_, i) => { const val = deadRoundRowLogs[i] || ''; return (<div key={i} style={{ width: '26px', height: '26px', borderRadius: '6px', background: val ? 'rgba(167,139,250,0.2)' : 'rgba(30,41,59,0.5)', border: val ? '1px solid rgba(167,139,250,0.5)' : '1px solid rgba(51,65,85,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><input id={`round-input-D-${i}`} className="round-dot-input" type="text" maxLength="1" value={val} onChange={(e) => { const logs = [...deadRoundRowLogs]; logs[i] = e.target.value.toUpperCase().slice(-1); setDeadRoundRowLogs(logs); }} onFocus={(e) => e.target.select()} onKeyDown={(e) => handleRoundInputKeyDown(e, 'D', i)} style={{ width: '100%', height: '100%', textAlign: 'center', background: 'transparent', color: val ? '#a78bfa' : 'transparent', fontSize: '11px', fontWeight: 900, border: 'none', outline: 'none', cursor: 'text', borderRadius: '6px' }} /></div>); })}
+                      {Array.from({ length: 12 }, (_, i) => { const val = deadRoundRowLogs[i] || ''; return (<div key={i} style={{ width: '26px', height: '26px', background: val ? 'rgba(167,139,250,0.2)' : 'rgba(30,41,59,0.5)', border: val ? '1px solid rgba(167,139,250,0.5)' : '1px solid rgba(51,65,85,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><input id={`round-input-D-${i}`} className="round-dot-input" type="text" maxLength="1" value={val} onChange={(e) => { const logs = [...deadRoundRowLogs]; logs[i] = e.target.value.toUpperCase().slice(-1); setDeadRoundRowLogs(logs); }} onFocus={(e) => e.target.select()} onKeyDown={(e) => handleRoundInputKeyDown(e, 'D', i)} style={{ width: '100%', height: '100%', textAlign: 'center', background: 'transparent', color: val ? '#a78bfa' : 'transparent', fontSize: '11px', fontWeight: 900, border: 'none', outline: 'none', cursor: 'text' }} /></div>); })}
                     </div>
                   </div>
                 </div>
@@ -2024,17 +2022,17 @@ const DataEntry = ({ globalGame, globalTournament }) => {
           </div>
 
           {/* ── Side-by-Side: Player Stats (Left) & Heatmap Entry + Submit (Right) ── */}
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start w-full">
+          <div className="grid grid-cols-1 2xl:grid-cols-12 gap-6 items-start w-full">
             {/* ── Left Column: Player Stats ── */}
-            <div className="xl:col-span-7 flex flex-col gap-6 w-full min-w-0">
-              <div className="bg-[#0d131c] light:bg-white rounded-2xl border border-slate-800/50 light:border-slate-200 overflow-hidden shadow-xl light:shadow-sm w-full">
+            <div className="2xl:col-span-7 flex flex-col gap-6 w-full min-w-0">
+              <div className="hud-card bg-[#0d131c] light:bg-white border border-slate-800/50 light:border-slate-200 overflow-hidden shadow-xl light:shadow-sm w-full">
                 <SectionHeader
                   icon={<IconStats />}
                   label="Player Stats"
                   sub="Per-Player Input Cards"
                   accent="#8b5cf6"
                 />
-                <div style={{ padding: "28px 32px" }}>
+                <div className="p-4 sm:p-6">
                   {/* ── Team A Players ── */}
                   <div className="flex flex-col gap-2">
                     {playersA.map((p, idx) => (
@@ -2681,16 +2679,16 @@ const DataEntry = ({ globalGame, globalTournament }) => {
             </div>
 
             {/* ── Right Column: Heatmap Entry & Submit ── */}
-            <div className="xl:col-span-5 flex flex-col gap-6 w-full min-w-0">
+            <div className="2xl:col-span-5 flex flex-col gap-6 w-full min-w-0">
               {/* Heatmap Entry Card */}
-              <div className="bg-[#0d131c] light:bg-white rounded-2xl border border-slate-800/50 light:border-slate-200 overflow-hidden shadow-xl light:shadow-sm w-full">
+              <div className="hud-card bg-[#0d131c] light:bg-white border border-slate-800/50 light:border-slate-200 overflow-hidden shadow-xl light:shadow-sm w-full">
                 <SectionHeader
                   icon={<IconMap />}
                   label="Heatmap Entry"
                   sub="Event Coordinate Plotting"
                   accent="#06b6d4"
                 />
-                <div className="flex flex-col" style={{ padding: "28px 32px" }}>
+                <div className="flex flex-col p-4 sm:p-6">
                   {/* ── Compact Toolbar ── */}
                   <div className="flex flex-wrap items-center justify-between gap-3 mb-4 rounded-xl bg-slate-900/60 light:bg-slate-100 border border-slate-700/40 light:border-slate-200 backdrop-blur-sm p-3 sm:px-4 sm:py-3">
                     {/* Round Selector */}
@@ -2852,24 +2850,25 @@ const DataEntry = ({ globalGame, globalTournament }) => {
               </div>
 
               {/* ── Submit Card ── */}
-              <div className="bg-[#0d131c] light:bg-white rounded-2xl border border-slate-800/50 light:border-slate-200 overflow-hidden shadow-xl light:shadow-sm w-full">
+              <div className="hud-card bg-[#0d131c] light:bg-white border border-slate-800/50 light:border-slate-200 overflow-hidden shadow-xl light:shadow-sm w-full">
                 <SectionHeader
                   icon={<IconNotes />}
                   label="Submit"
                   sub="Match Data Submission"
                   accent="#10b981"
                 />
-                <div className="flex flex-col sm:flex-row items-center justify-center" style={{ padding: "28px 32px", gap: "24px" }}>
+                <div className="flex flex-col sm:flex-row items-center justify-center p-5 sm:p-6 gap-4">
                   <button
+                    type="button"
                     onClick={handleSubmit}
                     disabled={isSubmitting}
-                    className={`w-full sm:w-auto flex-1 flex items-center justify-center gap-2 px-8 py-3.5 rounded-full text-sm font-black uppercase tracking-widest text-white transition-all active:scale-95 hover:-translate-y-0.5 ${submitSuccess
-                      ? "bg-emerald-500 shadow-[0_0_25px_rgba(16,185,129,0.4)] success-flash"
-                      : isSubmitting
-                        ? "opacity-70 cursor-wait"
-                        : "submit-pulse hover:shadow-[0_0_25px_rgba(6,182,212,0.4)]"
-                      }`}
-                    style={!submitSuccess ? { background: "linear-gradient(135deg, #0d9488, #2563eb)" } : {}}
+                    className={`w-full sm:w-auto flex-1 flex items-center justify-center gap-2.5 px-7 py-3.5 font-tactical text-sm font-extrabold uppercase tracking-[0.18em] transition-all cursor-pointer ${
+                      submitSuccess
+                        ? "hud-chamfer bg-emerald-500 text-slate-950 shadow-[0_0_25px_rgba(16,185,129,0.5)] success-flash"
+                        : isSubmitting
+                          ? "hud-btn-primary opacity-70 cursor-wait"
+                          : "hud-btn-primary"
+                    }`}
                   >
                     {isSubmitting ? (
                       <svg
@@ -2894,18 +2893,18 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                     ) : (
                       <IconSave />
                     )}
-                    {submitSuccess
-                      ? "Submitted!"
-                      : isSubmitting
-                        ? "Submitting..."
-                        : "Submit Data"}
+                    <span>
+                      {submitSuccess
+                        ? "Submitted!"
+                        : isSubmitting
+                          ? "Submitting..."
+                          : "Submit Data"}
+                    </span>
                   </button>
                   <button
+                    type="button"
                     onClick={handleCancel}
-                    className="w-full sm:w-auto flex-1 px-8 py-3.5 rounded-full text-sm font-black uppercase tracking-widest text-white transition-all active:scale-95 hover:-translate-y-0.5 border border-red-500/40 hover:shadow-[0_0_20px_rgba(239,68,68,0.3)]"
-                    style={{
-                      background: "linear-gradient(135deg, #991b1b, #dc2626)",
-                    }}
+                    className="hud-chamfer w-full sm:w-auto flex-1 flex items-center justify-center px-7 py-3.5 font-tactical text-sm font-extrabold uppercase tracking-[0.18em] bg-red-500/15 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/45 border-l-2 border-l-red-500 shadow-[0_0_18px_rgba(239,68,68,0.2)] hover:shadow-[0_0_24px_rgba(239,68,68,0.45)] transition-all cursor-pointer"
                   >
                     Clear All
                   </button>

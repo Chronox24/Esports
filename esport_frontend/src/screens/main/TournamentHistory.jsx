@@ -46,25 +46,33 @@ const TournamentHistory = ({ setGlobalTournament, setActiveTab }) => {
     return c;
   }, [tournaments]);
 
+  const formatSafeDate = (dateVal) => {
+    if (!dateVal) return 'COMPLETED';
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return 'COMPLETED';
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
   if (selectedComplete) {
     return (
       <div className="w-full h-full flex flex-col relative animate-fade-in bg-slate-950">
-        <div className="w-full h-16 bg-slate-900 border-b border-slate-800 flex items-center px-8 z-50 shrink-0">
+        <div className="w-full h-16 bg-slate-900/90 border-b border-cyan-500/20 flex items-center px-8 z-50 shrink-0 backdrop-blur-xl">
           <button
             onClick={() => setSelectedComplete(null)}
-            className="flex items-center gap-2 text-slate-400 hover:text-cyan-400 transition-colors text-sm font-bold tracking-widest uppercase bg-slate-800/50 hover:bg-slate-800 px-4 py-2 rounded-lg"
+            style={{ padding: '8px 16px' }}
+            className="hud-btn-secondary flex items-center gap-2 font-tactical text-xs font-extrabold tracking-[0.16em] uppercase cursor-pointer"
           >
-            <ChevronRight size={16} className="rotate-180" /> Back to History
+            <ChevronRight size={15} className="rotate-180" /> Back to History
           </button>
-          <div className="ml-auto text-sm font-black tracking-widest uppercase text-slate-300 flex items-center gap-3">
+          <div className="ml-auto font-tactical text-sm font-extrabold tracking-[0.16em] uppercase text-slate-200 flex items-center gap-3">
             <Trophy size={16} className="text-cyan-400" />
             {selectedComplete.name}
-            <span className="bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-2 py-0.5 rounded shadow-sm text-[10px] ml-2">READ ONLY</span>
+            <span className="hud-chamfer-sm bg-cyan-500/15 text-cyan-300 border border-cyan-400/35 px-2.5 py-1 text-[10px] ml-2">
+              ARCHIVE // READ ONLY
+            </span>
           </div>
         </div>
         <div className="flex-1 relative overflow-hidden">
-          {/* We pass the active format via localStorage so the bracket component picks it up initially */}
-
           <Bracket globalGame={selectedComplete.game_title} globalTournament={selectedComplete.name} isReadOnly={true} />
         </div>
       </div>
@@ -72,37 +80,70 @@ const TournamentHistory = ({ setGlobalTournament, setActiveTab }) => {
   }
 
   return (
-    <div className="w-full h-full p-8 md:p-12 overflow-y-auto custom-scrollbar relative" style={{ scrollbarWidth: 'thin', scrollbarColor: '#1e293b transparent' }}>
+    <div className="w-full h-full overflow-y-auto custom-scrollbar relative" style={{ padding: '28px 32px 48px 32px', scrollbarWidth: 'thin', scrollbarColor: '#1e293b transparent' }}>
 
-      <div className="max-w-6xl mx-auto flex flex-col gap-8 pb-20 relative z-10">
+      <div className="max-w-[1440px] mx-auto flex flex-col gap-6 pb-20 relative z-10">
 
-        {/* Header & Tabs */}
-        <div className="flex flex-col gap-6 border-b border-slate-700/50 pb-2">
+        {/* Tactical Command Header & Filter Bar */}
+        <div className="hud-card hud-enter rounded-xl bg-slate-900/60 flex flex-col gap-5" style={{ padding: '22px 26px' }}>
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800/70 pb-4">
+            <div className="flex items-center gap-3">
+              <span className="hud-diamond" />
+              <div>
+                <div className="font-tactical text-[10px] font-bold tracking-[0.22em] text-cyan-400/80 uppercase">
+                  SEASON ARCHIVE VAULT
+                </div>
+                <h1 className="font-tactical text-lg md:text-xl font-extrabold tracking-[0.16em] text-theme-text-base uppercase">
+                  Tournament History &amp; Records
+                </h1>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="hud-chamfer-sm bg-slate-950/80 border border-slate-800 px-3.5 py-1.5 flex items-center gap-2">
+                <Trophy size={14} className="text-cyan-400" />
+                <span className="font-tactical text-xs font-extrabold tracking-[0.14em] text-slate-300 uppercase">
+                  TOTAL LOGGED: <span className="text-cyan-400">{counts.ALL}</span>
+                </span>
+              </div>
+            </div>
+          </div>
 
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
-
-            <div className="flex items-center gap-6 text-[11px] font-black uppercase text-slate-500 tracking-widest">
-              {['ALL', 'PENDING', 'IN PROGRESS', 'COMPLETE', 'ARCHIVED'].map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => setCurrentTab(tab)}
-                  className={`flex items-center gap-2 pb-2 border-b-2 transition-all ${currentTab === tab
-                      ? 'text-cyan-400 border-cyan-400'
-                      : 'border-transparent hover:text-slate-300'
+          <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4">
+            {/* Filter Tabs */}
+            <div className="flex flex-wrap items-center gap-2">
+              {['ALL', 'PENDING', 'IN PROGRESS', 'COMPLETE', 'ARCHIVED'].map(tab => {
+                const isActive = currentTab === tab;
+                return (
+                  <button
+                    key={tab}
+                    onClick={() => setCurrentTab(tab)}
+                    style={{ padding: '8px 14px' }}
+                    className={`hud-chamfer-sm font-tactical text-[11px] font-extrabold uppercase tracking-[0.14em] flex items-center gap-2 transition-all duration-200 cursor-pointer ${
+                      isActive
+                        ? 'bg-cyan-400 text-slate-950 shadow-[0_0_16px_rgba(0,229,255,0.4)]'
+                        : 'bg-slate-950/70 text-theme-text-muted border border-slate-800 hover:border-cyan-500/40 hover:text-white'
                     }`}
-                >
-                  {tab} <span className="bg-slate-800/80 px-2 py-0.5 rounded-full text-slate-300 border border-white/5">{counts[tab]}</span>
-                </button>
-              ))}
+                  >
+                    <span>{tab}</span>
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
+                        isActive ? 'bg-slate-950/25 text-slate-950' : 'bg-slate-800 text-cyan-300'
+                      }`}
+                    >
+                      {counts[tab]}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Search */}
-            <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl flex items-center px-4 py-2.5 w-full lg:w-64 focus-within:border-cyan-500/50 focus-within:ring-1 focus-within:ring-cyan-500/50 transition-all shadow-inner">
-              <Search size={16} className="text-slate-500 mr-3" />
+            {/* Search Input */}
+            <div className="hud-chamfer-sm bg-slate-950/80 border border-slate-700/70 flex items-center w-full lg:w-72 focus-within:border-cyan-400 transition-all" style={{ padding: '8px 14px' }}>
+              <Search size={15} className="text-cyan-400/70 mr-2.5 shrink-0" />
               <input
                 type="text"
-                placeholder="Search tournaments..."
-                className="bg-transparent border-none outline-none text-sm text-slate-200 w-full placeholder-slate-600 font-medium"
+                placeholder="Search tournament records..."
+                className="bg-transparent border-none outline-none text-xs text-slate-200 w-full placeholder-slate-500 font-medium"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -110,23 +151,30 @@ const TournamentHistory = ({ setGlobalTournament, setActiveTab }) => {
           </div>
         </div>
 
-        {/* List */}
-        <div className="flex flex-col gap-3">
+        {/* Tournament List */}
+        <div className="flex flex-col gap-3.5">
           {loading ? (
-            <div className="flex justify-center py-20 text-cyan-400 animate-pulse">
-              <span className="text-sm font-black tracking-widest uppercase flex items-center gap-2">
-                <Trophy size={16} className="animate-bounce" /> Loading History...
+            <div className="hud-card rounded-xl flex justify-center py-20 text-cyan-400 animate-pulse">
+              <span className="font-tactical text-sm font-extrabold tracking-[0.2em] uppercase flex items-center gap-2.5">
+                <Trophy size={18} className="animate-bounce" /> Synchronizing Tournament Vault...
               </span>
             </div>
           ) : filteredTournaments.length === 0 ? (
-            <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-12 text-center flex flex-col items-center justify-center gap-4">
-              <Trophy size={48} className="text-slate-700" />
-              <div className="text-slate-400 font-medium tracking-wide">No tournaments found in this category.</div>
+            <div className="hud-card rounded-xl p-14 text-center flex flex-col items-center justify-center gap-3">
+              <div className="w-14 h-14 hud-chamfer bg-slate-900 border border-cyan-500/25 flex items-center justify-center text-cyan-400/50">
+                <Trophy size={28} />
+              </div>
+              <div className="font-tactical text-sm font-extrabold uppercase tracking-[0.18em] text-theme-text-base">
+                No Matching Tournaments Found
+              </div>
+              <div className="text-xs text-theme-text-muted max-w-sm">
+                Try switching the status filter tab above or clearing your search query.
+              </div>
             </div>
           ) : (
             filteredTournaments.map((t, idx) => (
               <div
-                key={t.id}
+                key={t.id || idx}
                 onClick={() => {
                   if (t.status === 'COMPLETE') {
                     localStorage.setItem('activeFormat', t.format !== 'Unspecified Format' ? t.format : 'Single Elimination');
@@ -137,53 +185,84 @@ const TournamentHistory = ({ setGlobalTournament, setActiveTab }) => {
                     setActiveTab('Bracket');
                   }
                 }}
-                className="group flex flex-col md:flex-row items-center justify-between gap-6 bg-slate-900/60 border border-slate-700/50 hover:border-cyan-500/50 rounded-2xl p-5 cursor-pointer transition-all duration-300 hover:bg-slate-800/80 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] relative overflow-hidden"
+                style={{ padding: '18px 24px', animationDelay: `${Math.min(idx * 50, 300)}ms` }}
+                className="group hud-card hud-card-interactive hud-enter rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-5 cursor-pointer relative overflow-hidden"
               >
-                {/* Decoration */}
-                <div className="absolute top-0 left-0 w-1 h-full bg-slate-800 group-hover:bg-cyan-500 transition-colors"></div>
+                <div className="hud-sweep-overlay" />
+                {/* Left Vertical Accent Bar */}
+                <div className={`absolute top-0 left-0 w-1 h-full transition-colors ${
+                  t.status === 'COMPLETE' ? 'bg-emerald-400' : t.status === 'IN PROGRESS' ? 'bg-amber-400' : 'bg-cyan-500/60 group-hover:bg-cyan-400'
+                }`} />
 
-                <div className="flex items-center gap-5 w-full md:w-auto">
-                  <div className="w-14 h-14 rounded-xl bg-slate-950/80 border border-white/5 flex items-center justify-center text-cyan-400 shadow-inner group-hover:scale-110 transition-transform group-hover:bg-cyan-500/10">
-                    <Trophy size={24} className="opacity-80 group-hover:opacity-100" />
+                <div className="flex items-center gap-4 w-full md:w-auto relative z-10">
+                  <div className="w-12 h-12 hud-chamfer-sm bg-slate-950/90 border border-cyan-500/25 flex items-center justify-center text-cyan-400 shrink-0 group-hover:scale-105 group-hover:border-cyan-400 transition-all">
+                    <Trophy size={20} />
                   </div>
 
-                  <div className="flex flex-col gap-1.5">
-                    <h3 className="text-[15px] font-black text-slate-100 uppercase tracking-wide group-hover:text-cyan-400 transition-colors leading-none">{t.name}</h3>
-                    <div className="flex items-center gap-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                      {t.format !== 'Unspecified Format' && (
-                        <span className="bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-2 py-0.5 rounded shadow-sm">{t.format}</span>
+                  <div className="flex flex-col gap-1.5 min-w-0">
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <h3 className="font-tactical text-base font-extrabold text-theme-text-base uppercase tracking-[0.1em] group-hover:text-cyan-300 transition-colors leading-none">
+                        {t.name}
+                      </h3>
+                      <span className="font-mono text-[10px] text-theme-text-muted">#{String(idx + 1).padStart(2, '0')}</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-wider">
+                      {t.format && t.format !== 'Unspecified Format' && (
+                        <span className="hud-chamfer-sm bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 px-2.5 py-0.5 font-tactical tracking-[0.12em]">
+                          {t.format}
+                        </span>
                       )}
                       {t.game_title && (
-                        <span className="text-slate-400">{t.game_title}</span>
+                        <span className="hud-chamfer-sm bg-slate-800/90 text-slate-300 border border-slate-700 px-2.5 py-0.5 font-tactical tracking-[0.12em]">
+                          {t.game_title}
+                        </span>
                       )}
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-8 w-full md:w-auto justify-end">
-                  <div className="flex items-center gap-2 text-slate-400 text-xs font-bold bg-slate-950/50 px-3 py-1.5 rounded-lg border border-white/5 shadow-inner">
-                    <User size={14} className="text-slate-500" />
-                    <span>{t.participant_count}</span>
+                <div className="flex items-center gap-5 w-full md:w-auto justify-between md:justify-end relative z-10">
+                  {/* Participant Count */}
+                  <div className="hud-chamfer-sm flex items-center gap-2 text-slate-300 text-xs font-bold bg-slate-950/80 px-3.5 py-1.5 border border-slate-800">
+                    <User size={13} className="text-cyan-400" />
+                    <span className="font-mono">{t.participant_count ?? 0}</span>
+                    <span className="font-tactical text-[9px] tracking-[0.14em] text-theme-text-muted uppercase">TEAMS</span>
                   </div>
 
-                  <div className="w-28 flex items-center justify-end">
+                  {/* Readable Status Badge + Progress Indicator */}
+                  <div className="flex items-center justify-end min-w-[150px]">
                     {t.status === 'COMPLETE' ? (
-                      <div className="flex items-center gap-1.5 text-emerald-400 text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20">
-                        <Check size={14} />
-                        {new Date(t.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      <div className="hud-chamfer-sm flex items-center gap-1.5 text-emerald-300 font-tactical text-[10px] font-extrabold uppercase tracking-[0.14em] bg-emerald-500/15 px-3 py-1.5 border border-emerald-500/35">
+                        <Check size={13} />
+                        <span>{formatSafeDate(t.date)}</span>
                       </div>
                     ) : t.status === 'IN PROGRESS' ? (
-                      <div className="w-24 h-1.5 bg-slate-800 rounded-full overflow-hidden shadow-inner">
-                        <div className="h-full bg-amber-400 w-[60%] shadow-[0_0_10px_rgba(251,191,36,0.5)]"></div>
+                      <div className="flex flex-col items-end gap-1.5 w-36">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                          <span className="font-tactical text-[10px] font-extrabold tracking-[0.14em] text-amber-300 uppercase">
+                            IN PROGRESS
+                          </span>
+                        </div>
+                        <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                          <div className="h-full bg-amber-400 w-[65%] shadow-[0_0_10px_rgba(251,191,36,0.6)]" />
+                        </div>
                       </div>
                     ) : t.status === 'PENDING' ? (
-                      <div className="w-24 h-1.5 bg-slate-800 rounded-full shadow-inner"></div>
+                      <div className="hud-chamfer-sm flex items-center gap-1.5 text-cyan-300 font-tactical text-[10px] font-extrabold uppercase tracking-[0.14em] bg-cyan-500/10 px-3 py-1.5 border border-cyan-500/25">
+                        <Calendar size={12} />
+                        <span>PENDING</span>
+                      </div>
                     ) : (
-                      <div className="w-24 h-1.5 bg-slate-800 rounded-full shadow-inner"></div>
+                      <div className="hud-chamfer-sm flex items-center gap-1.5 text-slate-400 font-tactical text-[10px] font-extrabold uppercase tracking-[0.14em] bg-slate-800/80 px-3 py-1.5 border border-slate-700">
+                        <span>{t.status || 'ARCHIVED'}</span>
+                      </div>
                     )}
                   </div>
 
-                  <ChevronRight size={20} className="text-slate-600 group-hover:text-cyan-400 group-hover:translate-x-1 transition-all hidden md:block" />
+                  <div className="hud-chamfer-sm w-8 h-8 bg-slate-900 border border-slate-800 group-hover:border-cyan-400/50 flex items-center justify-center text-slate-400 group-hover:text-cyan-300 transition-all shrink-0">
+                    <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+                  </div>
                 </div>
               </div>
             ))

@@ -7,25 +7,28 @@ const Card = ({ title, children, className = "" }) => {
   const [filterValue, setFilterValue] = useState("Last 7 Days");
 
   return (
-    <div className={`bg-bg-200/90 backdrop-blur-md rounded-2xl border border-white/5 shadow-[0_0_30px_rgba(6,182,212,0.15)] hover:shadow-[0_0_30px_rgba(6,182,212,0.25)] transition-all duration-500 flex flex-col overflow-hidden relative group ${className}`}>
+    <div className={`hud-card transition-all duration-500 flex flex-col overflow-hidden relative group ${className}`}>
       <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-[100px] -z-10 pointer-events-none"></div>
-      <div className="border-b border-white/5 bg-bg-300/50 relative z-50 flex justify-end items-center shrink-0" style={{ padding: "24px 32px" }}>
+      <div className="border-b border-cyan-500/20 bg-slate-950/60 relative z-50 flex justify-between items-center shrink-0 px-6 py-4">
+        <span className="font-tactical text-xs font-extrabold uppercase tracking-[0.18em] text-cyan-400">
+          // {title || "Map Veto Archive"}
+        </span>
         <div className="flex items-center relative">
           <button 
+            type="button"
             onClick={() => setFilterOpen(!filterOpen)}
-            className="flex items-center bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 text-xs font-bold text-theme-text-base transition-colors shadow-sm cursor-pointer"
-            style={{ padding: "10px 24px", borderRadius: "12px", gap: "8px" }}
+            className="hud-btn-secondary flex items-center px-4 py-2 text-xs font-tactical font-extrabold uppercase tracking-wider gap-2"
           >
             <Filter size={14} /> {filterValue} <ChevronDown size={14} />
           </button>
           {filterOpen && (
-            <div className="absolute top-full right-0 mt-2 w-40 bg-slate-800 border border-slate-700 rounded-xl shadow-xl overflow-hidden z-50">
+            <div className="hud-chamfer-sm absolute top-full right-0 mt-2 w-40 bg-slate-900 border border-cyan-500/40 shadow-xl overflow-hidden z-50">
               {["Last 7 Days", "Last 30 Days", "All Time"].map(opt => (
                 <button 
                   key={opt}
+                  type="button"
                   onClick={() => { setFilterValue(opt); setFilterOpen(false); }}
-                  className="w-full text-left text-xs font-bold text-theme-text-base hover:bg-slate-700 hover:text-theme-text-base transition-colors cursor-pointer"
-                  style={{ padding: "12px 16px" }}
+                  className="w-full text-left text-xs font-tactical font-bold text-slate-200 hover:bg-cyan-500/15 hover:text-cyan-300 transition-colors cursor-pointer px-4 py-2.5"
                 >
                   {opt}
                 </button>
@@ -53,9 +56,8 @@ const MapBpResults = ({ globalGame, globalTournament }) => {
   }, [globalTournament, activeGame]);
 
   return (
-    <div className="flex-1 bg-bg-base text-theme-text-base overflow-y-auto flex flex-col h-full custom-scrollbar relative" style={{ padding: "32px" }}>
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full blur-[120px] opacity-10 bg-cyan-500 pointer-events-none z-0"></div>
-      <div className="w-full pb-16 h-full flex flex-col relative z-10">
+    <div className="flex-1 text-theme-text-base overflow-y-auto flex flex-col h-full custom-scrollbar relative py-2">
+      <div className="w-full pb-12 h-full flex flex-col relative z-10">
         <Card title="Map BP Results" className="w-full flex-1">
           <div className="overflow-x-auto flex-1 custom-scrollbar">
             <table className="w-full table-fixed text-center text-sm whitespace-nowrap">

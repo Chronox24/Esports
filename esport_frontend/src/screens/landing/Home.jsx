@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LoginScreen from './LoginScreen'; 
 import { apiFetch } from '../../utils/api';
@@ -10,6 +10,13 @@ const navItems = [
   { key: 'Services', label: 'SERVICES', path: '/services' },
   { key: 'AboutUs', label: 'ABOUT US', path: '/about' },
 ];
+
+// Extract the 11-char YouTube video ID from an embed / watch / short URL
+const getYouTubeId = (url) => {
+  if (!url || typeof url !== 'string') return null;
+  const match = url.match(/(?:embed\/|v=|youtu\.be\/)([\w-]{11})/);
+  return match ? match[1] : null;
+};
 
 const defaultHighlights = [
   {
@@ -86,6 +93,18 @@ const Home = ({ onLoginSuccess }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeVideo, setActiveVideo] = useState(null);
+  const [isVideoClosing, setIsVideoClosing] = useState(false);
+  const [isVideoReady, setIsVideoReady] = useState(false);
+  const [highlightsInView, setHighlightsInView] = useState(false);
+  const [previewId, setPreviewId] = useState(null);
+  const [previewReady, setPreviewReady] = useState(false);
+  const [isCarouselPaused, setIsCarouselPaused] = useState(false);
+  const previewTimerRef = useRef(null);
+  const previewReadyTimerRef = useRef(null);
+  const autoSlideTimerRef = useRef(null);
+  const autoDirRef = useRef(1);
+  const closeTimerRef = useRef(null);
+  const highlightsSectionRef = useRef(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [activePage, setActivePage] = useState('Home');
   const [showLogin, setShowLogin] = useState(false);
@@ -135,6 +154,7 @@ const Home = ({ onLoginSuccess }) => {
     : highlights;
 
   const handleFilterChange = (filter) => {
+    stopHoverPreview();
     setActiveGameFilter(filter);
     setCurrentSlide(0);
   };
@@ -163,9 +183,9 @@ const Home = ({ onLoginSuccess }) => {
     return () => window.removeEventListener('resize', handleResize);
   }, [displayedHighlights.length]);
 
-  // Lock body scroll when mobile drawer is open
+  // Lock body scroll when mobile drawer or modal is open
   useEffect(() => {
-    if (mobileMenuOpen) {
+    if (mobileMenuOpen || activeVideo || showLogin) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -173,7 +193,43 @@ const Home = ({ onLoginSuccess }) => {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [mobileMenuOpen]);
+  }, [mobileMenuOpen, activeVideo, showLogin]);
+
+  // Reveal highlight cards (staggered) once the section scrolls into view
+  useEffect(() => {
+    const el = highlightsSectionRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      setHighlightsInView(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setHighlightsInView(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.15 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  // Clear any pending close timer on unmount
+  useEffect(() => () => clearTimeout(closeTimerRef.current), []);
+
+  // Allow closing video modal with Escape key (animated)
+  useEffect(() => {
+    if (!activeVideo) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        closeVideo();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeVideo, isVideoClosing]);
 
   const handleNavigation = (item) => {
     setActivePage(item.key);
@@ -190,11 +246,82 @@ const Home = ({ onLoginSuccess }) => {
   };
 
   const openVideo = (slide) => {
+    stopHoverPreview();
+    clearTimeout(closeTimerRef.current);
+    setIsVideoClosing(false);
+    setIsVideoReady(false);
     setActiveVideo(slide);
   };
 
+  // Play the exit animation first, then unmount the modal
   const closeVideo = () => {
-    setActiveVideo(null);
+    if (isVideoClosing) return;
+    setIsVideoClosing(true);
+    closeTimerRef.current = setTimeout(() => {
+      setActiveVideo(null);
+      setIsVideoClosing(false);
+    }, 280);
+  };
+
+  // ── Hover preview: a short muted "teaser" plays inside the card on mouse hover ──
+  const stopHoverPreview = () => {
+    clearTimeout(previewTimerRef.current);
+    clearTimeout(previewReadyTimerRef.current);
+    setPreviewId(null);
+    setPreviewReady(false);
+  };
+
+  const startHoverPreview = (slide, e) => {
+    // Only for real mouse pointers (never on touch screens)
+    if (e && e.pointerType && e.pointerType !== 'mouse') return;
+    if (activeVideo || !getYouTubeId(slide.videoUrl)) return;
+    clearTimeout(previewTimerRef.current);
+    // Small hover-intent delay so quick mouse passes don't spawn players
+    previewTimerRef.current = setTimeout(() => {
+      setPreviewReady(false);
+      setPreviewId(slide.id);
+    }, 450);
+  };
+
+  // Fade the teaser in only after the player had a moment to start playing
+  const handlePreviewLoaded = () => {
+    clearTimeout(previewReadyTimerRef.current);
+    previewReadyTimerRef.current = setTimeout(() => setPreviewReady(true), 900);
+  };
+
+  // Stop any teaser when the carousel moves; clear timers on unmount
+  useEffect(() => {
+    stopHoverPreview();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentSlide]);
+
+  useEffect(() => () => {
+    clearTimeout(previewTimerRef.current);
+    clearTimeout(previewReadyTimerRef.current);
+    clearTimeout(autoSlideTimerRef.current);
+  }, []);
+
+  // ── Auto slide: glides forward, then glides back (ping-pong) so the
+  //    carousel never "rewinds" across all cards at once ──
+  useEffect(() => {
+    clearTimeout(autoSlideTimerRef.current);
+    if (!highlightsInView || isCarouselPaused || activeVideo || showLogin || mobileMenuOpen || maxSlide === 0) return;
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    autoSlideTimerRef.current = setTimeout(() => {
+      setCurrentSlide((prev) => {
+        if (prev >= maxSlide) autoDirRef.current = -1;
+        else if (prev <= 0) autoDirRef.current = 1;
+        return Math.max(0, Math.min(maxSlide, prev + autoDirRef.current));
+      });
+    }, 4500);
+    return () => clearTimeout(autoSlideTimerRef.current);
+  }, [currentSlide, highlightsInView, isCarouselPaused, activeVideo, showLogin, mobileMenuOpen, maxSlide]);
+
+  const pauseAutoSlide = (e) => {
+    if (!e || !e.pointerType || e.pointerType === 'mouse') setIsCarouselPaused(true);
+  };
+  const resumeAutoSlide = (e) => {
+    if (!e || !e.pointerType || e.pointerType === 'mouse') setIsCarouselPaused(false);
   };
 
   const onTouchStartHandler = (e) => {
@@ -380,7 +507,11 @@ const Home = ({ onLoginSuccess }) => {
         </section>
 
         {/* Game Highlights Carousel Section */}
-        <section className="featured-section" id="game-highlights-section">
+        <section
+          className={`featured-section ${highlightsInView ? 'highlights-in-view' : ''}`}
+          id="game-highlights-section"
+          ref={highlightsSectionRef}
+        >
           <div className="section-header-wide">
             <div className="section-title-wrapper">
               <span className="neon-title-dot" />
@@ -446,6 +577,8 @@ const Home = ({ onLoginSuccess }) => {
             onTouchStart={onTouchStartHandler}
             onTouchMove={onTouchMoveHandler}
             onTouchEnd={onTouchEndHandler}
+            onPointerEnter={pauseAutoSlide}
+            onPointerLeave={resumeAutoSlide}
           >
             <div 
               className="carousel-track-max" 
@@ -455,32 +588,62 @@ const Home = ({ onLoginSuccess }) => {
                   : `translateX(calc(-${currentSlide * 50}% - ${currentSlide * 0.5}rem))` 
               }}
             >
-              {displayedHighlights.map((slide) => (
-                <div className="carousel-slide-max" key={slide.id}>
+              {displayedHighlights.map((slide, index) => (
+                <div
+                  className="carousel-slide-max"
+                  key={`${activeGameFilter}-${slide.id}`}
+                  style={{ '--card-index': index }}
+                >
                   <div
-                    className="highlight-card-max"
-                    style={{ backgroundImage: `url(${slide.img})` }}
+                    className={`highlight-card-max ${previewId === slide.id ? 'is-previewing' : ''} ${previewId === slide.id && previewReady ? 'preview-ready' : ''}`}
                     onClick={() => openVideo(slide)}
+                    onPointerEnter={(e) => startHoverPreview(slide, e)}
+                    onPointerLeave={stopHoverPreview}
                   >
-                    <div className="card-gradient-vignette" />
-
-                    {/* Top Game & Official Channel Badge */}
-                    <div className="card-top-badge">
-                      <span className="card-game-title">{slide.game || slide.title}</span>
-                      <span className="card-highlight-pill">NEW UPLOAD</span>
-                      {slide.author && (
-                        <span className="card-author-pill">
-                          {slide.author}
-                        </span>
+                    <div className="highlight-thumb-wrapper">
+                      <div
+                        className="highlight-thumb-image"
+                        style={{ backgroundImage: `url(${slide.img})` }}
+                      />
+                      {/* Muted hover teaser: plays quietly while the cursor is over the card */}
+                      {previewId === slide.id && getYouTubeId(slide.videoUrl) && (
+                        <iframe
+                          className="highlight-preview-frame"
+                          title={`Preview of ${slide.subtitle || slide.title}`}
+                          src={`https://www.youtube.com/embed/${getYouTubeId(slide.videoUrl)}?autoplay=1&mute=1&controls=0&disablekb=1&fs=0&iv_load_policy=3&modestbranding=1&rel=0&playsinline=1&loop=1&playlist=${getYouTubeId(slide.videoUrl)}`}
+                          allow="autoplay; encrypted-media"
+                          tabIndex={-1}
+                          aria-hidden="true"
+                          onLoad={handlePreviewLoaded}
+                        />
                       )}
+                      <div className="card-gradient-vignette" />
+
+                      {/* Top Game & Official Channel Badge */}
+                      <div className="card-top-badge">
+                        <span className="card-game-title">{slide.game || slide.title}</span>
+                        <span className="card-highlight-pill">NEW UPLOAD</span>
+                        {slide.author && (
+                          <span className="card-author-pill">
+                            {slide.author}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Centered Tactical Hexagon Play Button */}
+                      <button type="button" className="play-button-massive" aria-label={`Play ${slide.title} highlight`}>
+                        <svg className="play-hex-svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <polygon
+                            className="play-hex-polygon"
+                            points="32,3 59,18.5 59,45.5 32,61 5,45.5 5,18.5"
+                            strokeWidth="2.2"
+                          />
+                        </svg>
+                        <span className="play-icon-large" />
+                      </button>
                     </div>
 
-                    {/* Centered Modern Play Button */}
-                    <button type="button" className="play-button-massive" aria-label={`Play ${slide.title} highlight`}>
-                      <span className="play-icon-large" />
-                    </button>
-
-                    {/* Bottom Card Title Info */}
+                    {/* Dedicated Dark Card Footer Beneath Thumbnail */}
                     <div className="card-bottom-info">
                       <p className="card-stream-title" title={slide.subtitle}>{slide.subtitle}</p>
                       <span className="card-tap-cue">Watch Clip ▷</span>
@@ -508,7 +671,7 @@ const Home = ({ onLoginSuccess }) => {
 
       {/* Video Modal with YouTube Channel link */}
       {activeVideo && (
-        <div className="video-modal-overlay" onClick={closeVideo}>
+        <div className={`video-modal-overlay ${isVideoClosing ? 'closing' : ''}`} onClick={closeVideo}>
           <div className="video-modal-content" onClick={(event) => event.stopPropagation()}>
             <div className="video-modal-top-bar">
               <div className="video-modal-info">
@@ -532,15 +695,16 @@ const Home = ({ onLoginSuccess }) => {
                 </button>
               </div>
             </div>
-            <div className="video-player-frame">
+            <div className={`video-player-frame ${isVideoReady ? 'is-ready' : ''}`}>
               <iframe
                 key={activeVideo.id || activeVideo.videoUrl}
+                onLoad={() => setIsVideoReady(true)}
                 width="100%"
                 height="100%"
-                src={`${activeVideo.videoUrl || activeVideo}?autoplay=1`}
+                src={`${activeVideo.videoUrl || activeVideo}${(activeVideo.videoUrl || activeVideo).includes('?') ? '&' : '?'}autoplay=1&rel=0&modestbranding=1&playsinline=1`}
                 title={activeVideo.subtitle || "Esport highlight video"}
                 frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
               />
             </div>

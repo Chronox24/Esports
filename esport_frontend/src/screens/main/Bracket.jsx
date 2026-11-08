@@ -235,10 +235,10 @@ const MatchCard = ({ match, onChange, matchNumber }) => {
   const hasWinner = isTeam1Winner || isTeam2Winner;
 
   const cardBorder = match.isFinals
-    ? '1px solid rgba(234,179,8,0.4)'
+    ? '1px solid rgba(234,179,8,0.45)'
     : hasWinner
-      ? '1px solid rgba(6, 182, 212, 0.5)'
-      : '1px solid rgba(51,65,85,0.4)';
+      ? '1px solid rgba(0, 229, 255, 0.5)'
+      : '1px solid rgba(0, 229, 255, 0.18)';
 
   const rowStyle = (isWinner) => ({
     display: 'flex',
@@ -247,35 +247,37 @@ const MatchCard = ({ match, onChange, matchNumber }) => {
     padding: '10px 12px',
     position: 'relative',
     background: isWinner
-      ? 'linear-gradient(90deg, color-mix(in srgb, var(--color-cyan-500) 20%, transparent) 0%, var(--color-bg-300) 100%)'
-      : 'var(--color-bg-200)',
+      ? 'linear-gradient(90deg, rgba(0, 229, 255, 0.16) 0%, rgba(11, 17, 26, 0.96) 100%)'
+      : 'rgba(11, 17, 26, 0.92)',
     transition: 'background 0.2s',
   });
 
   const teamNameStyle = (isWinner, hasName) => ({
+    fontFamily: 'var(--font-tactical)',
     fontSize: '12px',
     fontWeight: 700,
-    color: isWinner ? 'var(--theme-text-base)' : hasName ? 'var(--theme-text-base)' : 'var(--theme-text-muted)',
+    color: isWinner ? '#ffffff' : hasName ? '#e2e8f0' : '#64748b',
     fontStyle: hasName ? 'normal' : 'italic',
-    textShadow: isWinner ? '0 0 6px rgba(255,255,255,0.3)' : 'none',
+    textShadow: isWinner ? '0 0 8px rgba(0,229,255,0.35)' : 'none',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
     textTransform: 'uppercase',
-    letterSpacing: '0.02em',
+    letterSpacing: '0.06em',
   });
 
   const scoreStyle = (isWinner) => ({
+    fontFamily: 'var(--font-tactical)',
     fontWeight: 900,
     textAlign: 'center',
     width: '36px',
     height: '28px',
-    borderRadius: '4px',
+    borderRadius: '0px',
     fontSize: '14px',
     padding: '0',
-    border: isWinner ? '1px solid var(--color-cyan-500)' : '1px solid var(--color-bg-500)',
-    background: isWinner ? 'color-mix(in srgb, var(--color-cyan-500) 20%, transparent)' : 'var(--color-bg-400)',
-    color: isWinner ? 'var(--color-cyan-400)' : 'var(--theme-text-base)',
+    border: isWinner ? '1px solid rgba(0, 229, 255, 0.65)' : '1px solid rgba(0, 229, 255, 0.2)',
+    background: isWinner ? 'rgba(0, 229, 255, 0.16)' : '#060a12',
+    color: isWinner ? '#00e5ff' : '#ffffff',
     outline: 'none',
     flexShrink: 0,
   });
@@ -284,13 +286,13 @@ const MatchCard = ({ match, onChange, matchNumber }) => {
     <div
       style={{
         width: 280,
-        borderRadius: '8px',
+        borderRadius: '0px',
         overflow: 'hidden',
         border: cardBorder,
         position: 'relative',
         transition: 'transform 0.3s, box-shadow 0.3s',
       }}
-      className="hover:-translate-y-0.5"
+      className="hud-chamfer-sm hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.6),0_0_16px_rgba(0,229,255,0.12)]"
     >
       {/* Finals glow */}
       {match.isFinals && (
@@ -304,17 +306,17 @@ const MatchCard = ({ match, onChange, matchNumber }) => {
       {/* ─── Team 1 Row ─── */}
       <div style={rowStyle(isTeam1Winner)}>
         {isTeam1Winner && (
-          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'linear-gradient(180deg, #22d3ee, #0891b2)', boxShadow: '0 0 8px #06b6d4' }} />
+          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'linear-gradient(180deg, #00e5ff, #0284c7)', boxShadow: '0 0 8px #00e5ff' }} />
         )}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
           <div style={{
-            width: 22, height: 22, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-            background: isTeam1Winner ? 'color-mix(in srgb, var(--color-cyan-500) 20%, transparent)' : 'var(--color-bg-300)',
-            border: isTeam1Winner ? '1px solid var(--color-cyan-500)' : '1px solid var(--color-bg-500)',
+            width: 22, height: 22, borderRadius: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            background: isTeam1Winner ? 'rgba(0, 229, 255, 0.18)' : '#060a12',
+            border: isTeam1Winner ? '1px solid rgba(0, 229, 255, 0.6)' : '1px solid rgba(0, 229, 255, 0.2)',
           }}>
             {isTeam1Winner
               ? <CrownIcon size={11} className="text-cyan-400" />
-              : <SwordsIcon size={11} className="text-theme-text-muted" />
+              : <SwordsIcon size={11} className="text-slate-500" />
             }
           </div>
           <span style={teamNameStyle(isTeam1Winner, !!match.team1)}>
@@ -322,7 +324,7 @@ const MatchCard = ({ match, onChange, matchNumber }) => {
           </span>
         </div>
         {matchNumber != null && (
-          <span style={{ fontSize: '9px', fontWeight: 700, color: '#475569', marginRight: 6, flexShrink: 0 }}>{matchNumber}</span>
+          <span style={{ fontFamily: 'var(--font-tactical)', fontSize: '9px', fontWeight: 700, color: '#64748b', marginRight: 6, flexShrink: 0 }}>{matchNumber}</span>
         )}
         <input
           type="number"
@@ -333,22 +335,22 @@ const MatchCard = ({ match, onChange, matchNumber }) => {
       </div>
 
       {/* Divider */}
-      <div style={{ height: 1, background: 'rgba(51,65,85,0.3)' }} />
+      <div style={{ height: 1, background: 'rgba(0, 229, 255, 0.12)' }} />
 
       {/* ─── Team 2 Row ─── */}
       <div style={rowStyle(isTeam2Winner)}>
         {isTeam2Winner && (
-          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'linear-gradient(180deg, #22d3ee, #0891b2)', boxShadow: '0 0 8px #06b6d4' }} />
+          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'linear-gradient(180deg, #00e5ff, #0284c7)', boxShadow: '0 0 8px #00e5ff' }} />
         )}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
           <div style={{
-            width: 22, height: 22, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-            background: isTeam2Winner ? 'color-mix(in srgb, var(--color-cyan-500) 20%, transparent)' : 'var(--color-bg-300)',
-            border: isTeam2Winner ? '1px solid var(--color-cyan-500)' : '1px solid var(--color-bg-500)',
+            width: 22, height: 22, borderRadius: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            background: isTeam2Winner ? 'rgba(0, 229, 255, 0.18)' : '#060a12',
+            border: isTeam2Winner ? '1px solid rgba(0, 229, 255, 0.6)' : '1px solid rgba(0, 229, 255, 0.2)',
           }}>
             {isTeam2Winner
               ? <CrownIcon size={11} className="text-cyan-400" />
-              : <SwordsIcon size={11} className="text-theme-text-muted" />
+              : <SwordsIcon size={11} className="text-slate-500" />
             }
           </div>
           <span style={teamNameStyle(isTeam2Winner, !!match.team2)}>
@@ -356,7 +358,7 @@ const MatchCard = ({ match, onChange, matchNumber }) => {
           </span>
         </div>
         {matchNumber != null && (
-          <span style={{ fontSize: '9px', fontWeight: 700, color: '#475569', marginRight: 6, flexShrink: 0 }}>{matchNumber}</span>
+          <span style={{ fontFamily: 'var(--font-tactical)', fontSize: '9px', fontWeight: 700, color: '#64748b', marginRight: 6, flexShrink: 0 }}>{matchNumber}</span>
         )}
         <input
           type="number"
@@ -962,28 +964,28 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
   const renderResults = () => {
     return (
       <div className="flex flex-col w-full max-w-3xl gap-4 mx-auto pb-12">
-        <h2 className="text-xl font-bold text-cyan-400 mb-4 uppercase tracking-widest text-center">Calculated Tournament Standings</h2>
+        <h2 className="font-tactical text-xl font-black text-cyan-400 mb-4 uppercase tracking-widest text-center">Calculated Tournament Standings</h2>
         <div className="text-center text-slate-400 text-sm mb-2 -mt-4">Please review the auto-generated standings before submitting.</div>
-        <div className="flex flex-col gap-2 bg-bg-200/50 p-6 rounded-2xl border border-theme-input">
-          {resultsData.length === 0 && <div className="text-center text-slate-500 py-4">No results calculated.</div>}
+        <div className="flex flex-col gap-2.5 hud-card p-6">
+          {resultsData.length === 0 && <div className="text-center text-slate-500 py-4 font-tactical uppercase tracking-widest">No results calculated.</div>}
           {[...resultsData].sort((a, b) => a.placement_rank - b.placement_rank).map((resItem, idx) => (
-            <div key={resItem.team_name} className="flex items-center gap-4 bg-bg-300 p-4 rounded-xl border border-slate-700/50 transition-colors">
+            <div key={resItem.team_name} className="flex items-center gap-4 bg-[#070b12]/90 p-4 hud-chamfer-sm border border-cyan-500/15 hover:border-cyan-500/35 transition-colors">
 
               <div className="flex flex-col gap-1 items-center justify-center shrink-0 w-12">
-                <div className={`text-center font-black text-xl ${resItem.placement_rank === 1 ? 'text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.5)]' : resItem.placement_rank === 2 ? 'text-slate-300 drop-shadow-[0_0_10px_rgba(203,213,225,0.3)]' : resItem.placement_rank === 3 ? 'text-amber-600 drop-shadow-[0_0_10px_rgba(217,119,6,0.3)]' : 'text-slate-500'}`}>
+                <div className={`text-center font-tactical font-black text-xl ${resItem.placement_rank === 1 ? 'text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.5)]' : resItem.placement_rank === 2 ? 'text-slate-300 drop-shadow-[0_0_10px_rgba(203,213,225,0.3)]' : resItem.placement_rank === 3 ? 'text-amber-600 drop-shadow-[0_0_10px_rgba(217,119,6,0.3)]' : 'text-slate-500'}`}>
                   #{resItem.placement_rank}
                 </div>
               </div>
 
               <div className="flex items-center gap-3 ml-2 flex-1">
                 {resItem.logo_url ? (
-                  <img src={resItem.logo_url} alt="Logo" className="w-10 h-10 object-contain rounded-full bg-bg-500/50 p-1" />
+                  <img src={resItem.logo_url} alt="Logo" className="w-10 h-10 object-contain hud-chamfer-sm bg-slate-900/80 border border-cyan-500/20 p-1" onError={(e) => { e.currentTarget.style.display = "none"; }} />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-bg-500/50 flex items-center justify-center shrink-0">
-                    <Shield size={20} className="text-slate-500" />
+                  <div className="w-10 h-10 hud-chamfer-sm bg-slate-900/80 border border-cyan-500/20 flex items-center justify-center shrink-0">
+                    <Shield size={20} className="text-cyan-400/70" />
                   </div>
                 )}
-                <span className={`font-bold text-theme-text-base uppercase tracking-wider ${resItem.placement_rank === 1 ? 'text-yellow-400' : ''}`}>{resItem.team_name}</span>
+                <span className={`font-tactical font-bold text-theme-text-base uppercase tracking-wider ${resItem.placement_rank === 1 ? 'text-yellow-400' : ''}`}>{resItem.team_name}</span>
               </div>
 
             </div>
@@ -993,7 +995,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
         <button
           onClick={submitResults}
           disabled={resultsData.length === 0 || isSaving}
-          className="mt-6 py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black uppercase tracking-[0.2em] rounded-xl shadow-lg transition-all disabled:opacity-50"
+          className="mt-6 py-4 hud-btn-primary text-xs font-black uppercase tracking-[0.2em] shadow-lg transition-all disabled:opacity-50 cursor-pointer"
         >
           {isSaving ? "Submitting..." : "Submit Official Results"}
         </button>
@@ -1182,19 +1184,20 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
     return (
       <div className="flex flex-col w-full relative z-10" style={{ gap: "32px", padding: "16px" }}>
         {/* Standings */}
-        <div className="w-full bg-bg-100/90 backdrop-blur-xl border border-slate-800/80 rounded-2xl shadow-2xl font-sans select-none overflow-hidden" style={{ padding: "32px" }}>
+        <div className="w-full hud-card shadow-2xl select-none overflow-hidden" style={{ padding: "32px" }}>
           {/* Header Component */}
           <div className="flex items-center justify-between" style={{ marginBottom: "32px" }}>
             <div className="flex items-center gap-3">
-              <h2 className="text-theme-text-base font-black text-lg tracking-wider uppercase">LEAGUE STANDINGS</h2>
+              <span className="hud-diamond" />
+              <h2 className="font-tactical text-theme-text-base font-black text-lg tracking-wider uppercase">LEAGUE STANDINGS</h2>
             </div>
             {/* Search Input */}
             <div className="relative hidden sm:block">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-muted" />
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-cyan-400/70" />
               <input
                 type="text"
-                placeholder="Search team"
-                className="bg-transparent border border-slate-700/50 rounded-lg text-sm text-theme-text-base placeholder:text-theme-text-muted focus:outline-none focus:border-cyan-500/50 w-48 transition-colors"
+                placeholder="Search team..."
+                className="bg-[#060a12] border border-cyan-500/25 hud-chamfer-sm text-sm text-theme-text-base placeholder:text-theme-text-muted focus:outline-none focus:border-cyan-400 w-48 transition-colors"
                 style={{ padding: "8px 16px 8px 40px" }}
               />
             </div>
@@ -1203,7 +1206,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
           <div className="overflow-x-auto custom-scrollbar">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="border-b border-slate-800/80 text-theme-text-muted text-xs font-bold uppercase tracking-[0.1em]">
+                <tr className="border-b border-cyan-500/15 font-tactical text-theme-text-muted text-xs font-bold uppercase tracking-[0.12em]">
                   <th className="text-center" style={{ padding: "12px 16px", width: "48px" }}>#</th>
                   <th style={{ padding: "12px 16px" }}>Team</th>
                   <th className="text-center" style={{ padding: "12px 16px", width: "48px" }}>P</th>
@@ -1213,18 +1216,17 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
                   <th className="text-center" style={{ padding: "12px 16px", width: "48px" }}>Pts</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/40">
+              <tbody className="divide-y divide-cyan-500/10">
                 {standings.length === 0 ? (
-                  <tr><td colSpan="7" className="text-center py-10 text-theme-text-muted text-sm">No matches played yet</td></tr>
+                  <tr><td colSpan="7" className="text-center py-10 text-theme-text-muted font-tactical uppercase tracking-widest text-xs">No matches played yet</td></tr>
                 ) : standings.map((team, idx) => (
                   <tr
                     key={team.name}
-                    className={`${idx === 0 ? 'bg-cyan-500/[0.06]' : 'hover:bg-slate-800/30'} transition-colors`}
+                    className={`${idx === 0 ? 'bg-cyan-500/[0.06]' : 'hover:bg-cyan-500/[0.04]'} transition-colors`}
                   >
                     <td style={{ padding: "12px 16px" }}>
-                      <div className="flex items-center justify-center gap-1.5">
+                      <div className="flex items-center justify-center gap-1.5 font-tactical">
                         <span className="text-theme-text-base font-bold">{idx + 1}</span>
-                        {/* Mock Trend Indicators based on photo */}
                         {idx === 0 || idx === 3 ? (
                           <span className="text-theme-text-muted text-xs">–</span>
                         ) : idx === 1 ? (
@@ -1236,19 +1238,19 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
                     </td>
                     <td style={{ padding: "12px 16px" }}>
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-cyan-900/40 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-xs font-black shadow-[0_0_10px_rgba(6,182,212,0.3)]">
+                        <div className="w-8 h-8 hud-chamfer-sm bg-cyan-900/40 border border-cyan-500/35 text-cyan-400 flex items-center justify-center font-tactical text-xs font-black shadow-[0_0_10px_rgba(6,182,212,0.25)]">
                           {team.name.substring(0, 2).toUpperCase()}
                         </div>
-                        <span className="text-theme-text-base font-bold">{team.name}</span>
+                        <span className="font-tactical text-theme-text-base font-bold uppercase tracking-wider">{team.name}</span>
                       </div>
                     </td>
-                    <td className="text-center text-theme-text-muted" style={{ padding: "12px 16px" }}>{team.played}</td>
-                    <td className="text-center text-emerald-400 font-bold" style={{ padding: "12px 16px" }}>{team.wins}</td>
-                    <td className="text-center text-rose-400 font-bold" style={{ padding: "12px 16px" }}>{team.losses}</td>
-                    <td className={`text-center font-medium ${team.diff > 0 ? 'text-emerald-400' : team.diff < 0 ? 'text-rose-400' : 'text-theme-text-muted'}`} style={{ padding: "12px 16px" }}>
+                    <td className="text-center font-tactical text-theme-text-muted" style={{ padding: "12px 16px" }}>{team.played}</td>
+                    <td className="text-center font-tactical text-emerald-400 font-bold" style={{ padding: "12px 16px" }}>{team.wins}</td>
+                    <td className="text-center font-tactical text-rose-400 font-bold" style={{ padding: "12px 16px" }}>{team.losses}</td>
+                    <td className={`text-center font-tactical font-medium ${team.diff > 0 ? 'text-emerald-400' : team.diff < 0 ? 'text-rose-400' : 'text-theme-text-muted'}`} style={{ padding: "12px 16px" }}>
                       {team.diff > 0 ? `+${team.diff}` : team.diff}
                     </td>
-                    <td className="text-center text-cyan-400 font-black" style={{ padding: "12px 16px" }}>{team.points}</td>
+                    <td className="text-center font-tactical text-cyan-400 font-black" style={{ padding: "12px 16px" }}>{team.points}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1259,7 +1261,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
         <div className="w-full flex flex-col" style={{ padding: "0 32px" }}>
           <div className="flex items-center space-x-3" style={{ marginBottom: "24px" }}>
             <SwordsIcon size={16} className="text-cyan-400" />
-            <h3 className="text-sm font-bold uppercase text-theme-text-base tracking-[0.1em]">Match Schedule</h3>
+            <h3 className="font-tactical text-sm font-bold uppercase text-theme-text-base tracking-[0.14em]">Match Schedule</h3>
           </div>
           <div className="flex flex-col gap-10 pb-20">
             {(() => {
@@ -1285,7 +1287,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
                 .map(([roundNum, matches]) => (
                   <div key={roundNum} className="flex flex-col lg:flex-row gap-6 items-start">
                     <div className="lg:w-32 shrink-0 pt-2 lg:text-left text-center">
-                      <h4 className="text-[16px] font-black uppercase tracking-widest text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">Round {roundNum}</h4>
+                      <h4 className="font-tactical text-[16px] font-black uppercase tracking-widest text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">Round {roundNum}</h4>
                     </div>
                     <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                       {matches.map(match => {
@@ -1318,29 +1320,44 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
 
   if (!isFormatLocked && hasLoaded && !isReadOnly) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-slate-950 p-12 h-full z-50">
-        <div className="max-w-4xl w-full flex flex-col items-center gap-12">
-          <div className="text-center">
-            <h2 className="text-4xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 mb-4">Setup Tournament</h2>
-            <p className="text-slate-400 font-medium">This tournament does not have a bracket yet. Choose a format to get started.</p>
+      <div className="flex-1 flex flex-col items-center justify-center bg-[#06090e] hud-canvas-bg p-10 md:p-14 h-full z-50 relative overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-cyan-500/80 via-cyan-400/20 to-transparent pointer-events-none" />
+        <div className="max-w-4xl w-full flex flex-col items-center gap-10 relative z-10">
+          <div className="text-center flex flex-col items-center">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-cyan-500/10 border border-cyan-500/35 hud-chamfer-sm mb-3">
+              <span className="hud-diamond" />
+              <span className="font-tactical text-[10px] font-black text-cyan-400 uppercase tracking-[0.22em]">
+                Bracket Format Initialization
+              </span>
+            </div>
+            <h2 className="font-tactical text-3xl md:text-4xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400 mb-3 drop-shadow-[0_0_16px_rgba(0,229,255,0.2)]">
+              Setup Tournament
+            </h2>
+            <p className="text-slate-400 text-sm font-medium">
+              This tournament does not have a bracket yet. Choose a format to get started.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
             {[
-              { id: 'Single Elimination', icon: <Trophy size={32} />, desc: 'Classic knockout format.' },
-              { id: 'Double Elimination', icon: <Shield size={32} />, desc: 'Includes a loser bracket for a second chance.' },
-              { id: 'Round Robin', icon: <Users size={32} />, desc: 'Every team plays against every other team.' }
+              { id: 'Single Elimination', icon: <Trophy size={30} />, desc: 'Classic knockout format.' },
+              { id: 'Double Elimination', icon: <Shield size={30} />, desc: 'Includes a loser bracket for a second chance.' },
+              { id: 'Round Robin', icon: <Users size={30} />, desc: 'Every team plays against every other team.' }
             ].map(f => (
               <button
                 key={f.id}
                 onClick={() => { setActiveFormat(f.id); setIsFormatLocked(true); }}
-                className="group flex flex-col items-center justify-center p-8 bg-slate-900/60 border border-slate-700/50 hover:border-cyan-500 rounded-3xl transition-all duration-300 hover:bg-slate-800 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] hover:-translate-y-2 cursor-pointer"
+                className="group hud-card hud-card-interactive hud-sweep-overlay flex flex-col items-center justify-center p-8 transition-all duration-300 cursor-pointer"
               >
-                <div className="w-16 h-16 rounded-2xl bg-cyan-900/20 text-cyan-500 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <div className="w-16 h-16 hud-chamfer-sm bg-cyan-500/10 border border-cyan-500/35 text-cyan-400 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(0,229,255,0.25)] transition-all">
                   {f.icon}
                 </div>
-                <h3 className="text-lg font-black uppercase text-slate-200 tracking-wide mb-2 group-hover:text-cyan-400 transition-colors text-center">{f.id}</h3>
-                <p className="text-xs text-slate-500 text-center font-medium leading-relaxed">{f.desc}</p>
+                <h3 className="font-tactical text-lg font-black uppercase text-white tracking-wider mb-2 group-hover:text-cyan-400 transition-colors text-center">
+                  {f.id}
+                </h3>
+                <p className="text-xs text-slate-400 text-center font-medium leading-relaxed">
+                  {f.desc}
+                </p>
               </button>
             ))}
           </div>
@@ -1354,48 +1371,47 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
 
       {/* ══ LEFT SIDEBAR — Team Roster ═══════════════════════ */}
       {!isReadOnly && (
-      <div className={`bg-bg-200/95 border-theme-input flex flex-col z-20 shadow-2xl relative flex-shrink-0 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${isRosterOpen ? 'w-[400px] border-r opacity-100' : 'w-0 border-r-0 opacity-0 overflow-hidden'}`}>
+      <div className={`bg-[#070b12]/95 border-cyan-500/20 flex flex-col z-20 shadow-2xl relative flex-shrink-0 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${isRosterOpen ? 'w-[400px] border-r opacity-100' : 'w-0 border-r-0 opacity-0 overflow-hidden'}`}>
         <div className="w-[400px] h-full flex flex-col shrink-0">
           {/* Header */}
-          <div className="border-b border-theme-input flex items-center justify-between" style={{ padding: "32px 40px" }}>
+          <div className="border-b border-cyan-500/15 flex items-center justify-between" style={{ padding: "28px 36px" }}>
             <div>
-              <h2 className="text-[16px] font-black uppercase tracking-[0.12em] text-theme-text-base flex items-center">
+              <h2 className="font-tactical text-[16px] font-black uppercase tracking-[0.14em] text-theme-text-base flex items-center">
                 <UserIcon size={18} className="text-cyan-400 mr-3" />
                 Team Roster
               </h2>
-              <p className="text-[12px] text-theme-text-muted mt-1.5 uppercase tracking-wider">Bracket Auto-Seeding</p>
+              <p className="font-tactical text-[11px] text-theme-text-muted mt-1 uppercase tracking-wider">Bracket Auto-Seeding</p>
             </div>
-            <div className="bg-slate-800/70 text-[12px] font-bold px-4 py-2 text-cyan-400 border border-slate-700/50" style={{ borderRadius: "8px" }}>
+            <div className="bg-cyan-500/10 font-tactical text-[12px] font-bold px-3.5 py-1.5 text-cyan-400 border border-cyan-500/35 hud-chamfer-sm">
               {teamPool.length} Teams
             </div>
           </div>
 
           {/* Add Team Input */}
-          <div className="border-b border-theme-input" style={{ padding: "24px 40px" }}>
+          <div className="border-b border-cyan-500/15" style={{ padding: "20px 36px" }}>
             <form onSubmit={addTeam} className="relative mb-0">
               <input
                 type="text"
                 value={newTeam}
                 onChange={(e) => setNewTeam(e.target.value)}
                 placeholder="Add teams (comma separated)..."
-                className="w-full bg-theme-input border border-theme-input px-5 py-4 text-[13px] text-theme-text-base placeholder-theme-text-muted focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all duration-200 pr-14"
-                style={{ borderRadius: "16px" }}
+                className="w-full bg-[#060a12] border border-cyan-500/25 hud-chamfer-sm px-5 py-3.5 text-[13px] text-theme-text-base placeholder-theme-text-muted focus:outline-none focus:border-cyan-400 transition-all duration-200 pr-14"
               />
-              <button type="submit" disabled={!newTeam.trim()} className="absolute right-2 top-2 bottom-2 px-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 flex items-center justify-center transition-colors shadow-[0_0_10px_rgba(6,182,212,0.4)] disabled:opacity-50 disabled:cursor-not-allowed" style={{ borderRadius: "12px" }}>
+              <button type="submit" disabled={!newTeam.trim()} className="absolute right-2 top-2 bottom-2 px-3 bg-cyan-400 hover:bg-cyan-300 text-slate-950 hud-chamfer-sm flex items-center justify-center transition-colors shadow-[0_0_10px_rgba(0,229,255,0.4)] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
                 <Plus size={18} strokeWidth={2.5} />
               </button>
             </form>
           </div>
 
           {/* Auto-Seed Manual Trigger */}
-          <div className="border-b border-theme-input bg-cyan-900/10" style={{ padding: "16px 40px", display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div className="border-b border-cyan-500/15 bg-cyan-950/15" style={{ padding: "16px 36px", display: "flex", flexDirection: "column", gap: "10px" }}>
             {activeFormat === "Round Robin" && (
-              <div className="flex items-center justify-between bg-slate-950/40 p-3 rounded-xl border border-slate-700/50">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Encounters per Opponent</span>
+              <div className="flex items-center justify-between bg-[#060a12] p-3 hud-chamfer-sm border border-cyan-500/20">
+                <span className="font-tactical text-[10px] font-bold text-slate-400 uppercase tracking-wider">Encounters per Opponent</span>
                 <div className="flex items-center gap-3">
-                  <button onClick={() => setRoundRobinEncounters(Math.max(1, roundRobinEncounters - 1))} className="w-6 h-6 rounded bg-slate-800 text-slate-300 hover:text-cyan-400 flex items-center justify-center font-bold transition-colors cursor-pointer">-</button>
-                  <span className="text-sm font-black text-cyan-400 w-4 text-center">{roundRobinEncounters}</span>
-                  <button onClick={() => setRoundRobinEncounters(roundRobinEncounters + 1)} className="w-6 h-6 rounded bg-slate-800 text-slate-300 hover:text-cyan-400 flex items-center justify-center font-bold transition-colors cursor-pointer">+</button>
+                  <button onClick={() => setRoundRobinEncounters(Math.max(1, roundRobinEncounters - 1))} className="w-6 h-6 hud-chamfer-sm bg-slate-800 text-slate-300 hover:text-cyan-400 flex items-center justify-center font-tactical font-bold transition-colors cursor-pointer">-</button>
+                  <span className="font-tactical text-sm font-black text-cyan-400 w-4 text-center">{roundRobinEncounters}</span>
+                  <button onClick={() => setRoundRobinEncounters(roundRobinEncounters + 1)} className="w-6 h-6 hud-chamfer-sm bg-slate-800 text-slate-300 hover:text-cyan-400 flex items-center justify-center font-tactical font-bold transition-colors cursor-pointer">+</button>
                 </div>
               </div>
             )}
@@ -1410,8 +1426,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
                 setDoubleElimData(generateDoubleElimBracket(num, teamPool));
                 setRoundRobinData(generateRoundRobin(teamPool, roundRobinEncounters));
               }}
-              className="w-full py-2.5 bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 hover:bg-cyan-500 hover:text-slate-950 font-black text-[11px] uppercase tracking-widest transition-all duration-300"
-              style={{ borderRadius: "10px", textShadow: "none" }}
+              className="w-full py-2.5 hud-chamfer-sm bg-cyan-500/15 border border-cyan-500/40 text-cyan-400 hover:bg-cyan-400 hover:text-slate-950 font-tactical font-black text-[11px] uppercase tracking-widest transition-all duration-300 cursor-pointer"
             >
               Apply Roster to Bracket
             </button>
@@ -1424,47 +1439,45 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
                 }
                 setTeamPool(activeTeams);
               }}
-              className="w-full py-2.5 bg-indigo-500/20 border border-indigo-500/40 text-indigo-400 hover:bg-indigo-500 hover:text-slate-950 font-black text-[11px] uppercase tracking-widest transition-all duration-300"
-              style={{ borderRadius: "10px", textShadow: "none" }}
+              className="w-full py-2.5 hud-chamfer-sm bg-indigo-500/15 border border-indigo-500/40 text-indigo-400 hover:bg-indigo-500 hover:text-slate-950 font-tactical font-black text-[11px] uppercase tracking-widest transition-all duration-300 cursor-pointer"
             >
               Import Database Teams
             </button>
           </div>
 
           {/* Team list */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar" style={{ padding: "24px 24px 24px 40px" }}>
-            <div className="flex flex-col gap-3">
+          <div className="flex-1 overflow-y-auto custom-scrollbar" style={{ padding: "20px 24px 20px 36px" }}>
+            <div className="flex flex-col gap-2.5">
               {/* Active Teams */}
               {teamPool.map((team, idx) => {
                 const dbTeam = allTeamsData.find(t => t.team_name === team);
                 return (
                   <div
                     key={team}
-                    className="group flex items-center justify-between bg-bg-300 hover:bg-bg-400 border border-theme-input hover:border-cyan-500/30 px-4 py-3.5 transition-all duration-200"
-                    style={{ borderRadius: "12px" }}
+                    className="group flex items-center justify-between bg-[#0b111b] hover:bg-slate-900 border border-cyan-500/15 hover:border-cyan-400/40 hud-chamfer-sm px-4 py-3 transition-all duration-200"
                   >
-                    <div className="flex items-center gap-4 min-w-0">
-                      <span className="text-[13px] font-bold text-theme-text-muted w-5 text-right flex-shrink-0">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <span className="font-tactical text-[13px] font-bold text-theme-text-muted w-5 text-right flex-shrink-0">
                         {idx + 1}
                       </span>
-                      <div className="w-8 h-8 rounded-lg bg-theme-input border border-theme-input flex items-center justify-center text-cyan-400 flex-shrink-0 overflow-hidden">
+                      <div className="w-8 h-8 hud-chamfer-sm bg-[#060a12] border border-cyan-500/25 flex items-center justify-center text-cyan-400 flex-shrink-0 overflow-hidden">
                         {dbTeam && dbTeam.logo_url ? (
-                          <img src={dbTeam.logo_url} alt={team} className="w-full h-full object-cover" />
+                          <img src={dbTeam.logo_url} alt={team} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />
                         ) : (
-                          <Shield size={16} />
+                          <Shield size={15} />
                         )}
                       </div>
-                      <span className="text-[14px] font-bold text-theme-text-base tracking-wide truncate">
+                      <span className="font-tactical text-[13px] font-bold text-theme-text-base uppercase tracking-wider truncate">
                         {team}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      <button onClick={() => removeTeam(team)} className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-1.5">
-                        <Trash2 size={16} />
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button onClick={() => removeTeam(team)} className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 cursor-pointer">
+                        <Trash2 size={15} />
                       </button>
                       <div className="text-slate-600 cursor-grab active:cursor-grabbing p-1.5">
-                        <GripVertical size={16} />
+                        <GripVertical size={15} />
                       </div>
                     </div>
                   </div>
@@ -1477,14 +1490,13 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
                 return (
                   <div
                     key={`empty-${slotNumber}`}
-                    className="flex items-center justify-between border border-dashed border-theme-input px-4 py-3.5 opacity-50"
-                    style={{ borderRadius: "12px" }}
+                    className="flex items-center justify-between border border-dashed border-cyan-500/20 hud-chamfer-sm px-4 py-3 opacity-50"
                   >
-                    <div className="flex items-center gap-4">
-                      <span className="text-[13px] font-medium text-slate-600 w-5 text-right">
+                    <div className="flex items-center gap-3.5">
+                      <span className="font-tactical text-[13px] font-medium text-slate-600 w-5 text-right">
                         {slotNumber}
                       </span>
-                      <span className="text-[14px] italic text-theme-text-muted font-medium tracking-wide">
+                      <span className="font-tactical text-[12px] uppercase text-theme-text-muted font-medium tracking-wider">
                         Available Slot
                       </span>
                     </div>
@@ -1495,22 +1507,20 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
           </div>
 
           {/* Bottom actions */}
-          <div className="border-t border-theme-input" style={{ padding: "24px 40px", display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div className="border-t border-cyan-500/15" style={{ padding: "20px 36px", display: "flex", flexDirection: "column", gap: "10px" }}>
             {teamPool.length > 0 && (
               <>
                 <button
                   onClick={shuffleTeams}
                   disabled={isShuffling}
-                  className={`w-full py-3.5 border border-cyan-700/60 text-cyan-400 flex justify-center items-center text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-cyan-900/25 transition-all duration-300 ${isShuffling ? 'opacity-60 animate-pulse' : ''}`}
-                  style={{ borderRadius: "12px" }}
+                  className={`w-full py-3 hud-chamfer-sm border border-cyan-500/40 text-cyan-400 flex justify-center items-center font-tactical text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-cyan-500/15 transition-all duration-300 cursor-pointer ${isShuffling ? 'opacity-60 animate-pulse' : ''}`}
                 >
                   <ShuffleIcon size={14} className="mr-2" />
                   {isShuffling ? 'Seed Shuffle Processing...' : 'Shuffle Seed'}
                 </button>
                 <button
                   onClick={() => setTeamPool([])}
-                  className="w-full py-3.5 border border-theme-input text-theme-text-muted text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-theme-input hover:text-theme-text-base transition-colors"
-                  style={{ borderRadius: "12px" }}
+                  className="w-full py-3 hud-chamfer-sm border border-slate-700/60 text-theme-text-muted font-tactical text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-red-500/10 hover:border-red-500/40 hover:text-red-400 transition-colors cursor-pointer"
                 >
                   Clear All Teams
                 </button>
@@ -1527,25 +1537,25 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
         {!isReadOnly && (
           <button
             onClick={() => setIsRosterOpen(!isRosterOpen)}
-            className={`absolute left-3 top-1/2 -translate-y-1/2 z-30 w-12 h-12 flex items-center justify-center bg-bg-200/90 backdrop-blur-md border border-theme-input rounded-full text-theme-text-muted hover:text-cyan-400 hover:bg-theme-input hover:border-cyan-500/50 shadow-xl hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] transition-all duration-700 group ${isIdle ? 'opacity-20' : 'opacity-100 hover:opacity-100'}`}
+            className={`absolute left-3 top-1/2 -translate-y-1/2 z-30 w-11 h-11 flex items-center justify-center bg-[#0b111b]/95 backdrop-blur-md border border-cyan-500/35 hud-chamfer-sm text-cyan-400 hover:bg-cyan-500/15 hover:border-cyan-400 shadow-xl hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] transition-all duration-500 group cursor-pointer ${isIdle ? 'opacity-30' : 'opacity-100 hover:opacity-100'}`}
           >
-            {isRosterOpen ? <PanelLeftClose size={24} className="group-hover:scale-110 transition-transform" /> : <PanelLeftOpen size={24} className="group-hover:scale-110 transition-transform" />}
+            {isRosterOpen ? <PanelLeftClose size={20} className="group-hover:scale-110 transition-transform" /> : <PanelLeftOpen size={20} className="group-hover:scale-110 transition-transform" />}
           </button>
         )}
         {/* Background gradient */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-cyan-900/15 via-[#090e14] to-[#090e14] pointer-events-none" />
 
         {/* Top bar: Title + Live Stats */}
-        <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6" style={{ padding: "48px 64px 48px 96px" }}>
+        <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6" style={{ padding: "40px 64px 40px 96px" }}>
           {/* Left: Title area */}
           <div className="flex-1 min-w-0 w-full">
-            <div className="flex items-center space-x-3 mb-1">
-              <p className="text-[10px] text-cyan-500 uppercase tracking-[0.2em] font-bold flex items-center">
-                <TrophyIcon size={12} className="mr-1.5" />
+            <div className="flex items-center space-x-3 mb-1.5">
+              <p className="font-tactical text-[10px] text-cyan-400 uppercase tracking-[0.2em] font-bold flex items-center gap-1.5">
+                <span className="hud-diamond" />
                 Tournament Bracket Management
               </p>
             </div>
-            <h1 className="text-2xl font-black uppercase tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400 leading-tight truncate">
+            <h1 className="font-tactical text-2xl font-black uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400 leading-tight truncate">
               {tournamentName && !tournamentName.match(/^[0-9a-f]{8}-/i) ? tournamentName : "Active Tournament Bracket"}
             </h1>
           </div>
@@ -1555,26 +1565,25 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
           <div className="flex-shrink-0 w-full lg:w-auto flex flex-col items-start lg:items-end justify-center gap-3">
             <div className="flex items-center gap-4">
               <div className="text-left lg:text-right">
-                <span className="text-xs font-bold uppercase tracking-[0.15em] text-theme-text-muted block mb-0.5">Live Statistics</span>
-                <span className={`text-[10px] font-bold flex items-center lg:justify-end ${isLiveConnected ? "text-green-400" : "text-theme-text-muted"}`}>
+                <span className="font-tactical text-xs font-bold uppercase tracking-[0.15em] text-theme-text-muted block mb-0.5">Live Statistics</span>
+                <span className={`font-tactical text-[10px] font-bold flex items-center lg:justify-end ${isLiveConnected ? "text-green-400" : "text-theme-text-muted"}`}>
                   <span className={`inline-block w-2 h-2 rounded-full mr-2 ${isLiveConnected ? "bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.6)]" : "bg-slate-600"}`} />
                   {isLiveConnected ? "Status: Active" : "Status: Inactive"}
                 </span>
               </div>
               <button
                 onClick={() => setIsLiveConnected(!isLiveConnected)}
-                className={`relative inline-flex h-6 w-11 items-center transition-colors focus:outline-none shadow-inner shrink-0 cursor-pointer ${isLiveConnected ? "bg-green-500" : "bg-slate-700"}`}
-                style={{ borderRadius: "24px" }}
+                className={`relative inline-flex h-6 w-11 items-center hud-chamfer-sm transition-colors focus:outline-none shadow-inner shrink-0 cursor-pointer ${isLiveConnected ? "bg-green-500" : "bg-slate-700"}`}
               >
-                <span className={`inline-block h-4 w-4 transform bg-white transition-transform shadow-md ${isLiveConnected ? "translate-x-6" : "translate-x-1"}`} style={{ borderRadius: "50%" }} />
+                <span className={`inline-block h-4 w-4 transform bg-white hud-chamfer-sm transition-transform shadow-md ${isLiveConnected ? "translate-x-6" : "translate-x-1"}`} />
               </button>
             </div>
             {/* Action buttons row */}
             <div className="flex items-center gap-3">
-              <span className={`inline-flex items-center px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-widest shrink-0 ${isLiveConnected ? 'bg-green-500/15 text-green-400 border border-green-500/30' : 'bg-slate-800/50 text-theme-text-muted border border-slate-700/30'}`}>
+              <span className={`inline-flex items-center px-3 py-1.5 hud-chamfer-sm font-tactical text-[10px] font-black uppercase tracking-widest shrink-0 ${isLiveConnected ? 'bg-green-500/15 text-green-400 border border-green-500/35' : 'bg-slate-800/50 text-theme-text-muted border border-slate-700/40'}`}>
                 {isLiveConnected ? "LIVE" : "OFFLINE"}
               </span>
-              <button className="flex items-center justify-center gap-2 px-4 py-1.5 bg-slate-800/40 border border-slate-700/30 rounded text-[10px] font-bold text-theme-text-base uppercase tracking-wider hover:bg-slate-700/40 hover:text-theme-text-base transition-colors cursor-pointer" style={{ borderRadius: "8px" }}>
+              <button className="flex items-center justify-center gap-2 px-4 py-1.5 bg-slate-900/80 border border-cyan-500/25 hud-chamfer-sm font-tactical text-[10px] font-bold text-theme-text-base uppercase tracking-wider hover:bg-cyan-500/15 hover:border-cyan-400/50 hover:text-cyan-400 transition-colors cursor-pointer">
                 <ExternalLinkIcon size={12} />
                 <span>View Data</span>
               </button>
@@ -1584,18 +1593,18 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
         </div>
 
         {/* Format Tabs */}
-        <div className="sticky top-0 z-50 w-full shrink-0" style={{ padding: "0 64px 24px 96px", marginTop: "-24px", marginBottom: "24px" }}>
-          <div className="flex items-center w-full bg-bg-200/90 backdrop-blur-md border border-slate-800/80 shadow-2xl" style={{ padding: "8px", gap: "12px", borderRadius: "16px" }}>
+        <div className="sticky top-0 z-50 w-full shrink-0" style={{ padding: "0 64px 24px 96px", marginTop: "-16px", marginBottom: "20px" }}>
+          <div className="flex items-center w-full hud-card shadow-2xl" style={{ padding: "8px", gap: "10px" }}>
             {formats.map(format => (
               <button
                 key={format}
                 onClick={() => setActiveFormat(format)}
-                className={`flex-1 text-sm font-bold transition-all duration-300 whitespace-nowrap shrink-0 cursor-pointer
+                className={`flex-1 font-tactical text-xs font-extrabold uppercase tracking-[0.14em] hud-chamfer-sm transition-all duration-300 whitespace-nowrap shrink-0 cursor-pointer
                   ${activeFormat === format
-                    ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-theme-text-base shadow-[0_0_16px_rgba(6,182,212,0.4)]"
-                    : "bg-transparent text-theme-text-muted hover:text-theme-text-base hover:bg-theme-input"
+                    ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-[0_0_16px_rgba(0,229,255,0.4)]"
+                    : "bg-transparent text-theme-text-muted hover:text-theme-text-base hover:bg-cyan-500/10"
                   } ${isReadOnly && activeFormat !== format ? 'hidden' : ''}`}
-                style={{ padding: "16px", borderRadius: "12px" }}
+                style={{ padding: "14px" }}
               >
                 {format}
               </button>
@@ -1608,7 +1617,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
                     setIsFormatLocked(false);
                   }
                 }}
-                className="text-xs font-bold uppercase tracking-wider text-red-400 hover:text-red-300 hover:bg-red-900/20 transition-all duration-300 px-6 py-4 rounded-xl border border-red-900/30 shrink-0 ml-4 cursor-pointer"
+                className="font-tactical text-xs font-bold uppercase tracking-wider text-red-400 hover:text-red-300 hover:bg-red-900/20 transition-all duration-300 px-5 py-3.5 hud-chamfer-sm border border-red-500/35 shrink-0 ml-2 cursor-pointer"
               >
                 Change Format
               </button>
@@ -1617,7 +1626,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
         </div>
 
         {/* Bracket Area */}
-        <div className="relative z-10 bg-bg-300 rounded-2xl border border-theme-input shadow-2xl shrink-0" style={{ minHeight: "fit-content", margin: "0 64px 24px 96px", overflowX: "auto" }}>
+        <div className="relative z-10 hud-card shadow-2xl shrink-0" style={{ minHeight: "fit-content", margin: "0 64px 24px 96px", overflowX: "auto" }}>
           <div className="p-6 flex items-start justify-center min-w-max">
             {activeFormat === "Single Elimination" && renderSingleElimination()}
             {activeFormat === "Double Elimination" && renderDoubleElimination()}
@@ -1635,21 +1644,21 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
                 setResultsData(standings);
                 setActiveFormat('Results');
               }}
-              className="flex items-center justify-center bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-bold uppercase tracking-[0.12em] shadow-lg transition-all duration-300 cursor-pointer"
-              style={{ padding: "16px 48px", borderRadius: "16px", gap: "12px" }}
+              className="flex items-center justify-center hud-chamfer-sm bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-tactical font-black uppercase tracking-[0.14em] shadow-[0_0_20px_rgba(245,158,11,0.3)] transition-all duration-300 cursor-pointer"
+              style={{ padding: "14px 40px", gap: "10px" }}
             >
-              <Trophy size={18} />
-              <span style={{ fontSize: "14px" }}>Finalize Standings</span>
+              <Trophy size={17} />
+              <span style={{ fontSize: "13px" }}>Finalize Standings</span>
             </button>
 
             <button
               onClick={saveBracketState}
               disabled={isSaving}
-              className="flex items-center space-x-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-theme-text-base font-bold uppercase tracking-[0.12em] hover:shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all duration-300 disabled:opacity-50 cursor-pointer"
-              style={{ padding: "16px 48px", borderRadius: "16px", gap: "12px" }}
+              className="hud-btn-primary flex items-center font-tactical font-black uppercase tracking-[0.14em] transition-all duration-300 disabled:opacity-50 cursor-pointer"
+              style={{ padding: "14px 40px", gap: "10px" }}
             >
-              <SaveIcon size={18} />
-              <span style={{ fontSize: "14px" }}>{isSaving ? 'Saving...' : 'Save Bracket'}</span>
+              <SaveIcon size={17} />
+              <span style={{ fontSize: "13px" }}>{isSaving ? 'Saving...' : 'Save Bracket'}</span>
             </button>
           </div>
         )}

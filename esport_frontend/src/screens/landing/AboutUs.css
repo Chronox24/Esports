@@ -1,6 +1,10 @@
+/* AboutUs.css */
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,600;0,700;1,700&family=Inter:wght@400;500;600;700&family=Rajdhani:wght@600;700&display=swap');
+
 :root {
   --bg-void: #03050a;
   --accent-neon: #00e5ff;
+  --accent-crimson: #ff4655;
   --text-pure: #ffffff;
   --text-dim: #94a3b8;
   --glass-panel: rgba(10, 16, 30, 0.6);
@@ -12,6 +16,7 @@
   min-height: 100vh; 
   background-color: var(--bg-void); 
   color: var(--text-pure); 
+  font-family: 'Inter', system-ui, sans-serif;
   overflow-x: hidden; 
   display: flex; 
   flex-direction: column; 
@@ -46,31 +51,35 @@
   display: flex; 
   justify-content: space-between; 
   align-items: center; 
-  padding: 1.25rem 4%; 
-  background: rgba(3, 5, 10, 0.8); 
+  padding: 1.15rem 4%; 
+  background: rgba(3, 5, 10, 0.85); 
   backdrop-filter: blur(20px); 
   border-bottom: 1px solid var(--glass-border); 
 }
 
 .maximized-about-wrapper .brand-logo { 
-  font-size: 1.6rem; 
-  font-weight: 900; 
-  letter-spacing: 2px; 
+  font-family: 'Chakra Petch', 'Rajdhani', sans-serif;
+  font-size: 1.55rem; 
+  font-weight: 700; 
+  letter-spacing: 2.5px; 
   text-transform: uppercase; 
+  cursor: pointer;
 }
 
-.maximized-about-wrapper .nav-links { display: flex; gap: 3rem; }
+.maximized-about-wrapper .nav-links { display: flex; gap: 2.5rem; }
 
 .maximized-about-wrapper .nav-btn { 
+  font-family: 'Chakra Petch', 'Rajdhani', sans-serif;
   background: transparent; 
   border: none; 
   color: var(--text-dim); 
   font-size: 0.95rem; 
   font-weight: 700; 
+  letter-spacing: 1.5px;
   text-transform: uppercase; 
   cursor: pointer; 
   position: relative; 
-  padding-bottom: 0.5rem; 
+  padding: 0.4rem 0; 
   transition: color 0.3s; 
 }
 
@@ -82,10 +91,10 @@
 .maximized-about-wrapper .nav-btn::after { 
   content: ''; 
   position: absolute; 
-  bottom: 0; 
+  bottom: -2px; 
   left: 0; 
   width: 0; 
-  height: 3px; 
+  height: 2px; 
   background: var(--accent-neon); 
   transition: width 0.3s ease; 
   box-shadow: 0 0 10px var(--accent-neon); 
@@ -96,23 +105,30 @@
   width: 100%; 
 }
 
-/* OVAL LOGIN BUTTON */
+/* Tactical HUD Chamfered Login Button */
 .maximized-about-wrapper .login-btn { 
-  background: transparent; 
-  border: 2px solid var(--accent-neon); 
+  font-family: 'Chakra Petch', 'Rajdhani', sans-serif;
+  background: rgba(0, 229, 255, 0.08); 
+  border: 1px solid rgba(0, 229, 255, 0.65); 
+  border-left: 2px solid var(--accent-neon);
+  border-right: 2px solid var(--accent-neon);
   color: var(--accent-neon); 
-  padding: 0.6rem 2rem; 
-  border-radius: 50px; /* Changed to 50px for Oval Shape */
-  font-size: 0.9rem; 
-  font-weight: 800; 
+  padding: 0.58rem 1.75rem; 
+  border-radius: 0;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  font-size: 0.88rem; 
+  font-weight: 700; 
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
   cursor: pointer; 
-  transition: all 0.3s; 
+  transition: all 0.25s ease; 
 }
 
 .maximized-about-wrapper .login-btn:hover { 
-  background: var(--accent-neon); 
-  color: var(--bg-void); 
-  box-shadow: 0 0 20px rgba(0, 229, 255, 0.4); 
+  background: var(--accent-crimson); 
+  border-color: var(--accent-crimson);
+  color: #ffffff; 
+  box-shadow: 0 0 20px rgba(255, 70, 85, 0.45); 
 }
 
 /* Main Content */
@@ -123,33 +139,37 @@
   display: flex; 
   flex-direction: column; 
   align-items: center; 
-  padding: 4rem 4% 6rem; 
+  padding: 0 4% 6rem; 
   width: 100%; 
 }
 
+/* Full-Bleed Hero Panel with Bottom Vignette Fade */
 .maximized-about-wrapper .glass-about-panel { 
-  width: 100%; 
-  max-width: 1300px; 
-  background: var(--glass-panel); 
-  backdrop-filter: blur(24px); 
-  border: 1px solid var(--glass-border); 
-  border-radius: 24px; 
-  padding: 5rem 4rem; 
+  width: 100vw; 
+  max-width: none; 
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  background: linear-gradient(180deg, rgba(6, 11, 19, 0.45) 0%, #060b13 100%); 
+  backdrop-filter: none; 
+  border: none; 
+  border-bottom: 1px solid rgba(0, 229, 255, 0.12);
+  border-radius: 0; 
+  padding: 5rem 4% 4.5rem; 
   text-align: center; 
   margin-bottom: 4rem; 
-  box-shadow: 0 30px 60px rgba(0,0,0,0.6); 
+  box-shadow: none; 
   position: relative; 
   overflow: hidden; 
 }
 
 .maximized-about-wrapper .about-header-glow { 
   position: absolute; 
-  top: -100px; 
+  top: 40%; 
   left: 50%; 
-  transform: translateX(-50%); 
-  width: 400px; 
-  height: 200px; 
-  background: radial-gradient(circle, rgba(0, 229, 255, 0.15) 0%, transparent 70%); 
+  transform: translate(-50%, -50%); 
+  width: 720px; 
+  height: 360px; 
+  background: radial-gradient(circle, rgba(0, 229, 255, 0.12) 0%, transparent 70%); 
   z-index: 0; 
   pointer-events: none; 
 }
@@ -157,30 +177,33 @@
 .maximized-about-wrapper .about-main-title { 
   position: relative; 
   z-index: 2; 
-  font-size: clamp(2.2rem, 4vw, 3.5rem); 
-  font-weight: 900; 
+  font-family: 'Chakra Petch', 'Rajdhani', sans-serif;
+  font-size: clamp(2.4rem, 4.2vw, 3.7rem); 
+  font-weight: 700; 
   letter-spacing: 3px; 
-  line-height: 1.2; 
+  line-height: 1.15; 
   margin-bottom: 1.5rem; 
+  text-shadow: none;
 }
 
 .maximized-about-wrapper .text-highlight { 
   color: var(--accent-neon); 
-  text-shadow: 0 0 20px rgba(0, 229, 255, 0.4); 
+  text-shadow: none; 
 }
 
 .maximized-about-wrapper .about-sub-desc { 
   position: relative; 
   z-index: 2; 
-  max-width: 900px; 
-  margin: 0 auto 4rem; 
+  font-family: 'Inter', sans-serif;
+  max-width: 860px; 
+  margin: 0 auto 3.5rem; 
   color: #cbd5e1; 
-  font-size: 1.1rem; 
-  line-height: 1.8; 
-  letter-spacing: 0.5px; 
+  font-size: 1.08rem; 
+  line-height: 1.75; 
+  letter-spacing: 0.3px; 
 }
 
-/* Values Grid */
+/* Values Grid - Tactical HUD Cards with 1px subtle border & 2px cyan corner ticks */
 .maximized-about-wrapper .values-grid-modern { 
   position: relative; 
   z-index: 2; 
@@ -192,10 +215,12 @@
 }
 
 .maximized-about-wrapper .value-card { 
-  background: rgba(0, 0, 0, 0.3); 
-  border: 1px solid var(--glass-border); 
-  border-radius: 16px; 
-  padding: 2rem 1rem; 
+  position: relative;
+  background: rgba(10, 18, 32, 0.72); 
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1); 
+  border-radius: 0; 
+  padding: 2.25rem 1.25rem; 
   display: flex; 
   flex-direction: column; 
   align-items: center; 
@@ -203,27 +228,60 @@
   transition: transform 0.3s ease, border-color 0.3s, box-shadow 0.3s; 
 }
 
+.maximized-about-wrapper .value-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 14px;
+  height: 14px;
+  border-top: 2px solid #00e5ff;
+  border-left: 2px solid #00e5ff;
+  pointer-events: none;
+  transition: width 0.3s ease, height 0.3s ease;
+}
+
+.maximized-about-wrapper .value-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 14px;
+  height: 14px;
+  border-bottom: 2px solid #00e5ff;
+  border-right: 2px solid #00e5ff;
+  pointer-events: none;
+  transition: width 0.3s ease, height 0.3s ease;
+}
+
 .maximized-about-wrapper .value-card:hover { 
-  transform: translateY(-8px); 
-  border-color: rgba(0, 229, 255, 0.4); 
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 229, 255, 0.05); 
+  transform: translateY(-6px); 
+  border-color: rgba(0, 229, 255, 0.45); 
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.55), inset 0 0 20px rgba(0, 229, 255, 0.05); 
+}
+
+.maximized-about-wrapper .value-card:hover::before,
+.maximized-about-wrapper .value-card:hover::after {
+  width: 22px;
+  height: 22px;
 }
 
 .maximized-about-wrapper .value-icon { 
-  color: var(--text-dim); 
+  color: var(--accent-neon); 
   transition: color 0.3s ease, transform 0.3s ease; 
 }
 
 .maximized-about-wrapper .value-card:hover .value-icon { 
-  color: var(--accent-neon); 
+  color: #ffffff; 
   transform: scale(1.1); 
   filter: drop-shadow(0 0 10px var(--accent-neon)); 
 }
 
 .maximized-about-wrapper .value-card span { 
-  font-weight: 800; 
+  font-family: 'Chakra Petch', 'Rajdhani', sans-serif;
+  font-weight: 700; 
   letter-spacing: 2px; 
-  font-size: 1rem; 
+  font-size: 1.05rem; 
   color: var(--text-pure); 
 }
 
@@ -238,24 +296,54 @@
 
 .maximized-about-wrapper .contact-info-glass, 
 .maximized-about-wrapper .contact-form-glass { 
-  background: var(--glass-panel); 
+  position: relative;
+  background: rgba(10, 16, 30, 0.72); 
   backdrop-filter: blur(16px); 
-  border: 1px solid var(--glass-border); 
-  border-radius: 24px; 
+  border: 1px solid rgba(255, 255, 255, 0.1); 
+  border-radius: 0; 
   padding: 3.5rem; 
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5); 
 }
 
+.maximized-about-wrapper .contact-info-glass::before,
+.maximized-about-wrapper .contact-form-glass::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  border-top: 2px solid #00e5ff;
+  border-left: 2px solid #00e5ff;
+  pointer-events: none;
+}
+
+.maximized-about-wrapper .contact-info-glass::after,
+.maximized-about-wrapper .contact-form-glass::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 16px;
+  height: 16px;
+  border-bottom: 2px solid #00e5ff;
+  border-right: 2px solid #00e5ff;
+  pointer-events: none;
+}
+
 .maximized-about-wrapper .contact-greeting-neon { 
+  font-family: 'Chakra Petch', 'Rajdhani', sans-serif;
   color: var(--accent-neon); 
   font-size: 2.5rem; 
-  font-weight: 900; 
+  font-weight: 700; 
+  letter-spacing: 2px;
   line-height: 1.2; 
   margin-bottom: 1rem; 
-  text-shadow: 0 0 20px rgba(0, 229, 255, 0.3); 
+  text-shadow: none; 
 }
 
 .maximized-about-wrapper .contact-subtext { 
+  font-family: 'Inter', sans-serif;
   color: var(--text-dim); 
   font-size: 1.05rem; 
   line-height: 1.6; 
@@ -275,14 +363,15 @@
 }
 
 .maximized-about-wrapper .contact-icon-box { 
-  background: rgba(0, 229, 255, 0.1); 
-  border: 1px solid rgba(0, 229, 255, 0.2); 
+  background: rgba(0, 229, 255, 0.08); 
+  border: 1px solid rgba(0, 229, 255, 0.3); 
   width: 60px; 
   height: 60px; 
   display: flex; 
   justify-content: center; 
   align-items: center; 
-  border-radius: 16px; 
+  border-radius: 0; 
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
 }
 
 .maximized-about-wrapper .contact-text-box { 
@@ -292,17 +381,19 @@
 }
 
 .maximized-about-wrapper .contact-label { 
+  font-family: 'Chakra Petch', 'Rajdhani', sans-serif;
   color: var(--text-dim); 
   font-size: 0.85rem; 
   text-transform: uppercase; 
-  letter-spacing: 1px; 
+  letter-spacing: 1.5px; 
   font-weight: 700; 
 }
 
 .maximized-about-wrapper .contact-link, 
 .maximized-about-wrapper .contact-text { 
+  font-family: 'Inter', sans-serif;
   color: var(--text-pure); 
-  font-size: 1.1rem; 
+  font-size: 1.05rem; 
   font-weight: 600; 
   text-decoration: none; 
   transition: color 0.2s; 
@@ -310,14 +401,14 @@
 
 .maximized-about-wrapper .contact-link:hover { 
   color: var(--accent-neon); 
-  text-shadow: 0 0 10px var(--accent-neon); 
 }
 
 /* Contact Form Elements */
 .maximized-about-wrapper .form-title { 
-  font-size: 1.5rem; 
-  font-weight: 800; 
-  letter-spacing: 1px; 
+  font-family: 'Chakra Petch', 'Rajdhani', sans-serif;
+  font-size: 1.55rem; 
+  font-weight: 700; 
+  letter-spacing: 2px; 
   margin-bottom: 2rem; 
   text-transform: uppercase; 
 }
@@ -333,12 +424,14 @@
 
 .maximized-about-wrapper .modern-input, 
 .maximized-about-wrapper .modern-textarea { 
+  font-family: 'Inter', sans-serif;
   width: 100%; 
-  background: rgba(0, 0, 0, 0.4); 
+  background: rgba(0, 0, 0, 0.45); 
   border: 1px solid var(--glass-border); 
+  border-left: 2px solid rgba(0, 229, 255, 0.4);
   color: var(--text-pure); 
-  padding: 1.25rem 1.5rem; 
-  border-radius: 12px; 
+  padding: 1.15rem 1.35rem; 
+  border-radius: 0; 
   font-size: 0.95rem; 
   transition: all 0.3s ease; 
   outline: none; 
@@ -348,38 +441,42 @@
 .maximized-about-wrapper .modern-input::placeholder, 
 .maximized-about-wrapper .modern-textarea::placeholder { 
   color: rgba(148, 163, 184, 0.6); 
-  letter-spacing: 1px; 
+  letter-spacing: 0.5px; 
 }
 
 .maximized-about-wrapper .modern-input:focus, 
 .maximized-about-wrapper .modern-textarea:focus { 
   border-color: var(--accent-neon); 
-  background: rgba(0, 0, 0, 0.6); 
+  background: rgba(0, 0, 0, 0.65); 
   box-shadow: 0 0 15px rgba(0, 229, 255, 0.15); 
 }
 
 .maximized-about-wrapper .modern-textarea { resize: none; }
 
 .maximized-about-wrapper .neon-submit-btn { 
+  font-family: 'Chakra Petch', 'Rajdhani', sans-serif;
   width: 100%; 
   background: var(--accent-neon); 
   color: var(--bg-void); 
   border: none; 
-  padding: 1.25rem; 
-  border-radius: 12px; 
-  font-weight: 800; 
+  padding: 1.15rem; 
+  border-radius: 0; 
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  font-weight: 700; 
   font-size: 1rem; 
   letter-spacing: 2px; 
   text-transform: uppercase; 
   cursor: pointer; 
   transition: all 0.3s ease; 
   margin-top: 1rem; 
-  box-shadow: 0 10px 20px rgba(0, 229, 255, 0.2); 
+  box-shadow: 0 10px 20px rgba(0, 229, 255, 0.25); 
 }
 
 .maximized-about-wrapper .neon-submit-btn:hover { 
-  transform: translateY(-3px); 
-  box-shadow: 0 15px 30px rgba(0, 229, 255, 0.4); 
+  background: var(--accent-crimson);
+  color: #ffffff;
+  transform: translateY(-2px); 
+  box-shadow: 0 12px 28px rgba(255, 70, 85, 0.45); 
 }
 
 /* Responsiveness */
@@ -389,7 +486,7 @@
 
 @media (max-width: 768px) { 
   .maximized-about-wrapper .nav-links { display: none; } 
-  .maximized-about-wrapper .glass-about-panel { padding: 3rem 1.5rem; border-radius: 16px; } 
+  .maximized-about-wrapper .glass-about-panel { padding: 3rem 1.5rem; border-radius: 0; } 
   .maximized-about-wrapper .about-main-title { font-size: 2rem; } 
   .maximized-about-wrapper .contact-info-glass, .maximized-about-wrapper .contact-form-glass { padding: 2rem 1.5rem; } 
   .maximized-about-wrapper .form-row-split-modern { grid-template-columns: 1fr; } 

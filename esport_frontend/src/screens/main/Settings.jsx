@@ -66,16 +66,16 @@ const RuleBookIcon = () => (
 );
 const Card = ({ title, children, className = "" }) => (
   <div
-    className={`bg-bg-300 light:bg-white rounded-xl border border-[#1c2532] light:border-slate-200 shadow-xl light:shadow-sm flex flex-col overflow-hidden relative group ${className}`}
+    className={`hud-card hud-enter rounded-xl shadow-xl flex flex-col overflow-hidden relative group ${className}`}
   >
-    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/[0.01] light:from-blue-100/[0.1] to-transparent pointer-events-none z-0"></div>
-    <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-blue-500/30 light:via-blue-300 to-transparent"></div>
-    <div className="border-b border-[#1c2532] light:border-slate-200 bg-bg-300 light:bg-slate-50 relative z-10 flex justify-between items-center group-hover:bg-bg-300 light:group-hover:bg-slate-100 transition-colors" style={{ padding: "24px 32px" }}>
-      <h3 className="text-sm font-bold tracking-wider text-theme-text-base light:text-slate-700 flex items-center">
+    <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/[0.02] to-transparent pointer-events-none z-0"></div>
+    <div className="border-b border-slate-800/80 bg-slate-900/50 relative z-10 flex justify-between items-center transition-colors" style={{ padding: "18px 26px" }}>
+      <h3 className="font-tactical text-sm md:text-base font-extrabold tracking-[0.16em] uppercase text-theme-text-base flex items-center gap-2.5">
+        <span className="hud-diamond" />
         {title}
       </h3>
     </div>
-    <div className="flex-1 relative z-10" style={{ padding: "32px" }}>{children}</div>
+    <div className="flex-1 relative z-10" style={{ padding: "26px" }}>{children}</div>
   </div>
 );
 const Toggle = ({ enabled, onChange, label, sublabel }) => (
@@ -157,15 +157,18 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = "max-w-2xl" }) => 
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ padding: "20px" }}>
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
-      <div className={`relative bg-bg-300 light:bg-white w-full ${maxWidth} rounded-2xl border border-[#1c2532] light:border-slate-200 shadow-2xl flex flex-col overflow-hidden max-h-[90vh]`}>
-        <div className="border-b border-[#1c2532] light:border-slate-200 flex justify-between items-center bg-bg-300 light:bg-slate-50" style={{ padding: "24px 32px" }}>
-          <h2 className="text-xl font-black tracking-wider text-theme-text-base light:text-slate-900 uppercase" style={{ margin: 0, letterSpacing: "0.05em" }}>{title}</h2>
-          <button onClick={onClose} className="text-theme-text-muted hover:text-theme-text-base transition-colors" style={{ background: "transparent", border: "none", cursor: "pointer", padding: "6px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose}></div>
+      <div className={`relative hud-card bg-bg-300 w-full ${maxWidth} rounded-xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh]`}>
+        <div className="border-b border-slate-800/80 flex justify-between items-center bg-slate-900/60" style={{ padding: "18px 26px" }}>
+          <div className="flex items-center gap-3">
+            <span className="hud-diamond" />
+            <h2 className="font-tactical text-lg font-extrabold tracking-[0.16em] text-theme-text-base uppercase" style={{ margin: 0 }}>{title}</h2>
+          </div>
+          <button onClick={onClose} className="hud-chamfer-sm text-theme-text-muted hover:text-cyan-400 bg-slate-800/60 border border-slate-700/60 transition-colors cursor-pointer" style={{ padding: "6px", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <CloseIcon />
           </button>
         </div>
-        <div className="overflow-y-auto custom-scrollbar" style={{ padding: "28px 32px" }}>
+        <div className="overflow-y-auto custom-scrollbar" style={{ padding: "24px 26px" }}>
           {children}
         </div>
       </div>
@@ -854,22 +857,24 @@ const Settings = ({ globalGame, themeBg, setThemeBg, themeAccent, setThemeAccent
           </div>
           {}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4">
-            <button onClick={() => setActiveModal('admins')} className="bg-bg-300 light:bg-white border border-blue-500/30 light:border-blue-200 rounded-xl p-4 flex flex-col items-center justify-center hover:bg-blue-900/20 light:hover:bg-blue-50 transition-all group shadow-lg light:shadow-sm">
-              <span className="text-xs font-black uppercase tracking-widest text-blue-400 light:text-blue-600 mb-2">
-                Match Admins
+            <button onClick={() => setActiveModal('admins')} className="hud-card hud-card-interactive hud-enter hud-delay-1 rounded-xl p-5 flex flex-col items-center justify-center transition-all group cursor-pointer relative overflow-hidden">
+              <div className="hud-sweep-overlay" />
+              <span className="font-tactical text-xs font-extrabold uppercase tracking-[0.2em] text-cyan-400 mb-3">
+                Match Admins Directory
               </span>
-              <div className="flex -space-x-2 opacity-80 group-hover:opacity-100 transition-opacity">
-                <div className="w-8 h-8 rounded-full bg-blue-600 border-2 border-[#0f1722] light:border-white"></div>
-                <div className="w-8 h-8 rounded-full bg-cyan-500 border-2 border-[#0f1722] light:border-white"></div>
-                <div className="w-8 h-8 rounded-full bg-purple-500 border-2 border-[#0f1722] light:border-white"></div>
+              <div className="flex -space-x-2 opacity-90 group-hover:opacity-100 transition-opacity">
+                <div className="w-8 h-8 rounded-full bg-blue-600 border-2 border-[#0f1722]"></div>
+                <div className="w-8 h-8 rounded-full bg-cyan-500 border-2 border-[#0f1722]"></div>
+                <div className="w-8 h-8 rounded-full bg-purple-500 border-2 border-[#0f1722]"></div>
               </div>
             </button>
-            <button onClick={() => setActiveModal('health')} className="bg-bg-300 light:bg-white border border-teal-500/30 light:border-teal-200 rounded-xl p-4 flex flex-col items-center justify-center hover:bg-teal-900/20 light:hover:bg-teal-50 transition-all group shadow-lg light:shadow-sm">
-              <span className="text-xs font-black uppercase tracking-widest text-teal-400 light:text-teal-600 mb-2">
-                Regional Health
+            <button onClick={() => setActiveModal('health')} className="hud-card hud-card-interactive hud-enter hud-delay-2 rounded-xl p-5 flex flex-col items-center justify-center transition-all group cursor-pointer relative overflow-hidden">
+              <div className="hud-sweep-overlay" />
+              <span className="font-tactical text-xs font-extrabold uppercase tracking-[0.2em] text-teal-400 mb-2">
+                Regional Server Health
               </span>
               <svg
-                className="w-8 h-8 text-teal-500 light:text-teal-600 opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all"
+                className="w-8 h-8 text-teal-400 opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -1008,31 +1013,31 @@ const Settings = ({ globalGame, themeBg, setThemeBg, themeAccent, setThemeAccent
             <div className="flex flex-col border-t border-[#1c2532] light:border-slate-200" style={{ paddingTop: "16px" }}>
               {!isBanning ? (
                 <div className="flex justify-between items-center w-full">
-                  <button onClick={() => {setSelectedReport(null); setIsBanning(false);}} className="text-sm font-bold text-theme-text-muted hover:text-theme-text-base transition-colors" style={{ padding: "8px 16px" }}>Close</button>
-                  <div className="flex items-center" style={{ gap: "12px" }}>
-                    <button onClick={async () => {
+                  <button type="button" onClick={() => {setSelectedReport(null); setIsBanning(false);}} className="hud-btn-secondary text-xs font-tactical font-extrabold uppercase tracking-wider px-4 py-2.5">Close</button>
+                  <div className="flex items-center gap-3">
+                    <button type="button" onClick={async () => {
                       try {
                         await apiFetch(`/api/settings/reports/${selectedReport.id}`, { method: 'DELETE' });
                         await fetchReports();
                         setSelectedReport(null);
                       } catch (e) { console.error(e); }
-                    }} className="bg-bg-400 hover:bg-bg-500 text-theme-text-base text-sm font-bold rounded-lg transition-all" style={{ padding: "12px 24px", borderRadius: "9999px" }}>Dismiss</button>
-                    <button onClick={() => setIsBanning(true)} className="bg-red-600 hover:bg-red-700 text-theme-text-base text-sm font-bold rounded-lg shadow-[0_0_15px_rgba(220,38,38,0.3)] transition-all" style={{ padding: "12px 24px", borderRadius: "9999px" }}>Ban Player</button>
+                    }} className="hud-btn-secondary text-xs font-tactical font-extrabold uppercase tracking-wider px-5 py-2.5">Dismiss</button>
+                    <button type="button" onClick={() => setIsBanning(true)} className="hud-chamfer-sm bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/45 border-l-2 border-l-red-500 text-xs font-tactical font-extrabold uppercase tracking-wider px-5 py-2.5 shadow-[0_0_15px_rgba(220,38,38,0.25)] transition-all cursor-pointer">Ban Player</button>
                   </div>
                 </div>
               ) : (
-                <div className="w-full bg-bg-300 light:bg-slate-50 rounded-xl border border-[#2a3648] light:border-slate-200 flex flex-col" style={{ padding: "16px", gap: "16px" }}>
-                  <h4 className="text-[10px] font-bold text-red-400 uppercase tracking-wider">Configure Ban Duration</h4>
-                  <div className="flex items-end" style={{ gap: "16px" }}>
+                <div className="w-full bg-bg-300 light:bg-slate-50 border border-[#2a3648] light:border-slate-200 flex flex-col p-4 gap-4">
+                  <h4 className="font-tactical text-[10px] font-extrabold text-red-400 uppercase tracking-wider">Configure Ban Duration</h4>
+                  <div className="flex items-end gap-4">
                     <Select 
                       label="Duration" 
                       options={['7 Days', '14 Days', '30 Days', 'Permanent']} 
                       value={banDuration} 
                       onChange={setBanDuration} 
                     />
-                    <div className="flex" style={{ gap: "8px" }}>
-                      <button onClick={() => setIsBanning(false)} className="text-xs font-bold text-theme-text-muted hover:text-theme-text-base transition-colors" style={{ padding: "10px 16px" }}>Cancel</button>
-                      <button onClick={async () => {
+                    <div className="flex gap-2.5">
+                      <button type="button" onClick={() => setIsBanning(false)} className="hud-btn-secondary text-xs font-tactical font-extrabold uppercase tracking-wider px-4 py-2.5">Cancel</button>
+                      <button type="button" onClick={async () => {
                         try {
                           await apiFetch('/api/settings/bans', {
                             method: 'POST',
@@ -1048,7 +1053,7 @@ const Settings = ({ globalGame, themeBg, setThemeBg, themeAccent, setThemeAccent
                           setSelectedReport(null);
                           setIsBanning(false);
                         } catch (e) { console.error(e); }
-                      }} className="bg-red-600 hover:bg-red-700 text-theme-text-base text-xs font-bold rounded-lg shadow-[0_0_15px_rgba(220,38,38,0.3)] transition-all whitespace-nowrap" style={{ padding: "12px 24px", borderRadius: "9999px" }}>
+                      }} className="hud-chamfer-sm bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/45 border-l-2 border-l-red-500 text-xs font-tactical font-extrabold uppercase tracking-wider px-5 py-2.5 shadow-[0_0_15px_rgba(220,38,38,0.25)] transition-all whitespace-nowrap cursor-pointer">
                         Confirm Ban
                       </button>
                     </div>

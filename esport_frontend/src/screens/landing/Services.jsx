@@ -1,1 +1,115 @@
-import React, { useState } from 'react';import { useNavigate } from 'react-router-dom';import LoginScreen from './LoginScreen';import './Services.css';const navItems = [  { key: 'Home', label: 'HOME', path: '/' },  { key: 'Projects', label: 'PROJECTS', path: '/projects' },  { key: 'Services', label: 'SERVICES', path: '/services' },  { key: 'AboutUs', label: 'ABOUT US', path: '/about' },];const HostingIcon = () => (  <svg width="80" height="80" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">    <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="2" strokeDasharray="6 6" className="svg-ring" style={{ opacity: 0.3 }}/>    <circle cx="32" cy="32" r="18" stroke="currentColor" strokeWidth="2.5" />    <path d="M32 24C34.2 24 36 25.8 36 28V34C36 36.2 34.2 38 32 38C29.8 38 28 36.2 28 34V28C28 25.8 29.8 24 32 24Z" fill="#00e5ff" />    <path d="M24 48C24 43.6 27.6 40 32 40C36.4 40 40 43.6 40 48V50H24V48Z" fill="#3B82F6" />  </svg>);const TeamIcon = () => (  <svg width="80" height="80" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">    <circle cx="20" cy="24" r="6" fill="#00e5ff" />    <circle cx="44" cy="24" r="6" fill="#3B82F6" />    <circle cx="32" cy="20" r="7" fill="#ffffff" />    <path d="M12 40C12 35.6 15.6 32 20 32H24V42H12V40Z" fill="#00e5ff" />    <path d="M52 40C52 35.6 48.4 32 44 32H40V42H52V40Z" fill="#3B82F6" />    <path d="M24 38C24 33.6 27.6 30 32 30C36.4 30 40 33.6 40 38V48H24V38Z" fill="#ffffff" />    <path d="M32 54C37.5 54 42 49.5 42 44H22C22 49.5 26.5 54 32 54Z" fill="rgba(255,255,255,0.1)" />    <circle cx="32" cy="44" r="4" fill="#00e5ff" />  </svg>);const AnalyticsIcon = () => (  <svg width="80" height="80" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">    <rect x="10" y="14" width="44" height="30" rx="4" fill="transparent" stroke="currentColor" strokeWidth="2.5" />    <rect x="18" y="22" width="6" height="16" rx="1.5" fill="#3B82F6" />    <rect x="29" y="28" width="6" height="10" rx="1.5" fill="#00e5ff" />    <rect x="40" y="18" width="6" height="20" rx="1.5" fill="#ffffff" />    <path d="M22 52C22 47.6 25.6 44 30 44H46C50.4 44 54 47.6 54 52V54C54 55.1 53.1 56 52 56H24C22.9 56 22 55.1 22 54V52Z" fill="currentColor" />    <circle cx="30" cy="50" r="3" fill="#03050a" />    <circle cx="46" cy="50" r="3" fill="#03050a" />  </svg>);const PartnershipIcon = () => (  <svg width="80" height="80" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">    <path d="M26 36H20C17.8 36 16 34.2 16 32V26C16 23.8 17.8 22 20 22H26V16C26 13.8 27.8 12 30 12H36V22H30V26H36V36H30C27.8 36 26 34.2 26 32V36Z" fill="#00e5ff" />    <path d="M48 26V32C48 34.2 46.2 36 44 36H38V42C38 44.2 36.2 46 34 46H28V36H34V32H28V26H34C36.2 26 38 27.8 38 30V26H48Z" fill="#3B82F6" />    <circle cx="21" cy="21" r="3" fill="#03050a" />    <circle cx="43" cy="41" r="3" fill="#03050a" />  </svg>);const servicesData = [  { id: 'hosting', title: 'TOURNAMENT HOSTING', icon: <HostingIcon />, description: 'Automated bracket generation, server provisioning, and match management for smooth competitive events.' },  { id: 'team', title: 'TEAM MANAGEMENT', icon: <TeamIcon />, description: 'Roster registration, scrimmage scheduling, and detailed player analytics for collegiate teams.' },  { id: 'analytics', title: 'ESPORT ANALYTICS', icon: <AnalyticsIcon />, description: 'Real-time telemetry and visualization of KDA, objective control, and in-game performance metrics.' },  { id: 'partnership', title: 'ESPORT PARTNERSHIP', icon: <PartnershipIcon />, description: 'Connect with collegiate partners, view recruitment scouts, and monetize varsity event sponsorships.' },];const Services = ({ onLoginSuccess }) => {  const navigate = useNavigate();  const [activePage, setActivePage] = useState('Services');  const [showLogin, setShowLogin] = useState(false);  const handleNavigation = (item) => {    setActivePage(item.key);    navigate(item.path);  };  return (    <div className="maximized-services-wrapper">      <div className="hero-trophy-bg" />      <div className="hero-dark-overlay" />      <header className="main-navbar">        <div className="brand-logo">ESPORT</div>        <nav className="nav-links">          {navItems.map((item) => (            <button              key={item.key}              type="button"              className={`nav-btn ${activePage === item.key ? 'active' : ''}`}              onClick={() => handleNavigation(item)}            >              {item.label}            </button>          ))}        </nav>        <button           type="button"           className="login-btn glow-on-hover"          onClick={() => setShowLogin(true)}        >          LOGIN        </button>      </header>      <main className="content-container z-relative">        <section className="services-grid-section fade-in-up" style={{ animationDelay: '0.2s' }}>          <div className="services-grid-modern">            {servicesData.map((service) => (              <div                key={service.id}                className="service-card-modern glass-panel-dynamic"              >                <div className="icon-glow-backdrop" />                <div className="service-icon-container">                  {service.icon}                </div>                <div>                  <h3 className="service-title-modern">{service.title}</h3>                  <p className="service-description-text">                    {service.description}                  </p>                </div>                <div className="service-card-border-glow" />              </div>            ))}          </div>        </section>      </main>      {}      {showLogin && (        <LoginScreen          onClose={() => setShowLogin(false)}          onLoginSuccess={onLoginSuccess}        />      )}    </div>  );};export default Services;
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Trophy, Crosshair, BarChart2, ShieldCheck } from 'lucide-react';
+import LoginScreen from './LoginScreen';
+import './Services.css';
+
+const navItems = [
+  { key: 'Home', label: 'HOME', path: '/' },
+  { key: 'Projects', label: 'PROJECTS', path: '/projects' },
+  { key: 'Services', label: 'SERVICES', path: '/services' },
+  { key: 'AboutUs', label: 'ABOUT US', path: '/about' },
+];
+
+const HostingIcon = () => (
+  <div className="tactical-icon-frame">
+    <Trophy size={44} strokeWidth={1.75} className="tactical-svg-icon" />
+  </div>
+);
+
+const TeamIcon = () => (
+  <div className="tactical-icon-frame">
+    <Crosshair size={44} strokeWidth={1.75} className="tactical-svg-icon" />
+  </div>
+);
+
+const AnalyticsIcon = () => (
+  <div className="tactical-icon-frame">
+    <BarChart2 size={44} strokeWidth={1.75} className="tactical-svg-icon" />
+  </div>
+);
+
+const PartnershipIcon = () => (
+  <div className="tactical-icon-frame">
+    <ShieldCheck size={44} strokeWidth={1.75} className="tactical-svg-icon" />
+  </div>
+);
+
+const servicesData = [
+  { id: 'hosting', title: 'TOURNAMENT HOSTING', icon: <HostingIcon />, description: 'Automated bracket generation, server provisioning, and match management for smooth competitive events.' },
+  { id: 'team', title: 'TEAM MANAGEMENT', icon: <TeamIcon />, description: 'Roster registration, scrimmage scheduling, and detailed player analytics for collegiate teams.' },
+  { id: 'analytics', title: 'ESPORT ANALYTICS', icon: <AnalyticsIcon />, description: 'Real-time telemetry and visualization of KDA, objective control, and in-game performance metrics.' },
+  { id: 'partnership', title: 'ESPORT PARTNERSHIP', icon: <PartnershipIcon />, description: 'Connect with collegiate partners, view recruitment scouts, and monetize varsity event sponsorships.' },
+];
+
+const Services = ({ onLoginSuccess }) => {
+  const navigate = useNavigate();
+  const [activePage, setActivePage] = useState('Services');
+  const [showLogin, setShowLogin] = useState(false);
+
+  const handleNavigation = (item) => {
+    setActivePage(item.key);
+    navigate(item.path);
+  };
+
+  return (
+    <div className="maximized-services-wrapper">
+      <div className="hero-trophy-bg" />
+      <div className="hero-dark-overlay" />
+      <header className="main-navbar">
+        <div className="brand-logo" onClick={() => navigate('/')}>ESPORT</div>
+        <nav className="nav-links">
+          {navItems.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              className={`nav-btn ${activePage === item.key ? 'active' : ''}`}
+              onClick={() => handleNavigation(item)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
+        <button 
+          type="button" 
+          className="login-btn glow-on-hover"
+          onClick={() => setShowLogin(true)}
+        >
+          LOGIN
+        </button>
+      </header>
+      <main className="content-container z-relative">
+        <section className="services-grid-section fade-in-up" style={{ animationDelay: '0.2s' }}>
+          <div className="services-grid-modern">
+            {servicesData.map((service) => (
+              <div
+                key={service.id}
+                className="service-card-modern glass-panel-dynamic"
+              >
+                <div className="icon-glow-backdrop" />
+                <div className="service-icon-container">
+                  {service.icon}
+                </div>
+                <div>
+                  <h3 className="service-title-modern">{service.title}</h3>
+                  <p className="service-description-text">
+                    {service.description}
+                  </p>
+                </div>
+                <div className="service-card-border-glow" />
+              </div>
+            ))}
+          </div>
+        </section>
+      </main>
+      {showLogin && (
+        <LoginScreen
+          onClose={() => setShowLogin(false)}
+          onLoginSuccess={onLoginSuccess}
+        />
+      )}
+    </div>
+  );
+};
+
+export default Services;

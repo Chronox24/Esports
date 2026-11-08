@@ -43,9 +43,9 @@ const Tooltip = ({ x, y, content, visible }) => {
     </div>
   );
 };
-const Card = ({ title, children, className = "", accent = "#06b6d4", icon = null, badge = null }) => (
+const Card = ({ title, children, className = "", accent = "#00e5ff", icon = null, badge = null }) => (
   <div
-    className={`rounded-2xl border border-slate-700/40 bg-bg-200 flex flex-col overflow-hidden relative group transition-all duration-300 hover:border-slate-600/60 hover:shadow-2xl ${className}`}
+    className={`hud-card flex flex-col overflow-hidden relative group transition-all duration-300 hover:border-cyan-400/40 hover:shadow-2xl ${className}`}
     style={{ boxShadow: "0 10px 40px rgba(0,0,0,0.5)" }}
   >
     {/* Top accent line */}
@@ -53,17 +53,17 @@ const Card = ({ title, children, className = "", accent = "#06b6d4", icon = null
     {/* Subtle bg glow */}
     <div className="absolute inset-0 pointer-events-none z-0" style={{ background: `radial-gradient(ellipse at top left, ${accent}08, transparent 60%)` }} />
     {/* Header */}
-    <div className="border-b border-slate-800/60 bg-bg-300/60 relative z-10 flex items-center justify-between shrink-0" style={{ padding: "16px 20px" }}>
+    <div className="border-b border-cyan-500/15 bg-slate-950/60 relative z-10 flex items-center justify-between shrink-0" style={{ padding: "16px 20px" }}>
       <div className="flex items-center gap-3">
         {icon && (
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${accent}18`, border: `1px solid ${accent}28` }}>
+          <div className="w-7 h-7 hud-chamfer-sm flex items-center justify-center shrink-0" style={{ background: `${accent}18`, border: `1px solid ${accent}35` }}>
             <span style={{ color: accent }}>{icon}</span>
           </div>
         )}
-        <h3 className="text-[11px] font-black tracking-[0.2em] text-theme-text-base uppercase">{title}</h3>
+        <h3 className="font-tactical text-[11px] font-black tracking-[0.2em] text-theme-text-base uppercase">{title}</h3>
       </div>
       {badge && (
-        <span className="text-[9px] font-black uppercase tracking-[0.15em] rounded-md px-2 py-1" style={{ background: `${accent}15`, color: accent, border: `1px solid ${accent}25` }}>
+        <span className="font-tactical text-[9px] font-black uppercase tracking-[0.15em] hud-chamfer-sm px-2.5 py-1" style={{ background: `${accent}15`, color: accent, border: `1px solid ${accent}35` }}>
           {badge}
         </span>
       )}

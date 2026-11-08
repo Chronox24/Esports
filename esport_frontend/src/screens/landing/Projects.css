@@ -1,9 +1,12 @@
 /* Projects.css */
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,600;0,700;1,700&family=Inter:wght@400;500;600;700&family=Rajdhani:wght@600;700&display=swap');
+
 .projects-app-wrapper {
   position: relative;
   min-height: 100vh;
   background-color: var(--bg-void);
   color: var(--text-pure);
+  font-family: 'Inter', system-ui, sans-serif;
   isolation: isolate;
   overflow-x: hidden;
 }
@@ -19,7 +22,7 @@
 .projects-app-wrapper .bg-gradient-overlay {
   position: fixed;
   inset: 0;
-  background: linear-gradient(180deg, rgba(3,5,10,0.6) 0%, rgba(3,5,10,0.98) 100%);
+  background: linear-gradient(180deg, rgba(6, 11, 19, 0.45) 0%, #060b13 100%);
   z-index: -1;
 }
 
@@ -27,7 +30,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.25rem 5%;
+  padding: 1.15rem 4%;
   background: rgba(3, 5, 10, 0.85);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--glass-border);
@@ -37,62 +40,157 @@
 }
 
 .projects-app-wrapper .brand-logo {
-  font-size: 1.5rem;
-  font-weight: 900;
-  letter-spacing: 2px;
+  font-family: 'Chakra Petch', 'Rajdhani', sans-serif;
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: 2.5px;
   color: var(--text-pure);
+  cursor: pointer;
 }
 
 .projects-app-wrapper .nav-links { display: flex; gap: 2.5rem; }
 .projects-app-wrapper .nav-btn {
+  font-family: 'Chakra Petch', 'Rajdhani', sans-serif;
   background: none; border: none; color: var(--text-dim);
-  font-size: 0.85rem; font-weight: 600; letter-spacing: 1.5px;
+  font-size: 0.95rem; font-weight: 700; letter-spacing: 1.5px;
   cursor: pointer; position: relative; text-transform: uppercase;
+  padding: 0.4rem 0;
 }
 .projects-app-wrapper .nav-btn.active, .projects-app-wrapper .nav-btn:hover { color: var(--text-pure); }
 .projects-app-wrapper .nav-btn::after {
-  content: ''; position: absolute; bottom: -5px; left: 0;
+  content: ''; position: absolute; bottom: -2px; left: 0;
   width: 0; height: 2px; background: var(--accent-neon);
   transition: width 0.3s ease; box-shadow: 0 0 10px var(--accent-neon);
 }
 .projects-app-wrapper .nav-btn:hover::after, .projects-app-wrapper .nav-btn.active::after { width: 100%; }
 
-/* Oval Button Update */
+/* Tactical HUD Chamfered Login Button */
 .projects-app-wrapper .login-btn {
-  background: transparent; color: var(--accent-neon);
-  border: 2px solid var(--accent-neon); padding: 0.6rem 2rem;
-  border-radius: 50px; font-weight: 800; cursor: pointer; transition: all 0.3s;
+  font-family: 'Chakra Petch', 'Rajdhani', sans-serif;
+  background: rgba(0, 229, 255, 0.08);
+  color: var(--accent-neon);
+  border: 1px solid rgba(0, 229, 255, 0.65);
+  border-left: 2px solid var(--accent-neon);
+  border-right: 2px solid var(--accent-neon);
+  padding: 0.58rem 1.75rem;
+  border-radius: 0;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.25s ease;
 }
-.projects-app-wrapper .login-btn:hover { background: var(--accent-neon); color: var(--bg-void); box-shadow: 0 0 20px rgba(0, 229, 255, 0.4); }
+.projects-app-wrapper .login-btn:hover {
+  background: #ff4655;
+  border-color: #ff4655;
+  color: #ffffff;
+  box-shadow: 0 0 20px rgba(255, 70, 85, 0.45);
+}
 
-.projects-app-wrapper .hero-section { text-align: center; padding: 5rem 2rem 4rem; }
-.projects-app-wrapper .hero-title { font-size: 3rem; font-weight: 900; letter-spacing: 3px; color: var(--text-pure); text-shadow: 0 0 20px rgba(0, 229, 255, 0.3); }
-.projects-app-wrapper .hero-subtitle { color: var(--text-dim); font-size: 1.1rem; }
+.projects-app-wrapper .hero-section {
+  position: relative;
+  text-align: center;
+  padding: 4.5rem 2rem 3.5rem;
+  background: linear-gradient(180deg, rgba(6, 11, 19, 0.45) 0%, #060b13 100%);
+  border-bottom: 1px solid rgba(0, 229, 255, 0.12);
+  margin-bottom: 3rem;
+  overflow: hidden;
+}
+
+.projects-app-wrapper .hero-section::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 680px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(0, 229, 255, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.projects-app-wrapper .hero-title {
+  position: relative;
+  z-index: 1;
+  font-family: 'Chakra Petch', 'Rajdhani', sans-serif;
+  font-size: clamp(2.2rem, 4vw, 3.4rem);
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--text-pure);
+  text-shadow: none;
+  margin-bottom: 0.5rem;
+}
+
+.projects-app-wrapper .hero-subtitle {
+  position: relative;
+  z-index: 1;
+  font-family: 'Inter', sans-serif;
+  color: var(--text-dim);
+  font-size: 1.05rem;
+}
 
 .projects-app-wrapper .projects-layout {
   display: grid; grid-template-columns: 260px 1fr; gap: 3rem;
   max-width: 1400px; width: 100%; margin: 0 auto; padding: 0 5% 5rem;
 }
 
-.projects-app-wrapper .sidebar-title { color: var(--text-dim); font-size: 0.85rem; letter-spacing: 2px; margin-bottom: 1.5rem; }
+.projects-app-wrapper .sidebar-title {
+  font-family: 'Chakra Petch', 'Rajdhani', sans-serif;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  margin-bottom: 1.25rem;
+}
+
 .projects-app-wrapper .category-btn {
-  display: block; width: 100%; text-align: left; padding: 1rem; margin-bottom: 0.5rem;
-  background: none; border: none; border-left: 3px solid transparent; border-radius: 0 50px 50px 0;
+  font-family: 'Chakra Petch', 'Rajdhani', sans-serif;
+  display: block; width: 100%; text-align: left; padding: 0.9rem 1rem; margin-bottom: 0.5rem;
+  background: none; border: none; border-left: 3px solid transparent;
+  border-radius: 0;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.8px;
   color: var(--text-dim); cursor: pointer; transition: 0.3s;
 }
 .projects-app-wrapper .category-btn:hover { background: rgba(255,255,255,0.05); color: var(--text-pure); }
 .projects-app-wrapper .category-btn.active {
-  background: linear-gradient(90deg, rgba(0, 229, 255, 0.1) 0%, transparent 100%);
-  border-left-color: var(--accent-neon); color: var(--text-pure); font-weight: bold;
+  background: linear-gradient(90deg, rgba(0, 229, 255, 0.14) 0%, transparent 100%);
+  border-left-color: var(--accent-neon); color: var(--text-pure); font-weight: 700;
 }
 
-.projects-app-wrapper .projects-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
-.projects-app-wrapper .search-bar {
-  padding: 0.75rem 1.25rem; background: rgba(10, 16, 30, 0.8);
-  border: 1px solid var(--glass-border); border-radius: 50px; /* Oval update */
-  color: var(--text-pure); width: 300px; outline: none; transition: 0.3s;
+.projects-app-wrapper .projects-header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;
 }
-.projects-app-wrapper .search-bar:focus { border-color: var(--accent-neon); box-shadow: 0 0 10px rgba(0,229,255,0.2); }
+.projects-app-wrapper .projects-header h2 {
+  font-family: 'Chakra Petch', 'Rajdhani', sans-serif;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* Tactical HUD Chamfered Search Input */
+.projects-app-wrapper .search-bar {
+  font-family: 'Inter', sans-serif;
+  padding: 0.75rem 1.25rem;
+  background: rgba(10, 20, 35, 0.85);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-left: 2px solid var(--accent-neon);
+  border-radius: 0;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  color: var(--text-pure);
+  width: 310px;
+  outline: none;
+  transition: 0.3s;
+}
+.projects-app-wrapper .search-bar:focus {
+  border-color: var(--accent-neon);
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.25);
+}
 
 /* Fixed Animation for Projects Display */
 .projects-app-wrapper .projects-grid {
@@ -100,9 +198,40 @@
 }
 
 .projects-app-wrapper .project-card {
-  background: var(--glass-panel); border: 1px solid var(--glass-border);
-  border-radius: 20px; overflow: hidden; cursor: pointer; transition: 0.3s;
+  position: relative;
+  background: rgba(10, 17, 26, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0;
+  overflow: hidden;
+  cursor: pointer;
+  transition: 0.3s;
   animation: cardFadeIn 0.5s ease forwards;
+}
+
+.projects-app-wrapper .project-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 14px;
+  height: 14px;
+  border-top: 2px solid #00e5ff;
+  border-left: 2px solid #00e5ff;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.projects-app-wrapper .project-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 14px;
+  height: 14px;
+  border-bottom: 2px solid #00e5ff;
+  border-right: 2px solid #00e5ff;
+  z-index: 3;
+  pointer-events: none;
 }
 
 @keyframes cardFadeIn {
@@ -110,13 +239,36 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-.projects-app-wrapper .project-card:hover { transform: translateY(-8px); border-color: var(--accent-neon); box-shadow: 0 15px 30px rgba(0,0,0,0.6); }
-.projects-app-wrapper .project-image { height: 180px; background-size: cover; background-position: center; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.projects-app-wrapper .project-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(0, 229, 255, 0.5);
+  box-shadow: 0 15px 30px rgba(0,0,0,0.65);
+}
+.projects-app-wrapper .project-image { height: 180px; background-size: cover; background-position: center; border-bottom: 1px solid rgba(0, 229, 255, 0.15); }
 .projects-app-wrapper .project-content { padding: 1.5rem; }
-.projects-app-wrapper .project-content h3 { font-size: 1.2rem; margin: 0.5rem 0; font-weight: 800; letter-spacing: 1px; }
-.projects-app-wrapper .project-category { color: var(--accent-neon); font-size: 0.8rem; font-weight: bold; text-transform: uppercase; }
-.projects-app-wrapper .project-desc { color: var(--text-dim); font-size: 0.9rem; margin: 1rem 0; line-height: 1.5; }
-.projects-app-wrapper .status-badge { padding: 0.4rem 1rem; border-radius: 50px; font-size: 0.75rem; font-weight: bold; display: inline-block; }
+.projects-app-wrapper .project-content h3 {
+  font-family: 'Chakra Petch', 'Rajdhani', sans-serif;
+  font-size: 1.25rem; margin: 0.4rem 0; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+}
+.projects-app-wrapper .project-category {
+  font-family: 'Chakra Petch', 'Rajdhani', sans-serif;
+  color: var(--accent-neon); font-size: 0.78rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+}
+.projects-app-wrapper .project-desc {
+  font-family: 'Inter', sans-serif;
+  color: var(--text-dim); font-size: 0.9rem; margin: 0.85rem 0 1.15rem; line-height: 1.55;
+}
+.projects-app-wrapper .status-badge {
+  font-family: 'Chakra Petch', 'Rajdhani', sans-serif;
+  padding: 0.35rem 0.95rem;
+  border-radius: 0;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  display: inline-block;
+}
 
 .projects-app-wrapper .status-active { background: rgba(0, 255, 136, 0.1); color: #00ff88; border: 1px solid rgba(0, 255, 136, 0.3); }
 .projects-app-wrapper .status-upcoming { background: rgba(0, 229, 255, 0.1); color: var(--accent-neon); border: 1px solid rgba(0, 229, 255, 0.3); }

@@ -1,78 +1,70 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ShieldCheck, Cpu, Crosshair, Trophy } from 'lucide-react';
 import LoginScreen from './LoginScreen';
 import './AboutUs.css';
+
 const navItems = [
   { key: 'Home', label: 'HOME', path: '/' },
   { key: 'Projects', label: 'PROJECTS', path: '/projects' },
   { key: 'Services', label: 'SERVICES', path: '/services' },
   { key: 'AboutUs', label: 'ABOUT US', path: '/about' },
 ];
+
 const IntegrityIcon = () => (
-  <svg width="45" height="45" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-    <path d="M9 12l2 2 4-4"></path>
-  </svg>
+  <ShieldCheck size={42} strokeWidth={1.75} />
 );
+
 const InnovationIcon = () => (
-  <svg width="45" height="45" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="4"></circle>
-    <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"></path>
-  </svg>
+  <Cpu size={42} strokeWidth={1.75} />
 );
+
 const ExecutionIcon = () => (
-  <svg width="45" height="45" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10"></circle>
-    <path d="M8 12l2 2 4-4"></path>
-  </svg>
+  <Crosshair size={42} strokeWidth={1.75} />
 );
+
 const CommunityIcon = () => (
-  <svg width="45" height="45" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-    <circle cx="9" cy="7" r="4"></circle>
-    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-  </svg>
+  <Trophy size={42} strokeWidth={1.75} />
 );
+
 const EmailIcon = () => (
   <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent-neon)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
     <polyline points="22,6 12,13 2,6"></polyline>
   </svg>
 );
-const LocationIcon = () => (
-  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent-neon)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-    <circle cx="12" cy="10" r="3"></circle>
-  </svg>
-);
+
 const AboutUs = ({ onLoginSuccess }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ name: '', email: '', contact: '', message: '' });
   const [activePage, setActivePage] = useState('AboutUs');
   const [showLogin, setShowLogin] = useState(false);
+
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    if(!formData.name || !formData.email || !formData.message) {
+    if (!formData.name || !formData.email || !formData.message) {
       alert("Please fill out the required fields (Name, Email, Message).");
       return;
     }
     alert(`Request Sent Successfully!\n\nThank you, ${formData.name}. Our team will review your message.`);
     setFormData({ name: '', email: '', contact: '', message: '' });
   };
+
   const handleNavigation = (item) => {
     setActivePage(item.key);
     navigate(item.path);
   };
+
   return (
     <div className="maximized-about-wrapper">
       <div className="hero-trophy-bg" />
       <div className="hero-dark-overlay" />
       <header className="main-navbar">
-        <div className="brand-logo">ESPORT</div>
+        <div className="brand-logo" onClick={() => navigate('/')}>ESPORT</div>
         <nav className="nav-links">
           {navItems.map((item) => (
             <button
@@ -144,7 +136,6 @@ const AboutUs = ({ onLoginSuccess }) => {
           </div>
         </div>
       </main>
-      {}
       {showLogin && (
         <LoginScreen
           onClose={() => setShowLogin(false)}
@@ -154,4 +145,5 @@ const AboutUs = ({ onLoginSuccess }) => {
     </div>
   );
 };
+
 export default AboutUs;

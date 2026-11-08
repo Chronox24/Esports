@@ -275,7 +275,7 @@ const LiveMatchManager = ({ globalTournament, globalGame, teams }) => {
           {teams.map(t => <option key={t.team_id} value={t.team_id}>{t.team_name}</option>)}
         </select>
         <input placeholder="Map..." value={newMatch.map_name} onChange={e => setNewMatch({...newMatch, map_name: e.target.value})} className="w-20 bg-bg-300 border border-theme-input rounded px-2 py-1 text-xs text-theme-text-base" />
-        <button onClick={handleCreateMatch} className="bg-cyan-600 text-theme-text-base font-bold text-xs hover:bg-cyan-500" style={{ padding: "12px 24px", borderRadius: "9999px" }}>+</button>
+        <button type="button" onClick={handleCreateMatch} className="hud-btn-primary px-4 py-1.5 text-xs font-tactical font-extrabold">+</button>
       </div>
       <div className="flex flex-col gap-2 max-h-60 overflow-y-auto">
         {loading && <div className="text-center text-xs text-theme-text-faint">Loading matches...</div>}
@@ -585,6 +585,8 @@ const Admin = ({ globalGame, globalTournament }) => {
   const [lastStatsSync, setLastStatsSync] = useState(null);
   const [statsModal, setStatsModal] = useState(null);
   const [statsSearch, setStatsSearch] = useState('');
+  const [accountSearch, setAccountSearch] = useState('');
+  const [accountRoleFilter, setAccountRoleFilter] = useState('All Roles');
   const [rulebookUrl, setRulebookUrl] = useState(null);
   const [rulebookRecord, setRulebookRecord] = useState(null);
   const [allRulebooks, setAllRulebooks] = useState([]);
@@ -971,42 +973,45 @@ const Admin = ({ globalGame, globalTournament }) => {
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #334155; }
       `}</style>
       {}
-      <div className="flex-1 pb-16 flex flex-col items-center" style={{ padding: "32px" }}>
-        <div className="w-full max-w-[1400px] flex flex-col gap-6">
-          {}
+      <div className="flex-1 pb-16 flex flex-col items-center" style={{ padding: "28px 32px" }}>
+        <div className="w-full max-w-[1440px] flex flex-col gap-6">
+          {/* Active Folder Tactical Banner */}
           {activeTournamentObj && (
-            <div className="w-full flex items-center justify-between mb-4" style={{ borderRadius: "9999px", border: "1px solid #00c8c8", padding: "16px 48px", backgroundColor: "transparent" }}>
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-bold text-theme-text-muted uppercase tracking-widest">Active Folder:</span>
-                <span className="text-cyan-400 font-black text-xl tracking-wider">{activeTournamentObj.name}</span>
+            <div className="hud-card hud-enter rounded-xl w-full flex flex-wrap items-center justify-between gap-4 bg-slate-900/65" style={{ padding: "16px 26px" }}>
+              <div className="flex items-center gap-3.5">
+                <span className="hud-diamond" />
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="font-tactical text-xs font-extrabold text-theme-text-muted uppercase tracking-[0.2em]">Active Folder //</span>
+                  <span className="font-tactical text-cyan-400 font-extrabold text-lg md:text-xl tracking-[0.14em] uppercase">{activeTournamentObj.name}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-4">
-                <span className="text-xs text-theme-text-faint font-bold uppercase tracking-widest">Game Title:</span>
+              <div className="flex items-center gap-3">
+                <span className="font-tactical text-[11px] text-theme-text-muted font-bold uppercase tracking-[0.18em]">Game Title:</span>
                 <div className="relative">
                   <select 
                     value={activeTournamentObj.game.toUpperCase()} 
                     onChange={(e) => handleUpdateFolderGame(e.target.value)}
-                    className="appearance-none bg-transparent border border-[#00c8c8] text-cyan-400 text-sm font-bold focus:outline-none cursor-pointer"
-                    style={{ borderRadius: "9999px", padding: "8px 48px 8px 24px" }}
+                    className="hud-chamfer-sm appearance-none bg-slate-950/90 border border-cyan-500/40 hover:border-cyan-400 font-tactical text-cyan-300 text-xs font-extrabold tracking-[0.14em] focus:outline-none cursor-pointer transition-colors"
+                    style={{ padding: "8px 38px 8px 16px" }}
                   >
-                    <option value="VALORANT" className="bg-bg-300">VALORANT</option>
-                    <option value="CROSSFIRE" className="bg-bg-300">CROSSFIRE</option>
+                    <option value="VALORANT" className="bg-slate-900">VALORANT</option>
+                    <option value="CROSSFIRE" className="bg-slate-900">CROSSFIRE</option>
                   </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-5 pointer-events-none text-cyan-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-cyan-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
                 </div>
               </div>
             </div>
           )}
-          {}
           
-          <div className="flex justify-center mb-8">
+          {/* Tactical Sub-Navigation Tabs */}
+          <div className="flex justify-center">
             <div 
-              className="flex items-center bg-bg-200 border border-theme-input rounded-2xl shadow-xl backdrop-blur-md"
-              style={{ padding: "6px 8px", gap: "10px" }}
+              className="flex flex-wrap items-center bg-slate-950/80 border border-cyan-500/20 hud-chamfer shadow-xl backdrop-blur-md"
+              style={{ padding: "5px", gap: "6px" }}
             >
               {[
                 {
@@ -1042,14 +1047,14 @@ const Admin = ({ globalGame, globalTournament }) => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center rounded-xl text-xs sm:text-sm font-black tracking-wide uppercase transition-all duration-200 active:scale-95 ${
+                    className={`hud-chamfer-sm flex items-center font-tactical text-xs font-extrabold tracking-[0.14em] uppercase transition-all duration-200 cursor-pointer ${
                       isActive
-                        ? 'bg-gradient-to-r from-cyan-500/25 to-cyan-500/10 text-cyan-400 border border-cyan-500/50 shadow-[0_0_20px_color-mix(in_srgb,var(--theme-accent-base,#06b6d4)_30%,transparent)]'
-                        : 'text-theme-text-muted hover:text-theme-text-base hover:bg-bg-300 border border-transparent'
+                        ? 'bg-cyan-400 text-slate-950 shadow-[0_0_18px_rgba(0,229,255,0.45)]'
+                        : 'text-theme-text-muted hover:text-white hover:bg-slate-900 border border-transparent'
                     }`}
-                    style={{ padding: "12px 28px", gap: "10px" }}
+                    style={{ padding: "10px 22px", gap: "9px" }}
                   >
-                    <span className={isActive ? "text-cyan-400" : "text-theme-text-faint"}>
+                    <span className={isActive ? "text-slate-950" : "text-cyan-400/70"}>
                       {tab.icon}
                     </span>
                     <span>{tab.label}</span>
@@ -1060,12 +1065,14 @@ const Admin = ({ globalGame, globalTournament }) => {
           </div>
 
           {activeTab === 'League Quick Stats' && (
-            <>
-            <div className="bg-bg-200 rounded-xl shadow-xl overflow-hidden flex flex-col border border-theme-input">
-              <div className="border-b border-theme-input bg-bg-300/40 flex flex-wrap items-center justify-between" style={{ padding: "20px 32px", gap: "16px" }}>
+            <div className="hud-card hud-enter hud-delay-1 rounded-xl shadow-xl overflow-hidden flex flex-col">
+              <div className="border-b border-slate-800/80 bg-slate-900/50 flex flex-wrap items-center justify-between" style={{ padding: "18px 26px", gap: "16px" }}>
                  <div className="flex items-center gap-3">
-                   <h2 className="text-base font-bold text-theme-text-base tracking-wide">League Quick Stats (PH Local Context)</h2>
-                   <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-[10px] font-bold">
+                   <span className="hud-diamond" />
+                   <h2 className="font-tactical text-base font-extrabold text-theme-text-base tracking-[0.16em] uppercase">
+                     League Quick Stats <span className="text-cyan-400/80 text-xs">// PH LOCAL CONTEXT</span>
+                   </h2>
+                   <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 hud-chamfer-sm bg-cyan-500/10 border border-cyan-500/30 font-tactical text-cyan-300 text-[10px] font-bold tracking-widest uppercase">
                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
                      Live Sync Active
                    </div>
@@ -1073,14 +1080,15 @@ const Admin = ({ globalGame, globalTournament }) => {
 
                  <div className="flex items-center gap-3">
                    {lastStatsSync && (
-                     <span className="text-[11px] text-gray-400 font-mono hidden md:inline">
-                       Last updated: {lastStatsSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                     <span className="text-[11px] text-slate-400 font-mono hidden md:inline">
+                       SYNC // {lastStatsSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                      </span>
                    )}
                    <button
                      onClick={fetchData}
                      disabled={loadingStats}
-                     className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-bg-300 hover:bg-slate-800 border border-gray-700 hover:border-cyan-500/50 text-cyan-400 text-xs font-bold transition-all disabled:opacity-50 active:scale-95 shadow-sm"
+                     style={{ padding: '8px 16px' }}
+                     className="hud-btn-secondary flex items-center gap-2 font-tactical text-xs font-extrabold tracking-[0.14em] uppercase disabled:opacity-50 cursor-pointer"
                      title="Refresh stats from database"
                    >
                      <RefreshIcon className={`w-3.5 h-3.5 ${loadingStats ? 'animate-spin' : ''}`} />
@@ -1089,26 +1097,29 @@ const Admin = ({ globalGame, globalTournament }) => {
                  </div>
               </div>
 
-               <div className="grid grid-cols-2 flex-1" style={{ padding: "32px", gap: "24px" }}>
+               <div className="grid grid-cols-1 md:grid-cols-2 flex-1" style={{ padding: "26px", gap: "20px" }}>
                  {/* Card 1: Total Registered Players */}
                  <div 
                    onClick={() => { setStatsModal('players'); setStatsSearch(''); }}
-                   className="flex flex-col items-center justify-center bg-bg-300/40 hover:bg-bg-300 border border-theme-input hover:border-cyan-500/50 rounded-2xl p-6 shadow-inner cursor-pointer transition-all duration-200 transform hover:scale-[1.01] active:scale-[0.99] group relative"
+                   className="hud-card hud-card-interactive rounded-xl flex flex-col items-center justify-center p-6 cursor-pointer group relative overflow-hidden"
                  >
-                    <span className="text-sm font-bold text-theme-text-base mb-2 text-center group-hover:text-cyan-400 transition-colors">Total Registered Players</span>
+                    <div className="hud-sweep-overlay" />
+                    <span className="font-tactical text-xs font-extrabold tracking-[0.18em] uppercase text-theme-text-base mb-3 text-center group-hover:text-cyan-300 transition-colors">
+                      Total Registered Players
+                    </span>
                     <div className="flex items-center gap-4 mb-2">
-                       <div className="group-hover:scale-110 transition-transform duration-200">
+                       <div className="hud-chamfer-sm bg-cyan-500/10 border border-cyan-400/25 p-3 group-hover:scale-110 transition-transform duration-200">
                          <UsersIcon />
                        </div>
                        <div className="flex flex-col">
-                         <span className="text-4xl font-black text-cyan-400 leading-none">
+                         <span className="font-tactical text-4xl font-extrabold text-cyan-400 leading-none">
                            {totalPlayersCount.toLocaleString()}
                          </span>
-                         <span className="text-[10px] text-gray-400 font-bold uppercase mt-1 tracking-wider">Players</span>
+                         <span className="font-tactical text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-[0.18em]">Players</span>
                        </div>
                     </div>
-                    <span className="text-[10px] text-gray-500 mt-2 text-center">Verified (PH: 100%)</span>
-                    <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-cyan-400 font-bold flex items-center gap-1 mt-2">
+                    <span className="text-[11px] text-slate-400 mt-1 text-center">Verified (PH: 100%)</span>
+                    <span className="opacity-70 group-hover:opacity-100 transition-opacity font-tactical text-[10px] text-cyan-400 font-bold uppercase tracking-[0.14em] flex items-center gap-1 mt-2">
                       Click to inspect player directory →
                     </span>
                  </div>
@@ -1116,22 +1127,25 @@ const Admin = ({ globalGame, globalTournament }) => {
                  {/* Card 2: Total Teams */}
                  <div 
                    onClick={() => { setStatsModal('teams'); setStatsSearch(''); }}
-                   className="flex flex-col items-center justify-center bg-bg-300/40 hover:bg-bg-300 border border-theme-input hover:border-cyan-500/50 rounded-2xl p-6 shadow-inner cursor-pointer transition-all duration-200 transform hover:scale-[1.01] active:scale-[0.99] group relative"
+                   className="hud-card hud-card-interactive rounded-xl flex flex-col items-center justify-center p-6 cursor-pointer group relative overflow-hidden"
                  >
-                    <span className="text-sm font-bold text-theme-text-base mb-2 text-center group-hover:text-cyan-400 transition-colors">Total Teams</span>
+                    <div className="hud-sweep-overlay" />
+                    <span className="font-tactical text-xs font-extrabold tracking-[0.18em] uppercase text-theme-text-base mb-3 text-center group-hover:text-cyan-300 transition-colors">
+                      Total Teams
+                    </span>
                     <div className="flex items-center gap-4 mb-2">
-                       <div className="group-hover:scale-110 transition-transform duration-200">
+                       <div className="hud-chamfer-sm bg-cyan-500/10 border border-cyan-400/25 p-3 group-hover:scale-110 transition-transform duration-200">
                          <TrophyIcon />
                        </div>
                        <div className="flex flex-col">
-                         <span className="text-4xl font-black text-cyan-400 leading-none">
+                         <span className="font-tactical text-4xl font-extrabold text-cyan-400 leading-none">
                            {totalTeamsCount.toLocaleString()}
                          </span>
-                         <span className="text-[10px] text-gray-400 font-bold uppercase mt-1 tracking-wider">Teams</span>
+                         <span className="font-tactical text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-[0.18em]">Teams</span>
                        </div>
                     </div>
-                    <span className="text-[10px] text-gray-500 mt-2 text-center text-balance">Active Teams (Local Leagues)</span>
-                    <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-cyan-400 font-bold flex items-center gap-1 mt-2">
+                    <span className="text-[11px] text-slate-400 mt-1 text-center">Active Teams (Local Leagues)</span>
+                    <span className="opacity-70 group-hover:opacity-100 transition-opacity font-tactical text-[10px] text-cyan-400 font-bold uppercase tracking-[0.14em] flex items-center gap-1 mt-2">
                       Click to inspect teams →
                     </span>
                  </div>
@@ -1139,22 +1153,25 @@ const Admin = ({ globalGame, globalTournament }) => {
                  {/* Card 3: Active Tournaments */}
                  <div 
                    onClick={() => { setStatsModal('tournaments'); setStatsSearch(''); }}
-                   className="flex flex-col items-center justify-center bg-bg-300/40 hover:bg-bg-300 border border-theme-input hover:border-cyan-500/50 rounded-2xl p-6 shadow-inner cursor-pointer transition-all duration-200 transform hover:scale-[1.01] active:scale-[0.99] group relative"
+                   className="hud-card hud-card-interactive rounded-xl flex flex-col items-center justify-center p-6 cursor-pointer group relative overflow-hidden"
                  >
-                    <span className="text-sm font-bold text-theme-text-base mb-2 text-center group-hover:text-cyan-400 transition-colors">Active Tournaments</span>
+                    <div className="hud-sweep-overlay" />
+                    <span className="font-tactical text-xs font-extrabold tracking-[0.18em] uppercase text-theme-text-base mb-3 text-center group-hover:text-cyan-300 transition-colors">
+                      Active Tournaments
+                    </span>
                     <div className="flex items-center gap-4 mb-2">
-                       <div className="group-hover:scale-110 transition-transform duration-200">
+                       <div className="hud-chamfer-sm bg-cyan-500/10 border border-cyan-400/25 p-3 group-hover:scale-110 transition-transform duration-200">
                          <CalendarIcon />
                        </div>
                        <div className="flex flex-col">
-                         <span className="text-4xl font-black text-cyan-400 leading-none">
+                         <span className="font-tactical text-4xl font-extrabold text-cyan-400 leading-none">
                            {activeTournamentsCount.toLocaleString()}
                          </span>
-                         <span className="text-[10px] text-gray-400 font-bold uppercase mt-1 tracking-wider">Tournaments</span>
+                         <span className="font-tactical text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-[0.18em]">Tournaments</span>
                        </div>
                     </div>
-                    <span className="text-[10px] text-gray-500 mt-2 text-center text-balance">Ongoing (Metro Manila, Cebu, etc.)</span>
-                    <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-cyan-400 font-bold flex items-center gap-1 mt-2">
+                    <span className="text-[11px] text-slate-400 mt-1 text-center">Ongoing (Metro Manila, Cebu, etc.)</span>
+                    <span className="opacity-70 group-hover:opacity-100 transition-opacity font-tactical text-[10px] text-cyan-400 font-bold uppercase tracking-[0.14em] flex items-center gap-1 mt-2">
                       Click to inspect tournaments →
                     </span>
                  </div>
@@ -1162,126 +1179,159 @@ const Admin = ({ globalGame, globalTournament }) => {
                  {/* Card 4: Pending Verifications */}
                  <div 
                    onClick={() => { setStatsModal('reports'); setStatsSearch(''); }}
-                   className="flex flex-col items-center justify-center bg-bg-300/40 hover:bg-bg-300 border border-theme-input hover:border-cyan-500/50 rounded-2xl p-6 shadow-inner cursor-pointer transition-all duration-200 transform hover:scale-[1.01] active:scale-[0.99] group relative"
+                   className="hud-card hud-card-interactive rounded-xl flex flex-col items-center justify-center p-6 cursor-pointer group relative overflow-hidden"
                  >
-                    <span className="text-sm font-bold text-theme-text-base mb-2 text-center group-hover:text-cyan-400 transition-colors">Pending Verifications</span>
+                    <div className="hud-sweep-overlay" />
+                    <span className="font-tactical text-xs font-extrabold tracking-[0.18em] uppercase text-theme-text-base mb-3 text-center group-hover:text-cyan-300 transition-colors">
+                      Pending Verifications
+                    </span>
                     <div className="flex items-center gap-4 mb-2">
-                       <div className="group-hover:scale-110 transition-transform duration-200">
+                       <div className="hud-chamfer-sm bg-cyan-500/10 border border-cyan-400/25 p-3 group-hover:scale-110 transition-transform duration-200">
                          <ClipboardCheckIcon />
                        </div>
                        <div className="flex flex-col">
-                         <span className="text-4xl font-black text-cyan-400 leading-none">
+                         <span className="font-tactical text-4xl font-extrabold text-cyan-400 leading-none">
                            {(pendingReportsCount > 0 ? pendingReportsCount : totalReportsCount).toLocaleString()}
                          </span>
-                         <span className="text-[10px] text-gray-400 font-bold uppercase mt-1 tracking-wider">Verifications</span>
+                         <span className="font-tactical text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-[0.18em]">Verifications</span>
                        </div>
                     </div>
-                    <span className="text-[10px] text-gray-500 mt-2 text-center">
+                    <span className="text-[11px] text-slate-400 mt-1 text-center">
                       {totalReportsCount > 0 ? `${totalReportsCount} Reports (${pendingReportsCount} Pending Review)` : 'New Player IDs to review'}
                     </span>
-                    <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-cyan-400 font-bold flex items-center gap-1 mt-2">
-                      Click to review reports & verifications →
+                    <span className="opacity-70 group-hover:opacity-100 transition-opacity font-tactical text-[10px] text-cyan-400 font-bold uppercase tracking-[0.14em] flex items-center gap-1 mt-2">
+                      Click to review reports &amp; verifications →
                     </span>
                  </div>
 
                  {/* Card 5: New Admin Logins */}
                  <div 
                    onClick={() => setActiveTab('Admin Accounts & User Directory')}
-                   className="col-span-2 flex flex-col items-center justify-center bg-bg-300/40 hover:bg-bg-300 border border-theme-input hover:border-cyan-500/50 rounded-2xl p-6 shadow-inner cursor-pointer transition-all duration-200 transform hover:scale-[1.01] active:scale-[0.99] group relative"
+                   className="md:col-span-2 hud-card hud-card-interactive rounded-xl flex flex-col items-center justify-center p-6 cursor-pointer group relative overflow-hidden"
                  >
-                    <span className="text-sm font-bold text-theme-text-base mb-2 text-center group-hover:text-cyan-400 transition-colors">New Admin Logins</span>
+                    <div className="hud-sweep-overlay" />
+                    <span className="font-tactical text-xs font-extrabold tracking-[0.18em] uppercase text-theme-text-base mb-3 text-center group-hover:text-cyan-300 transition-colors">
+                      New Admin Logins
+                    </span>
                     <div className="flex items-center gap-4 mb-2">
-                       <div className="group-hover:scale-110 transition-transform duration-200">
+                       <div className="hud-chamfer-sm bg-cyan-500/10 border border-cyan-400/25 p-3 group-hover:scale-110 transition-transform duration-200">
                          <LockIcon />
                        </div>
                        <div className="flex flex-col">
-                         <span className="text-4xl font-black text-cyan-400 leading-none">
+                         <span className="font-tactical text-4xl font-extrabold text-cyan-400 leading-none">
                            {totalAdminsCount.toLocaleString()}
                          </span>
-                         <span className="text-[10px] text-gray-400 font-bold uppercase mt-1 tracking-wider">Admins</span>
+                         <span className="font-tactical text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-[0.18em]">Admins</span>
                        </div>
                     </div>
-                    <span className="text-[10px] text-gray-500 mt-2 text-center text-balance">Admins (Central & Local PH)</span>
-                    <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-cyan-400 font-bold flex items-center gap-1 mt-2">
-                      Open Admin Accounts & Directory Tab →
+                    <span className="text-[11px] text-slate-400 mt-1 text-center">Admins (Central &amp; Local PH)</span>
+                    <span className="opacity-70 group-hover:opacity-100 transition-opacity font-tactical text-[10px] text-cyan-400 font-bold uppercase tracking-[0.14em] flex items-center gap-1 mt-2">
+                      Open Admin Accounts &amp; Directory Tab →
                     </span>
                  </div>
                </div>
             </div>
-            </>
           )}
           {activeTab === 'Admin Accounts & User Directory' && (
-            <><div className="bg-bg-300 rounded-xl border border-theme-input shadow-xl overflow-hidden flex flex-col">
-              <div className="border-b border-theme-input bg-bg-300 flex flex-wrap justify-between items-center" style={{ padding: "24px 32px", gap: "24px" }}>
-                 <div className="flex flex-col flex-shrink-0 whitespace-nowrap" style={{ gap: "4px" }}>
-                   <h2 className="text-sm font-bold text-theme-text-base tracking-wide">Admin Accounts & User Directory</h2>
-                   <span className="text-[10px] text-theme-text-faint font-mono italic">(System Access Hub)</span>
+            <div className="hud-card hud-enter rounded-xl shadow-xl overflow-hidden flex flex-col">
+              <div className="border-b border-slate-800/80 bg-slate-900/50 flex flex-wrap justify-between items-center" style={{ padding: "20px 26px", gap: "20px" }}>
+                 <div className="flex items-center gap-3 flex-shrink-0">
+                   <span className="hud-diamond" />
+                   <div className="flex flex-col">
+                     <h2 className="font-tactical text-base font-extrabold text-theme-text-base tracking-[0.16em] uppercase">Admin Accounts &amp; User Directory</h2>
+                     <span className="text-[10px] text-cyan-400/70 font-mono uppercase tracking-widest">// SYSTEM ACCESS HUB</span>
+                   </div>
                  </div>
-                 <div className="flex items-center flex-wrap" style={{ gap: "16px" }}>
-                    <div className="relative flex-shrink-0" style={{ width: "256px" }}>
+                 <div className="flex items-center flex-wrap" style={{ gap: "12px" }}>
+                    <div className="relative flex-shrink-0" style={{ width: "260px" }}>
                       <div className="absolute inset-y-0 left-0 flex items-center pointer-events-none" style={{ paddingLeft: "12px" }}>
                         <SearchIcon />
                       </div>
                       <input 
                         type="text" 
-                        placeholder="Search (IGN, Team, Location)" 
-                        className="w-full bg-bg-300 border border-theme-input text-theme-text-base text-xs rounded-lg focus:outline-none focus:border-cyan-500 transition-colors"
-                        style={{ padding: "10px 16px 10px 40px" }}
+                        value={accountSearch}
+                        onChange={(e) => setAccountSearch(e.target.value)}
+                        placeholder="Search username or role..." 
+                        className="hud-chamfer-sm w-full bg-slate-950/80 border border-slate-700/70 text-theme-text-base text-xs focus:outline-none focus:border-cyan-400 transition-colors"
+                        style={{ padding: "9px 14px 9px 38px" }}
                       />
                     </div>
-                    <div className="flex-shrink-0" style={{ width: "224px" }}>
-                      <SelectDropdown options={['Verification Status', 'Verified', 'Pending', 'Rejected']} />
+                    <div className="flex-shrink-0" style={{ width: "210px" }}>
+                      <SelectDropdown
+                        options={['All Roles', 'Super Admin', 'Standard Admin']}
+                        value={accountRoleFilter}
+                        onChange={(e) => setAccountRoleFilter(e.target.value)}
+                      />
                     </div>
                  </div>
               </div>
               <div className="flex-1 overflow-auto custom-scrollbar">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-bg-300 text-theme-text-faint sticky top-0 shadow-sm z-10 border-b border-theme-input">
+                  <thead className="bg-slate-950/70 font-tactical text-[11px] uppercase tracking-[0.18em] text-cyan-400/80 sticky top-0 shadow-sm z-10 border-b border-slate-800">
                     <tr>
-                      <th className="font-semibold w-1/5" style={{ padding: "24px 32px" }}>Username</th>
-                      <th className="font-semibold" style={{ padding: "24px 32px" }}>Role</th>
-                      <th className="font-semibold" style={{ padding: "24px 32px" }}>Super Admin</th>
-                      <th className="font-semibold" style={{ padding: "24px 32px" }}>Permissions</th>
-                      <th className="font-semibold text-center w-20" style={{ padding: "24px 32px" }}>Active</th>
+                      <th className="font-bold w-1/4" style={{ padding: "18px 26px" }}>Username</th>
+                      <th className="font-bold" style={{ padding: "18px 26px" }}>Role</th>
+                      <th className="font-bold" style={{ padding: "18px 26px" }}>Super Admin</th>
+                      <th className="font-bold" style={{ padding: "18px 26px" }}>Permissions</th>
+                      <th className="font-bold text-center w-24" style={{ padding: "18px 26px" }}>Active</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/40">
-                    {accounts.length === 0 ? (
-                      <tr><td colSpan="5" className="text-center py-6 text-theme-text-faint italic">No accounts found or loading...</td></tr>
-                    ) : accounts.map((user, idx) => (
-                      <tr key={idx} onClick={() => handleOpenEdit(user)} className="hover:bg-bg-300/50 transition-colors cursor-pointer group">
-                        <td className="text-theme-text-base font-medium group-hover:text-cyan-400" style={{ padding: "20px 32px" }}>
-                           <div className="flex flex-col gap-1">
-                             <span>{user.username}</span>
-                             <span className={`text-[9px] text-cyan-600/70 italic transition-opacity duration-200 ${!user.is_super_admin ? 'opacity-0 group-hover:opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                               Click to edit
-                             </span>
-                           </div>
-                        </td>
-                        <td className="text-theme-text-muted" style={{ padding: "20px 32px" }}>{user.role || 'N/A'}</td>
-                        <td className="text-theme-text-muted" style={{ padding: "20px 32px" }}>
-                           {user.is_super_admin ? (
-                             <span className="bg-cyan-500/20 text-cyan-400 rounded text-[10px] font-black uppercase tracking-wider" style={{ padding: "8px 24px", borderRadius: "9999px" }}>Yes</span>
-                           ) : (
-                             <span className="bg-bg-400/50 text-theme-text-faint rounded text-[10px] font-black uppercase tracking-wider border border-theme-input/50" style={{ padding: "8px 24px", borderRadius: "9999px" }}>No</span>
-                           )}
-                        </td>
-                        <td className="text-theme-text-muted font-mono text-[9px] tracking-wide max-w-[150px] truncate" style={{ padding: "20px 32px" }}>
-                           {user.permissions ? JSON.stringify(user.permissions) : 'None'}
-                        </td>
-                        <td className="text-center" style={{ padding: "20px 32px" }}>
-                          <div className="flex items-center justify-center w-full h-full">
-                            <svg className="w-5 h-5 text-cyan-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {(() => {
+                      const filteredAccounts = accounts.filter((user) => {
+                        if (accountRoleFilter === 'Super Admin' && !user.is_super_admin) return false;
+                        if (accountRoleFilter === 'Standard Admin' && user.is_super_admin) return false;
+                        if (accountSearch.trim()) {
+                          const q = accountSearch.toLowerCase();
+                          const matchName = (user.username || '').toLowerCase().includes(q);
+                          const matchRole = (user.role || '').toLowerCase().includes(q);
+                          return matchName || matchRole;
+                        }
+                        return true;
+                      });
+                      if (filteredAccounts.length === 0) {
+                        return (
+                          <tr>
+                            <td colSpan="5" className="text-center py-10 text-theme-text-muted font-tactical tracking-widest uppercase text-xs">
+                              No matching admin accounts found.
+                            </td>
+                          </tr>
+                        );
+                      }
+                      return filteredAccounts.map((user, idx) => (
+                        <tr key={idx} onClick={() => handleOpenEdit(user)} className="hover:bg-cyan-500/[0.05] transition-colors cursor-pointer group">
+                          <td className="text-theme-text-base font-bold group-hover:text-cyan-300" style={{ padding: "18px 26px" }}>
+                             <div className="flex flex-col gap-0.5">
+                               <span>{user.username}</span>
+                               <span className={`text-[9px] text-cyan-400/70 font-mono transition-opacity duration-200 ${!user.is_super_admin ? 'opacity-0 group-hover:opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                                 Click to configure access →
+                               </span>
+                             </div>
+                          </td>
+                          <td className="text-slate-300 font-semibold" style={{ padding: "18px 26px" }}>{user.role || 'N/A'}</td>
+                          <td className="text-theme-text-muted" style={{ padding: "18px 26px" }}>
+                             {user.is_super_admin ? (
+                               <span className="hud-chamfer-sm bg-cyan-500/20 border border-cyan-400/40 text-cyan-300 font-tactical text-[10px] font-extrabold uppercase tracking-[0.14em]" style={{ padding: "5px 16px" }}>Yes</span>
+                             ) : (
+                               <span className="hud-chamfer-sm bg-slate-800/80 text-slate-400 font-tactical text-[10px] font-extrabold uppercase tracking-[0.14em] border border-slate-700" style={{ padding: "5px 16px" }}>No</span>
+                             )}
+                          </td>
+                          <td className="text-theme-text-muted font-mono text-[10px] tracking-wide max-w-[200px] truncate" style={{ padding: "18px 26px" }}>
+                             {user.permissions ? JSON.stringify(user.permissions) : 'None'}
+                          </td>
+                          <td className="text-center" style={{ padding: "18px 26px" }}>
+                            <div className="flex items-center justify-center w-full h-full">
+                              <svg className="w-5 h-5 text-cyan-400 drop-shadow-[0_0_6px_rgba(0,229,255,0.5)]" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+                            </div>
+                          </td>
+                        </tr>
+                      ));
+                    })()}
                   </tbody>
                 </table>
               </div>
-              {}
-              <div className="border-t border-theme-input bg-bg-300 flex justify-between items-center" style={{ padding: "24px 32px" }}>
-                 <div className="flex items-center gap-3 font-black text-xl italic tracking-wider text-orange-500 drop-shadow-md">
+              <div className="border-t border-slate-800/80 bg-slate-900/50 flex justify-between items-center" style={{ padding: "18px 26px" }}>
+                 <div className="flex items-center gap-3 font-tactical font-extrabold text-xl italic tracking-wider text-orange-500 drop-shadow-md">
                     <img 
                       src="/assets/tnc_logo.png" 
                       alt="TNC Logo" 
@@ -1294,26 +1344,32 @@ const Admin = ({ globalGame, globalTournament }) => {
                     <span>TNC</span>
                  </div>
                  <div className="flex items-center gap-4">
-                    <button onClick={() => setShowCreateModal(true)} className="bg-cyan-600 hover:bg-cyan-500 text-theme-text-base text-xs font-bold transition-colors shadow-lg shadow-cyan-900/20" style={{ padding: "12px 32px", borderRadius: "9999px" }}>Create Admin</button>
+                    <button
+                      onClick={() => setShowCreateModal(true)}
+                      className="hud-btn-primary font-tactical text-xs font-extrabold uppercase tracking-[0.16em] cursor-pointer"
+                      style={{ padding: "10px 26px" }}
+                    >
+                      + Create Admin
+                    </button>
                  </div>
               </div>
             </div>
-          </>
           )}
           {activeTab === 'Rulebook Viewer' && (
-            <div className="bg-bg-300 rounded-xl border border-theme-input shadow-xl flex flex-col gap-6" style={{ padding: "32px" }}>
+            <div className="hud-card hud-enter rounded-xl shadow-xl flex flex-col gap-6" style={{ padding: "26px" }}>
               {/* Header Bar */}
-              <div className="border-b border-theme-input pb-6 flex flex-wrap justify-between items-center gap-4">
+              <div className="border-b border-slate-800/80 pb-5 flex flex-wrap justify-between items-center gap-4">
                 <div>
                   <div className="flex items-center gap-3">
-                    <h2 className="text-lg font-black text-theme-text-base tracking-wide uppercase">Rulebook Viewer</h2>
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                    <span className="hud-diamond" />
+                    <h2 className="font-tactical text-lg font-extrabold text-theme-text-base tracking-[0.16em] uppercase">Rulebook Viewer</h2>
+                    <span className="hud-chamfer-sm inline-flex items-center gap-1.5 px-3 py-1 font-tactical text-[10px] font-extrabold uppercase tracking-[0.14em] bg-emerald-500/15 border border-emerald-500/35 text-emerald-300">
                       <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                       Connected to Database (public.rulebooks)
                     </span>
                   </div>
-                  <p className="text-xs text-theme-text-faint mt-1">
-                    Official League Rulebook stored in Supabase Cloud Storage & PostgreSQL. Synced across all player & tournament screens.
+                  <p className="text-xs text-theme-text-muted mt-1.5">
+                    Official League Rulebook stored in Supabase Cloud Storage &amp; PostgreSQL. Synced across all player &amp; tournament screens.
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -1321,14 +1377,14 @@ const Admin = ({ globalGame, globalTournament }) => {
                     type="button"
                     onClick={fetchRulebook}
                     disabled={rulebookLoading}
-                    className="flex items-center gap-2 bg-bg-200 border border-theme-input text-slate-300 hover:text-white text-xs font-bold hover:bg-[#192738] transition-colors cursor-pointer"
-                    style={{ padding: "10px 20px", borderRadius: "9999px" }}
+                    className="hud-btn-secondary flex items-center gap-2 font-tactical text-xs font-extrabold tracking-[0.14em] uppercase cursor-pointer"
+                    style={{ padding: "9px 18px" }}
                     title="Refresh database records"
                   >
                     <RefreshIcon className={`w-3.5 h-3.5 ${rulebookLoading ? 'animate-spin text-cyan-400' : ''}`} />
                     <span>Refresh DB</span>
                   </button>
-                  <label className="bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-slate-950 text-xs font-black uppercase tracking-wider transition-all cursor-pointer shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:scale-105 active:scale-95 flex items-center gap-2" style={{ padding: "10px 24px", borderRadius: "9999px" }}>
+                  <label className="hud-btn-primary font-tactical text-xs font-extrabold uppercase tracking-[0.14em] cursor-pointer flex items-center gap-2" style={{ padding: "9px 20px" }}>
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                     <span>{isUploadingRulebook ? 'Uploading to DB...' : 'Upload New Rulebook'}</span>
                     <input type="file" className="hidden" accept="application/pdf,image/*" onChange={handleRulebookUpload} disabled={isUploadingRulebook} />
@@ -1376,16 +1432,16 @@ const Admin = ({ globalGame, globalTournament }) => {
                   <div className="bg-bg-200 rounded-xl border border-cyan-500/30 p-6 flex flex-wrap items-center justify-between gap-6 shadow-[0_0_30px_rgba(6,182,212,0.08)] relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-1.5 h-full bg-cyan-400" />
                     <div className="flex items-center gap-5">
-                      <div className="flex-shrink-0 w-14 h-14 rounded-xl flex items-center justify-center bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 shadow-inner">
+                      <div className="hud-chamfer-sm flex-shrink-0 w-14 h-14 flex items-center justify-center bg-cyan-500/15 border border-cyan-500/40 text-cyan-400 shadow-inner">
                         <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                       </div>
                       <div className="flex flex-col gap-1.5">
                         <div className="flex items-center gap-2.5 flex-wrap">
-                          <span className="text-base font-black text-theme-text-base">Official League Rulebook</span>
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                          <span className="font-tactical text-base font-extrabold uppercase tracking-wider text-theme-text-base">Official League Rulebook</span>
+                          <span className="hud-chamfer-sm px-2.5 py-0.5 font-tactical text-[10px] font-extrabold uppercase tracking-wider bg-cyan-500/15 text-cyan-300 border border-cyan-500/35">
                             Tournament: {rulebookRecord?.tournament_name || rulebookTournament}
                           </span>
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                          <span className="hud-chamfer-sm px-2.5 py-0.5 font-tactical text-[10px] font-bold uppercase tracking-wider bg-slate-900 text-slate-300 border border-slate-700">
                             DB Record #{rulebookRecord?.id || 'Active'}
                           </span>
                         </div>
@@ -1398,14 +1454,14 @@ const Admin = ({ globalGame, globalTournament }) => {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2.5 flex-wrap">
                       <button
                         type="button"
                         onClick={() => setShowRulebookPreview(!showRulebookPreview)}
-                        className={`text-xs font-bold transition-all px-4 py-2.5 rounded-full border cursor-pointer ${
+                        className={`font-tactical text-xs font-extrabold uppercase tracking-wider transition-all px-4 py-2.5 cursor-pointer ${
                           showRulebookPreview
-                            ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-300'
-                            : 'bg-transparent border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800'
+                            ? 'hud-btn-primary'
+                            : 'hud-btn-secondary'
                         }`}
                       >
                         {showRulebookPreview ? 'Hide Inline Preview' : 'Show Inline Preview'}
@@ -1414,7 +1470,7 @@ const Admin = ({ globalGame, globalTournament }) => {
                         href={rulebookUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="bg-transparent border border-cyan-500/60 text-cyan-400 hover:bg-cyan-500/10 text-xs font-bold transition-colors whitespace-nowrap flex items-center gap-2 px-5 py-2.5 rounded-full"
+                        className="hud-btn-secondary font-tactical text-xs font-extrabold uppercase tracking-wider whitespace-nowrap flex items-center gap-2 px-4 py-2.5"
                       >
                         <span>Open PDF in Browser</span>
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
@@ -1424,7 +1480,7 @@ const Admin = ({ globalGame, globalTournament }) => {
                         download
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold transition-colors whitespace-nowrap px-4 py-2.5 rounded-full"
+                        className="hud-btn-secondary font-tactical text-xs font-extrabold uppercase tracking-wider whitespace-nowrap px-4 py-2.5"
                       >
                         Download
                       </a>
@@ -1461,36 +1517,36 @@ const Admin = ({ globalGame, globalTournament }) => {
               {allRulebooks.length > 0 && (
                 <div className="mt-4 flex flex-col gap-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-theme-text-base">
+                    <h3 className="font-tactical text-xs font-extrabold uppercase tracking-[0.18em] text-theme-text-base">
                       Database Records History ({allRulebooks.length})
                     </h3>
                     <span className="text-[10px] font-mono text-theme-text-faint">Table: public.rulebooks</span>
                   </div>
-                  <div className="border border-theme-input rounded-xl overflow-hidden bg-bg-200">
+                  <div className="hud-card overflow-x-auto custom-scrollbar">
                     <table className="w-full text-left text-xs">
                       <thead>
-                        <tr className="border-b border-theme-input bg-bg-300 text-theme-text-faint uppercase font-bold text-[10px] tracking-wider">
-                          <th className="py-3 px-4">Record ID</th>
-                          <th className="py-3 px-4">Assigned Tournament</th>
-                          <th className="py-3 px-4">File Name / Path</th>
-                          <th className="py-3 px-4">Date Uploaded</th>
-                          <th className="py-3 px-4 text-right">Actions</th>
+                        <tr className="border-b border-cyan-500/20 bg-slate-950/80 text-cyan-400/90 uppercase font-tactical font-extrabold text-[10px] tracking-[0.16em]">
+                          <th className="py-3.5 px-4">Record ID</th>
+                          <th className="py-3.5 px-4">Assigned Tournament</th>
+                          <th className="py-3.5 px-4">File Name / Path</th>
+                          <th className="py-3.5 px-4">Date Uploaded</th>
+                          <th className="py-3.5 px-4 text-right">Actions</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-800/40 text-theme-text-base">
+                      <tbody className="divide-y divide-slate-800/60 text-theme-text-base">
                         {allRulebooks.map((rb) => {
                           const isActive = rulebookRecord?.id === rb.id;
                           const cdnUrl = rb.file_url?.startsWith('http') ? rb.file_url : `${window.location.origin}${rb.file_url}`;
                           return (
-                            <tr key={rb.id} className={`hover:bg-[#141e2e]/50 transition-colors ${isActive ? 'bg-cyan-950/20' : ''}`}>
-                              <td className="py-3 px-4 font-mono font-bold text-cyan-400">
-                                #{rb.id} {isActive && <span className="ml-1 text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Active</span>}
+                            <tr key={rb.id} className={`hover:bg-cyan-500/5 transition-colors ${isActive ? 'bg-cyan-950/20' : ''}`}>
+                              <td className="py-3 px-4 font-mono font-bold text-cyan-400 whitespace-nowrap">
+                                #{rb.id} {isActive && <span className="hud-chamfer-sm ml-1.5 font-tactical text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">Active</span>}
                               </td>
                               <td className="py-3 px-4">
                                 <select
                                   value={rb.tournament_name || 'Default'}
                                   onChange={(e) => handleAssignRulebookTournament(rb.id, e.target.value)}
-                                  className="bg-[#0b1017] border border-slate-700 hover:border-cyan-400 text-cyan-300 text-[11px] font-semibold rounded px-2 py-1 focus:outline-none cursor-pointer"
+                                  className="hud-chamfer-sm bg-slate-950 border border-cyan-500/35 hover:border-cyan-400 text-cyan-300 font-tactical text-[11px] font-bold uppercase tracking-wider px-2.5 py-1.5 focus:outline-none cursor-pointer"
                                   title="Change assigned tournament"
                                 >
                                   <option value="Default" className="bg-[#0d1420] text-slate-400">Default (Unassigned)</option>
@@ -1502,8 +1558,8 @@ const Admin = ({ globalGame, globalTournament }) => {
                                 </select>
                               </td>
                               <td className="py-3 px-4 font-mono text-[11px] text-slate-400 truncate max-w-xs">{rb.file_url?.split('/').pop()}</td>
-                              <td className="py-3 px-4 text-slate-400">{rb.created_at ? new Date(rb.created_at).toLocaleString() : 'N/A'}</td>
-                              <td className="py-3 px-4 text-right">
+                              <td className="py-3 px-4 text-slate-400 whitespace-nowrap">{rb.created_at ? new Date(rb.created_at).toLocaleString() : 'N/A'}</td>
+                              <td className="py-3 px-4 text-right whitespace-nowrap">
                                 <div className="flex items-center justify-end gap-2">
                                   <button
                                     type="button"
@@ -1515,7 +1571,7 @@ const Admin = ({ globalGame, globalTournament }) => {
                                         setRulebookTournament(rb.tournament_name);
                                       }
                                     }}
-                                    className="px-2.5 py-1 rounded-md text-[10px] font-bold bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 border border-cyan-500/30 transition-colors cursor-pointer"
+                                    className="hud-btn-secondary px-3 py-1.5 font-tactical text-[10px] font-extrabold uppercase tracking-[0.14em]"
                                   >
                                     Preview
                                   </button>
@@ -1523,14 +1579,14 @@ const Admin = ({ globalGame, globalTournament }) => {
                                     href={cdnUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="px-2.5 py-1 rounded-md text-[10px] font-bold bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+                                    className="hud-btn-secondary px-3 py-1.5 font-tactical text-[10px] font-extrabold uppercase tracking-[0.14em] inline-flex items-center"
                                   >
                                     Open
                                   </a>
                                   <button
                                     type="button"
                                     onClick={() => handleDeleteRulebook(rb.id)}
-                                    className="px-2 py-1 rounded-md text-[10px] font-bold text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+                                    className="hud-chamfer-sm px-3 py-1.5 font-tactical text-[10px] font-extrabold uppercase tracking-[0.14em] bg-red-500/15 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/40 border-l-2 border-l-red-500 transition-all cursor-pointer"
                                     title="Delete from database"
                                   >
                                     Delete
@@ -1709,7 +1765,7 @@ const Admin = ({ globalGame, globalTournament }) => {
                         setDevPreviewUrl('');
                         setModalFeedback({ type: 'info', message: 'Enter a new email address to verify.' });
                       }}
-                      className="px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium border border-slate-700 transition-colors whitespace-nowrap"
+                      className="hud-btn-secondary px-5 py-3 text-xs font-tactical font-extrabold uppercase tracking-wider whitespace-nowrap"
                     >
                       Change Email
                     </button>
@@ -1718,7 +1774,7 @@ const Admin = ({ globalGame, globalTournament }) => {
                       type="button"
                       onClick={handleSendVerification}
                       disabled={emailVerificationStatus === 'sending' || !newEmail || resendCooldown > 0}
-                      className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-colors disabled:bg-slate-800 disabled:text-slate-500 disabled:border disabled:border-slate-700 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-2 shadow-sm"
+                      className="hud-btn-primary px-6 py-3 text-xs font-tactical font-extrabold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-2"
                     >
                       {emailVerificationStatus === 'sending' ? (
                         <span>Sending...</span>
@@ -1795,7 +1851,7 @@ const Admin = ({ globalGame, globalTournament }) => {
                         type="button"
                         onClick={handleVerifyCode}
                         disabled={emailVerificationStatus === 'verifying' || verificationCode.length !== 6}
-                        className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold transition-colors disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed whitespace-nowrap shadow-sm"
+                        className="hud-btn-primary px-6 py-2.5 text-xs font-tactical font-extrabold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                       >
                         {emailVerificationStatus === 'verifying' ? 'Verifying...' : 'Verify Code'}
                       </button>
@@ -1967,7 +2023,7 @@ const Admin = ({ globalGame, globalTournament }) => {
                   type="button"
                   onClick={resetCreateModal}
                   disabled={isCreating}
-                  className="px-5 py-2.5 rounded-xl border border-slate-700 hover:bg-slate-800 text-slate-300 text-sm font-medium transition-colors"
+                  className="hud-btn-secondary px-5 py-2.5 text-xs font-tactical font-extrabold uppercase tracking-wider"
                 >
                   Cancel
                 </button>
@@ -1976,7 +2032,7 @@ const Admin = ({ globalGame, globalTournament }) => {
                   type="button"
                   onClick={handleCreateUser}
                   disabled={isCreating || emailVerificationStatus !== 'verified' || !newPassword}
-                  className="px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 transition-colors disabled:bg-slate-800 disabled:text-slate-500 disabled:border disabled:border-slate-700/80 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm"
+                  className="hud-btn-primary px-6 py-2.5 text-xs font-tactical font-extrabold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   title={emailVerificationStatus !== 'verified' ? "Please verify email first" : ""}
                 >
                   {isCreating ? (
@@ -2029,10 +2085,10 @@ const Admin = ({ globalGame, globalTournament }) => {
                 </div>
               </div>
               <button
+                type="button"
                 onClick={handleUpdatePermissions}
                 disabled={isUpdatingPermissions}
-                className="w-full bg-cyan-500 hover:bg-cyan-400 text-[#090e14] font-black uppercase tracking-widest rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-cyan-500/20"
-                style={{ padding: "14px", marginTop: "8px" }}
+                className="hud-btn-primary w-full py-3.5 mt-2 font-tactical text-xs font-extrabold uppercase tracking-[0.18em] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isUpdatingPermissions ? 'Saving...' : 'Save Permissions'}
               </button>
@@ -2089,10 +2145,10 @@ const Admin = ({ globalGame, globalTournament }) => {
           </div>
           
           <div className="flex justify-end pt-4 border-t border-theme-input">
-             <button onClick={() => {
+             <button type="button" onClick={() => {
                 handleFormulaUpdate(calcTarget, calcString);
                 setCalculatorOpen(false);
-             }} className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-full shadow-[0_0_15px_rgba(37,99,235,0.5)] transition-all">
+             }} className="hud-btn-primary py-3 px-8 font-tactical text-xs font-extrabold uppercase tracking-[0.18em]">
                 Apply Formula
              </button>
           </div>

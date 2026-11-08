@@ -547,69 +547,76 @@ const Mapping = ({ globalGame, globalTournament }) => {
         : null;
     return (
       <>
-        {" "}
-        {}{" "}
-        <div className="flex flex-col xl:flex-row justify-center items-center border-b border-slate-800/60" style={{ gap: "32px", marginBottom: "24px", paddingBottom: "24px" }}>
-          <div className="flex flex-col bg-slate-900/50 rounded-3xl border border-slate-800/50 shadow-lg" style={{ padding: "24px 32px", gap: "24px", alignSelf: "stretch", justifyContent: "center" }}>
-            <h3 className="text-[10px] font-black tracking-[0.2em] uppercase text-cyan-400">Match Details</h3>
-            <div className="flex gap-6">
-               <div className="flex flex-col">
-                  <span className="text-[9px] text-theme-text-muted font-bold tracking-widest uppercase mb-2">Week</span>
-                  <div className="bg-slate-900 border border-slate-800/60 rounded-lg px-6 py-2 text-sm font-bold text-gray-300 shadow-inner">{matchWeek}</div>
-               </div>
-               <div className="flex flex-col">
-                  <span className="text-[9px] text-theme-text-muted font-bold tracking-widest uppercase mb-2">Day</span>
-                  <div className="bg-slate-900 border border-slate-800/60 rounded-lg px-6 py-2 text-sm font-bold text-gray-300 shadow-inner">{matchDay}</div>
-               </div>
-               <div className="flex flex-col">
-                  <span className="text-[9px] text-theme-text-muted font-bold tracking-widest uppercase mb-2">Match</span>
-                  <div className="bg-slate-900 border border-slate-800/60 rounded-lg px-6 py-2 text-sm font-bold text-gray-300 shadow-inner">{matchNumber}</div>
-               </div>
+        <div className="flex flex-wrap justify-between items-stretch gap-4 border-b border-cyan-500/20 pb-6 mb-6 w-full">
+          {/* Match Details Pod */}
+          <div className="hud-card flex flex-col justify-center px-4 py-3.5 gap-2.5 flex-1 min-w-[210px]">
+            <h3 className="font-tactical text-[10px] font-extrabold tracking-[0.2em] uppercase text-cyan-400">
+              // Match Details
+            </h3>
+            <div className="grid grid-cols-3 gap-2.5">
+              <div className="flex flex-col">
+                <span className="font-tactical text-[9px] text-slate-400 font-bold tracking-widest uppercase mb-1">
+                  Week
+                </span>
+                <div className="hud-chamfer-sm bg-slate-950/90 border border-cyan-500/25 px-3 py-1.5 text-xs font-tactical font-extrabold text-white text-center shadow-inner">
+                  {matchWeek}
+                </div>
+              </div>
+              <div className="flex flex-col">
+                <span className="font-tactical text-[9px] text-slate-400 font-bold tracking-widest uppercase mb-1">
+                  Day
+                </span>
+                <div className="hud-chamfer-sm bg-slate-950/90 border border-cyan-500/25 px-3 py-1.5 text-xs font-tactical font-extrabold text-white text-center shadow-inner">
+                  {matchDay}
+                </div>
+              </div>
+              <div className="flex flex-col">
+                <span className="font-tactical text-[9px] text-slate-400 font-bold tracking-widest uppercase mb-1">
+                  Match
+                </span>
+                <div className="hud-chamfer-sm bg-slate-950/90 border border-cyan-500/25 px-3 py-1.5 text-xs font-tactical font-extrabold text-white text-center shadow-inner">
+                  {matchNumber}
+                </div>
+              </div>
             </div>
           </div>
-          {" "}
-          {}{" "}
-          <div className="flex flex-col items-center" style={{ gap: "16px" }}>
-            {" "}
-            <div className="flex items-center bg-slate-900/50 rounded-3xl border border-slate-800/50 shadow-lg" style={{ padding: "32px 48px", gap: "48px" }}>
-              {" "}
-              {}{" "}
-              <div className="flex flex-col items-center" style={{ gap: "12px" }}>
-                {" "}
-                <span className="text-[10px] text-blue-400 font-bold tracking-[0.2em] uppercase">
+
+          {/* Center Team A vs Timer vs Team B Pod */}
+          <div className="flex flex-col items-center justify-center gap-2.5 flex-[2] min-w-[290px]">
+            <div className="hud-card w-full flex flex-wrap sm:flex-nowrap items-center justify-center px-4 sm:px-6 py-3.5 gap-4 sm:gap-6">
+              {/* Team A */}
+              <div className="flex flex-col items-center gap-1.5 flex-1 min-w-[115px]">
+                <span className="font-tactical text-[10px] text-blue-400 font-extrabold tracking-[0.18em] uppercase">
                   Team A
-                </span>{" "}
+                </span>
                 <select
                   value={teamA}
                   onChange={(e) => setTeamA(e.target.value)}
-                  className="bg-blue-700/20 border border-[#1d4ed8]/50 text-theme-text-base text-base font-black rounded-xl outline-none text-center w-36 focus:border-[#60a5fa] transition-colors focus:bg-blue-700/40 shadow-[0_0_15px_rgba(29,78,216,0.2)]"
-                  style={{ padding: "12px 16px" }}
+                  className="hud-chamfer-sm bg-blue-950/40 border border-blue-500/50 text-white font-tactical text-xs sm:text-sm font-extrabold outline-none text-center w-full max-w-[150px] px-2.5 py-2 focus:border-blue-400 transition-colors cursor-pointer shadow-[0_0_15px_rgba(29,78,216,0.2)]"
                 >
-                  {" "}
                   {dbTeams.map((t) => (
                     <option
                       key={`a-${t.team_name}`}
                       value={t.team_name}
-                      className="bg-slate-900 text-theme-text-base"
+                      className="bg-slate-900 text-white"
                     >
                       {t.team_name}
                     </option>
-                  ))}{" "}
-                </select>{" "}
-              </div>{" "}
-              {}{" "}
-              <div className="relative flex flex-col items-center justify-center">
-                {" "}
+                  ))}
+                </select>
+              </div>
+
+              {/* Countdown Ring */}
+              <div className="relative flex flex-col items-center justify-center shrink-0">
                 <div
-                  className={`relative flex items-center justify-center rounded-full ${isTimeLow && vetoActive ? "timer-pulse" : ""} bg-slate-900 shadow-inner`}
+                  className={`relative flex items-center justify-center rounded-full ${isTimeLow && vetoActive ? "timer-pulse" : ""} bg-slate-950 shadow-inner`}
                 >
-                  {" "}
                   <svg
-                    width="100"
-                    height="100"
+                    width="84"
+                    height="84"
+                    viewBox="0 0 100 100"
                     className="transform -rotate-90"
                   >
-                    {" "}
                     <circle
                       cx="50"
                       cy="50"
@@ -617,13 +624,13 @@ const Mapping = ({ globalGame, globalTournament }) => {
                       fill="transparent"
                       stroke="#1e293b"
                       strokeWidth="6"
-                    />{" "}
+                    />
                     <circle
                       cx="50"
                       cy="50"
                       r={40}
                       fill="transparent"
-                      stroke={isTimeLow ? "#ef4444" : "#00ffcc"}
+                      stroke={isTimeLow ? "#ef4444" : "#00e5ff"}
                       strokeWidth="6"
                       strokeDasharray={2 * Math.PI * 40}
                       strokeDashoffset={
@@ -631,53 +638,48 @@ const Mapping = ({ globalGame, globalTournament }) => {
                       }
                       className="transition-all duration-1000 ease-linear"
                       strokeLinecap="round"
-                    />{" "}
-                  </svg>{" "}
+                    />
+                  </svg>
                   <div className="absolute flex flex-col items-center">
-                    {" "}
                     <span
-                      className={`text-3xl font-black ${isTimeLow ? "text-red-500" : "text-theme-text-base"}`}
+                      className={`font-tactical text-2xl font-black leading-none ${isTimeLow ? "text-red-500" : "text-white"}`}
                     >
                       {timeLeft}
-                    </span>{" "}
-                    <span className="text-[10px] text-theme-text-muted font-bold uppercase tracking-widest -mt-1">
+                    </span>
+                    <span className="font-tactical text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
                       Sec
-                    </span>{" "}
-                  </div>{" "}
-                </div>{" "}
-              </div>{" "}
-              {}{" "}
-              <div className="flex flex-col items-center" style={{ gap: "12px" }}>
-                {" "}
-                <span className="text-[10px] text-red-400 font-bold tracking-[0.2em] uppercase">
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Team B */}
+              <div className="flex flex-col items-center gap-1.5 flex-1 min-w-[115px]">
+                <span className="font-tactical text-[10px] text-red-400 font-extrabold tracking-[0.18em] uppercase">
                   Team B
-                </span>{" "}
+                </span>
                 <select
                   value={teamB}
                   onChange={(e) => setTeamB(e.target.value)}
-                  className="bg-red-700/20 border border-[#b91c1c]/50 text-theme-text-base text-base font-black rounded-xl outline-none text-center w-36 focus:border-[#f87171] transition-colors focus:bg-red-700/40 shadow-[0_0_15px_rgba(185,28,28,0.2)]"
-                  style={{ padding: "12px 16px" }}
+                  className="hud-chamfer-sm bg-red-950/40 border border-red-500/50 text-white font-tactical text-xs sm:text-sm font-extrabold outline-none text-center w-full max-w-[150px] px-2.5 py-2 focus:border-red-400 transition-colors cursor-pointer shadow-[0_0_15px_rgba(185,28,28,0.2)]"
                 >
-                  {" "}
                   {dbTeams.map((t) => (
                     <option
                       key={`b-${t.team_name}`}
                       value={t.team_name}
-                      className="bg-slate-900 text-theme-text-base"
+                      className="bg-slate-900 text-white"
                     >
                       {t.team_name}
                     </option>
-                  ))}{" "}
-                </select>{" "}
-              </div>{" "}
-            </div>{" "}
-            {}{" "}
+                  ))}
+                </select>
+              </div>
+            </div>
+
             <div className="whitespace-nowrap text-center">
-              {" "}
               {currentPhase ? (
-                <span className="text-[12px] font-black uppercase tracking-[0.25em]">
-                  {" "}
-                  <span className="text-theme-text-muted">TURN: </span>{" "}
+                <span className="font-tactical text-[11px] font-extrabold uppercase tracking-[0.22em]">
+                  <span className="text-slate-400">TURN: </span>
                   <span
                     className={
                       currentPhase.team === "A"
@@ -685,89 +687,100 @@ const Mapping = ({ globalGame, globalTournament }) => {
                         : "text-red-400"
                     }
                   >
-                    {" "}
-                    {currentPhase.team === "A" ? teamA : teamB}{" "}
-                  </span>{" "}
+                    {currentPhase.team === "A" ? teamA : teamB}
+                  </span>
                 </span>
               ) : (
-                <span className="text-[12px] font-black uppercase tracking-[0.25em] text-cyan-400">
+                <span className="font-tactical text-[11px] font-extrabold uppercase tracking-[0.22em] text-cyan-400">
                   DECIDER
                 </span>
-              )}{" "}
-            </div>{" "}
-          </div>{" "}
-          {}{" "}
-          <div className="flex flex-row xl:flex-col shrink-0" style={{ gap: "16px" }}>
-            {" "}
+              )}
+            </div>
+          </div>
+
+          {/* Right Veto Controls */}
+          <div className="flex flex-row sm:flex-col justify-center gap-2.5 flex-1 sm:flex-none min-w-[165px]">
             {!currentPhase && phaseIndex > 0 ? (
               <button
+                type="button"
                 onClick={() => submitVetoResult(currentMaps)}
-                className="text-[13px] font-black uppercase tracking-[0.2em] transition-all transform hover:scale-105 active:scale-95 shadow-lg border bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.2)]"
-                style={{ padding: "14px 32px", borderRadius: "12px" }}
+                className="hud-btn-primary flex-1 sm:flex-none px-5 py-3 text-xs font-tactical font-extrabold uppercase tracking-[0.16em] text-center"
               >
-                {" "}
-                SUBMIT RESULTS{" "}
+                SUBMIT RESULTS
               </button>
             ) : (
               <button
+                type="button"
                 onClick={toggleVeto}
                 disabled={!currentPhase}
-                className={`text-[13px] font-black uppercase tracking-[0.2em] transition-all transform hover:scale-105 active:scale-95 shadow-lg border ${!currentPhase ? "bg-slate-800 text-theme-text-muted border-slate-700 cursor-not-allowed" : vetoActive ? "bg-amber-500/10 text-amber-500 border-amber-500/30 hover:bg-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.2)]" : "bg-cyan-400/10 text-cyan-400 border-cyan-400/30 hover:bg-cyan-400/20 shadow-[0_0_20px_rgba(6,182,212,0.3)]"}`}
-                style={{ padding: "14px 32px", borderRadius: "12px" }}
+                className={`flex-1 sm:flex-none px-5 py-3 text-xs font-tactical font-extrabold uppercase tracking-[0.16em] transition-all cursor-pointer ${
+                  !currentPhase
+                    ? "hud-chamfer-sm bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed"
+                    : vetoActive
+                      ? "hud-chamfer-sm bg-amber-500/20 text-amber-300 border border-amber-400/50 hover:bg-amber-500 hover:text-slate-950 shadow-[0_0_18px_rgba(245,158,11,0.25)]"
+                      : "hud-btn-primary"
+                }`}
               >
-                {" "}
                 {vetoActive
                   ? "PAUSE VETO"
                   : phaseIndex > 0 && currentPhase
                     ? "RESUME"
-                    : "START VETO"}{" "}
+                    : "START VETO"}
               </button>
-            )}{" "}
+            )}
             <button
+              type="button"
               onClick={resetVeto}
-              className="text-[13px] font-black uppercase tracking-[0.2em] transition-all transform hover:scale-105 active:scale-95 bg-slate-800/50 text-theme-text-muted hover:text-theme-text-base hover:bg-slate-700 border border-slate-700/50"
-              style={{ padding: "14px 32px", borderRadius: "12px" }}
+              className="hud-btn-secondary flex-1 sm:flex-none px-5 py-3 text-xs font-tactical font-extrabold uppercase tracking-[0.16em] text-center"
             >
-              {" "}
-              RESET{" "}
-            </button>{" "}
-          </div>{" "}
-        </div>{" "}
-        {}{" "}
-        <div className="flex justify-center w-full max-w-full overflow-x-auto pb-2 custom-scrollbar" style={{ marginBottom: "48px" }}>
-          {" "}
-          <div className="flex flex-wrap justify-center bg-slate-900/60 rounded-xl border border-slate-800/60 min-w-max" style={{ gap: "12px", padding: "16px" }}>
-            {" "}
+              RESET
+            </button>
+          </div>
+        </div>
+
+        {/* Veto Sequence Bar */}
+        <div className="flex justify-center w-full mb-8">
+          <div className="hud-card flex flex-wrap justify-center items-center gap-2 p-3 w-full">
             {vetoSequence.map((seq, idx) => (
               <div
                 key={idx}
-                className={`flex flex-col items-center justify-center transition-colors border ${idx < phaseIndex ? "bg-slate-800 border-slate-700 opacity-50" : idx === phaseIndex ? "bg-white/[0.08] border-white/20 shadow-[0_0_10px_rgba(255,255,255,0.1)]" : "bg-transparent border-transparent opacity-40"}`}
-                style={{ padding: "8px 16px", borderRadius: "12px" }}
+                className={`hud-chamfer-sm flex flex-col items-center justify-center px-3.5 py-2 transition-colors border ${
+                  idx < phaseIndex
+                    ? "bg-slate-900/80 border-slate-800 opacity-50"
+                    : idx === phaseIndex
+                      ? "bg-cyan-500/15 border-cyan-400/50 shadow-[0_0_12px_rgba(0,229,255,0.2)]"
+                      : "bg-slate-950/60 border-slate-800/60 opacity-45"
+                }`}
               >
-                {" "}
                 <span
-                  className={`text-[10px] font-bold tracking-widest ${seq.team === "A" ? "text-blue-400" : "text-red-400"}`}
+                  className={`font-tactical text-[10px] font-extrabold tracking-widest ${
+                    seq.team === "A" ? "text-blue-400" : "text-red-400"
+                  }`}
                 >
                   T-{seq.team}
-                </span>{" "}
+                </span>
                 <span
-                  className={`text-[11px] font-black tracking-widest uppercase ${seq.action === "ban" ? "text-red-500" : "text-green-400"}`}
+                  className={`font-tactical text-[11px] font-black tracking-widest uppercase ${
+                    seq.action === "ban" ? "text-red-500" : "text-emerald-400"
+                  }`}
                 >
                   {seq.action}
-                </span>{" "}
+                </span>
               </div>
-            ))}{" "}
+            ))}
             <div
-              className={`flex items-center justify-center transition-colors border ${!currentPhase ? "bg-cyan-400/20 border-cyan-400/50 shadow-[0_0_15px_rgba(6,182,212,0.3)]" : "bg-transparent border-transparent opacity-40"}`}
-              style={{ padding: "8px 16px", borderRadius: "12px" }}
+              className={`hud-chamfer-sm flex items-center justify-center px-4 py-2 transition-colors border ${
+                !currentPhase
+                  ? "bg-cyan-400/20 border-cyan-400/60 shadow-[0_0_15px_rgba(6,182,212,0.3)]"
+                  : "bg-slate-950/60 border-slate-800/60 opacity-45"
+              }`}
             >
-              {" "}
-              <span className="text-[11px] font-black tracking-widest text-cyan-400">
+              <span className="font-tactical text-[11px] font-black tracking-widest text-cyan-400">
                 DECIDER
-              </span>{" "}
-            </div>{" "}
-          </div>{" "}
-        </div>{" "}
+              </span>
+            </div>
+          </div>
+        </div>
         {}{" "}
         <div className="relative" style={{ marginBottom: "48px" }}>
           {" "}
@@ -995,276 +1008,212 @@ const Mapping = ({ globalGame, globalTournament }) => {
   };
   const renderMapPoolSettings = () => {
     return (
-      <div className="animate-[fadeInScale_0.3s_ease-out]" style={{ padding: "32px" }}>
-        {" "}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center border-b border-slate-800/60 shrink-0" style={{ gap: "24px", marginBottom: "32px", paddingBottom: "24px" }}>
-          {" "}
+      <div className="animate-[fadeInScale_0.3s_ease-out] p-4 sm:p-6">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center border-b border-cyan-500/20 shrink-0 gap-4 mb-6 pb-5">
           <div>
-            {" "}
-            <h2 className="text-2xl font-black tracking-widest uppercase flex items-center gap-3">
+            <h2 className="font-tactical text-xl sm:text-2xl font-extrabold tracking-widest uppercase flex items-center gap-3 flex-wrap">
               <span>Map Pool Settings</span>
-              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-cyan-400/10 text-cyan-400 border border-cyan-400/30 uppercase tracking-widest">
+              <span className="hud-chamfer-sm text-[10px] font-tactical font-extrabold px-2.5 py-0.5 bg-cyan-400/15 text-cyan-300 border border-cyan-400/40 uppercase tracking-widest">
                 {currentTournamentName}
               </span>
-            </h2>{" "}
-            <p className="text-theme-text-muted text-sm mt-1">
+            </h2>
+            <p className="text-slate-400 text-xs sm:text-sm mt-1">
               Configure which maps are available for the veto process in {game} for folder{" "}
               <span className="text-cyan-400 font-semibold">"{currentTournamentName}"</span>.
-            </p>{" "}
-          </div>{" "}
-          <div className="flex flex-wrap items-center" style={{ gap: "16px" }}>
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
             <button
+              type="button"
               onClick={handleSelectAll}
-              style={{
-                boxShadow: "0 4px 0 #1e293b, 0 6px 12px rgba(0,0,0,0.3)",
-                transform: "translateY(0)",
-                padding: "12px 24px",
-                borderRadius: "12px",
-              }}
-              onMouseDown={(e) => {
-                e.currentTarget.style.transform = "translateY(3px)";
-                e.currentTarget.style.boxShadow =
-                  "0 1px 0 #1e293b, 0 2px 4px rgba(0,0,0,0.3)";
-              }}
-              onMouseUp={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow =
-                  "0 4px 0 #1e293b, 0 6px 12px rgba(0,0,0,0.3)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow =
-                  "0 4px 0 #1e293b, 0 6px 12px rgba(0,0,0,0.3)";
-              }}
-              className="bg-slate-800 text-theme-text-base text-xs font-bold tracking-wide transition-all cursor-pointer border border-slate-600/50 hover:bg-slate-700"
+              className="hud-btn-secondary px-4 py-2.5 text-xs font-tactical font-extrabold uppercase tracking-wider"
             >
               Select All
             </button>
             <button
+              type="button"
               onClick={handleDeselectAll}
-              style={{
-                boxShadow: "0 4px 0 #1e293b, 0 6px 12px rgba(0,0,0,0.3)",
-                transform: "translateY(0)",
-                padding: "12px 24px",
-                borderRadius: "12px",
-              }}
-              onMouseDown={(e) => {
-                e.currentTarget.style.transform = "translateY(3px)";
-                e.currentTarget.style.boxShadow =
-                  "0 1px 0 #1e293b, 0 2px 4px rgba(0,0,0,0.3)";
-              }}
-              onMouseUp={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow =
-                  "0 4px 0 #1e293b, 0 6px 12px rgba(0,0,0,0.3)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow =
-                  "0 4px 0 #1e293b, 0 6px 12px rgba(0,0,0,0.3)";
-              }}
-              className="bg-slate-800 text-theme-text-base text-xs font-bold tracking-wide transition-all cursor-pointer border border-slate-600/50 hover:bg-slate-700"
+              className="hud-btn-secondary px-4 py-2.5 text-xs font-tactical font-extrabold uppercase tracking-wider"
             >
               Deselect All
             </button>
             <button
+              type="button"
               onClick={handleSaveConfiguration}
               disabled={isSaving}
-              style={{
-                boxShadow: "0 4px 0 #065f46, 0 6px 16px rgba(16,185,129,0.3)",
-                transform: "translateY(0)",
-                padding: "12px 24px",
-                borderRadius: "12px",
-              }}
-              onMouseDown={(e) => {
-                e.currentTarget.style.transform = "translateY(3px)";
-                e.currentTarget.style.boxShadow =
-                  "0 1px 0 #065f46, 0 2px 4px rgba(16,185,129,0.2)";
-              }}
-              onMouseUp={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow =
-                  "0 4px 0 #065f46, 0 6px 16px rgba(16,185,129,0.3)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow =
-                  "0 4px 0 #065f46, 0 6px 16px rgba(16,185,129,0.3)";
-              }}
-              className={`text-xs font-bold tracking-wide transition-all cursor-pointer border ${
-                isSaving
-                  ? "bg-cyan-500/30 text-cyan-200 border-cyan-400/60 cursor-wait"
-                  : "bg-cyan-400/15 text-cyan-400 border-cyan-400/40 hover:bg-cyan-400/25"
+              className={`hud-btn-primary px-5 py-2.5 text-xs font-tactical font-extrabold uppercase tracking-wider ${
+                isSaving ? "opacity-60 cursor-wait" : ""
               }`}
             >
               {isSaving ? "Saving..." : "Save Configuration"}
             </button>
-          </div>{" "}
-        </div>{" "}
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4" style={{ gap: "24px", paddingBottom: "32px" }}>
-          {" "}
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5 pb-4">
           {currentMaps.map((m) => (
             <div
               key={m.id}
-              className={`relative aspect-video rounded-xl overflow-hidden border-2 transition-all ${m.enabled ? "border-slate-600" : "border-slate-800 opacity-60"}`}
+              className={`hud-chamfer-sm relative aspect-video overflow-hidden border transition-all ${
+                m.enabled ? "border-cyan-500/40 shadow-[0_0_15px_rgba(0,229,255,0.12)]" : "border-slate-800 opacity-60"
+              }`}
             >
-              {" "}
               <div
                 className={`absolute inset-0 bg-cover bg-center ${!m.enabled ? "grayscale brightness-50" : ""}`}
                 style={{ backgroundImage: `url(${m.img})` }}
-              ></div>{" "}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>{" "}
-              <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center z-10">
-                {" "}
-                <span className="text-sm font-black uppercase tracking-widest">
+              ></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+              <div className="absolute bottom-3.5 left-4 right-4 flex justify-between items-center z-10">
+                <span className="font-tactical text-sm font-black uppercase tracking-widest text-white">
                   {m.name}
-                </span>{" "}
+                </span>
                 <ToggleSwitch
                   enabled={m.enabled}
                   onChange={() => toggleMapEnabled(m.id)}
-                />{" "}
-              </div>{" "}
+                />
+              </div>
             </div>
-          ))}{" "}
-        </div>{" "}
+          ))}
+        </div>
       </div>
     );
   };
   const renderBanHistory = () => {
     return <MapBpResults globalGame={globalGame} globalTournament={globalTournament} />;
   };
-    const renderAdminTools = () => {
+  const renderAdminTools = () => {
     return (
-      <div className="animate-[fadeInScale_0.3s_ease-out]">
-        {" "}
-        <div className="border-b border-slate-800/60" style={{ marginBottom: "32px", paddingBottom: "24px" }}>
-          {" "}
-          <h2 className="text-2xl font-black tracking-widest uppercase">
+      <div className="animate-[fadeInScale_0.3s_ease-out] p-2 sm:p-4">
+        <div className="border-b border-cyan-500/20 mb-6 pb-5">
+          <h2 className="font-tactical text-xl sm:text-2xl font-extrabold tracking-widest uppercase">
             Admin Veto Tools
-          </h2>{" "}
-          <p className="text-theme-text-muted text-sm mt-1">
+          </h2>
+          <p className="text-slate-400 text-xs sm:text-sm mt-1">
             Powerful overrides and match controls. Use with caution.
-          </p>{" "}
-        </div>{" "}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3" style={{ gap: "24px" }}>
-          {" "}
-          <div className="bg-slate-900 rounded-xl border border-slate-800 flex flex-col justify-between hover:border-slate-600 transition-colors" style={{ padding: "24px", gap: "24px" }}>
-            {" "}
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="hud-card flex flex-col justify-between p-6 gap-6">
             <div>
-              {" "}
-              <h3 className="text-sm font-bold text-theme-text-base uppercase tracking-wider mb-2">
+              <h3 className="font-tactical text-sm font-extrabold text-white uppercase tracking-wider mb-2">
                 Reverse Last Action
-              </h3>{" "}
-              <p className="text-xs text-theme-text-muted mb-6">
+              </h3>
+              <p className="text-xs text-slate-400">
                 Undo the last map ban or pick. Restores the timer and phase
                 state to the previous turn.
-              </p>{" "}
-            </div>{" "}
-            <button className="w-full bg-slate-800 hover:bg-slate-700 text-theme-text-base text-xs font-bold uppercase tracking-wider border border-slate-700 transition-colors" style={{ padding: "12px 24px", borderRadius: "12px" }}>
+              </p>
+            </div>
+            <button
+              type="button"
+              className="hud-btn-secondary w-full py-3 px-5 text-xs font-tactical font-extrabold uppercase tracking-wider"
+            >
               Undo Action
-            </button>{" "}
-          </div>{" "}
-          <div className="bg-slate-900 rounded-xl border border-slate-800 flex flex-col justify-between hover:border-slate-600 transition-colors" style={{ padding: "24px", gap: "24px" }}>
-            {" "}
-            <div>
-              {" "}
-              <h3 className="text-sm font-bold text-theme-text-base uppercase tracking-wider mb-2">
-                Override Turn Timer
-              </h3>{" "}
-              <p className="text-xs text-theme-text-muted mb-6">
-                Manually adjust the current turn's timer countdown.
-              </p>{" "}
-              <div className="flex mb-4" style={{ gap: "12px" }}>
-                {" "}
-                <button className="flex-1 bg-slate-800 text-xs font-bold text-theme-text-base hover:bg-slate-700" style={{ padding: "10px", borderRadius: "8px" }}>
-                  +10s
-                </button>{" "}
-                <button className="flex-1 bg-slate-800 text-xs font-bold text-theme-text-base hover:bg-slate-700" style={{ padding: "10px", borderRadius: "8px" }}>
-                  +30s
-                </button>{" "}
-                <button className="flex-1 bg-slate-800 text-xs font-bold text-red-400 hover:bg-slate-700" style={{ padding: "10px", borderRadius: "8px" }}>
-                  Force 0s
-                </button>{" "}
-              </div>{" "}
-            </div>{" "}
-          </div>{" "}
+            </button>
+          </div>
 
-          <div className="bg-slate-900 rounded-xl border border-slate-800 flex flex-col justify-between hover:border-slate-600 transition-colors" style={{ padding: "24px", gap: "24px" }}>
-            {" "}
+          <div className="hud-card flex flex-col justify-between p-6 gap-6">
             <div>
-              {" "}
-              <h3 className="text-sm font-bold text-theme-text-base uppercase tracking-wider mb-2">
+              <h3 className="font-tactical text-sm font-extrabold text-white uppercase tracking-wider mb-2">
+                Override Turn Timer
+              </h3>
+              <p className="text-xs text-slate-400 mb-6">
+                Manually adjust the current turn's timer countdown.
+              </p>
+              <div className="flex gap-2.5">
+                <button
+                  type="button"
+                  className="hud-btn-secondary flex-1 py-2.5 px-3 text-xs font-tactical font-extrabold"
+                >
+                  +10s
+                </button>
+                <button
+                  type="button"
+                  className="hud-btn-secondary flex-1 py-2.5 px-3 text-xs font-tactical font-extrabold"
+                >
+                  +30s
+                </button>
+                <button
+                  type="button"
+                  className="hud-chamfer-sm flex-1 py-2.5 px-3 text-xs font-tactical font-extrabold uppercase bg-red-500/15 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/40 transition-all cursor-pointer"
+                >
+                  Force 0s
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="hud-card flex flex-col justify-between p-6 gap-6">
+            <div>
+              <h3 className="font-tactical text-sm font-extrabold text-white uppercase tracking-wider mb-2">
                 Match Format Setup
-              </h3>{" "}
-              <p className="text-xs text-theme-text-muted mb-6">
+              </h3>
+              <p className="text-xs text-slate-400">
                 Change the veto format sequence. This can only be changed before
                 the veto starts.
-              </p>{" "}
-            </div>{" "}
-            <div className="flex" style={{ gap: "12px", marginTop: "12px" }}>
-              {" "}
+              </p>
+            </div>
+            <div className="flex gap-3">
               <button
+                type="button"
                 onClick={() => !vetoActive && setVetoFormat("BO3")}
                 disabled={vetoActive && phaseIndex > 0}
-                className={`flex-1 text-xs font-bold transition-colors ${vetoFormat === "BO3" ? "bg-cyan-400/20 text-cyan-400 border border-cyan-400/30" : "bg-slate-800 text-theme-text-muted hover:text-theme-text-base border border-slate-700"} ${vetoActive && phaseIndex > 0 ? "opacity-50 cursor-not-allowed" : ""}`}
-                style={{ padding: "10px", borderRadius: "8px" }}
+                className={`flex-1 py-2.5 px-3 text-xs font-tactical font-extrabold uppercase tracking-wider transition-all ${
+                  vetoFormat === "BO3"
+                    ? "hud-btn-primary"
+                    : "hud-btn-secondary"
+                } ${vetoActive && phaseIndex > 0 ? "opacity-50 cursor-not-allowed" : ""}`}
               >
-                {" "}
-                BEST OF 3{" "}
-              </button>{" "}
+                BEST OF 3
+              </button>
               <button
+                type="button"
                 onClick={() => !vetoActive && setVetoFormat("BO5")}
                 disabled={vetoActive && phaseIndex > 0}
-                className={`flex-1 text-xs font-bold transition-colors ${vetoFormat === "BO5" ? "bg-cyan-400/20 text-cyan-400 border border-cyan-400/30" : "bg-slate-800 text-theme-text-muted hover:text-theme-text-base border border-slate-700"} ${vetoActive && phaseIndex > 0 ? "opacity-50 cursor-not-allowed" : ""}`}
-                style={{ padding: "10px", borderRadius: "8px" }}
+                className={`flex-1 py-2.5 px-3 text-xs font-tactical font-extrabold uppercase tracking-wider transition-all ${
+                  vetoFormat === "BO5"
+                    ? "hud-btn-primary"
+                    : "hud-btn-secondary"
+                } ${vetoActive && phaseIndex > 0 ? "opacity-50 cursor-not-allowed" : ""}`}
               >
-                {" "}
-                BEST OF 5{" "}
-              </button>{" "}
-            </div>{" "}
-          </div>{" "}
-
-        </div>{" "}
+                BEST OF 5
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     );
   };
   return (
-    <div className={`flex-1 overflow-y-auto w-full h-full text-theme-text-base font-sans custom-scrollbar flex flex-col items-center ${activeTab === 'BAN HISTORY' ? 'bg-bg-base' : 'bg-bg-100'}`}>
-      {" "}
-      <div className={`w-full flex-1 flex flex-col ${activeTab === 'BAN HISTORY' ? 'max-w-full px-0 py-0' : 'max-w-[1400px] px-8 lg:px-12 py-6 lg:py-8'}`}>
-        {" "}
+    <div className="flex-1 w-full h-full text-theme-text-base font-sans flex flex-col items-center">
+      <div className="w-full flex-1 flex flex-col max-w-[1440px]">
         <style
           dangerouslySetInnerHTML={{
             __html: `        @keyframes pulse-red {          0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }          50% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }        }        .timer-pulse {          animation: pulse-red 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;        }        .veto-card-enter {          animation: fadeInScale 0.4s ease-out forwards;        }        @keyframes fadeInScale {          from { opacity: 0; transform: scale(0.95); }          to { opacity: 1; transform: scale(1); }        }        @keyframes revealMap {          0% { opacity: 0; transform: scale(1.05) translateY(10px); box-shadow: 0 0 0 rgba(0,0,0,0); }          100% { opacity: 1; transform: scale(1) translateY(0); box-shadow: 0 10px 40px rgba(0,0,0,0.8); }        }        @keyframes slideUpFade {          0% { opacity: 0; transform: translateY(15px); }          100% { opacity: 1; transform: translateY(0); }        }        .animate-reveal-map {          animation: revealMap 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;        }        .animate-slide-up-fade {          opacity: 0;          animation: slideUpFade 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 0.6s forwards;        }      `,
           }}
-        />{" "}
-        {}{" "}
-        <div className={`mapping-tab-nav flex flex-wrap justify-between items-center bg-slate-900/60 rounded-2xl border border-slate-700/50 shadow-2xl ${activeTab === 'BAN HISTORY' ? 'mt-8 mx-8 lg:mx-12 shrink-0' : 'w-full'}`} style={{ padding: "8px", gap: "8px", marginBottom: "32px" }}>
+        />
+        {/* Sub-Navigation Bar */}
+        <div className="hud-card mapping-tab-nav flex flex-wrap justify-between items-center p-2 gap-2 mb-6 w-full">
           {tabs.map((tab) => (
             <button
               key={tab}
+              type="button"
               onClick={() => setActiveTab(tab)}
-              className={`relative flex-1 whitespace-nowrap transition-all duration-300 text-[11px] lg:text-[13px] font-black uppercase tracking-widest overflow-hidden ${
+              className={`hud-chamfer-sm relative flex-1 min-w-[140px] whitespace-nowrap transition-all duration-200 py-3 px-4 font-tactical text-xs font-extrabold uppercase tracking-[0.14em] cursor-pointer focus:outline-none ${
                 activeTab === tab
-                  ? "text-cyan-400 shadow-[0_8px_25px_rgba(6,182,212,0.35)] scale-[1.02] border border-cyan-400/30 bg-cyan-400/10 z-10"
-                  : "text-theme-text-muted hover:text-theme-text-base hover:bg-slate-800/80 border border-transparent hover:border-slate-600/50"
+                  ? "bg-cyan-400 text-slate-950 border border-cyan-400 shadow-[0_0_18px_rgba(0,229,255,0.4)] z-10"
+                  : "bg-slate-950/75 text-slate-400 hover:text-white hover:bg-slate-900 border border-slate-800 hover:border-cyan-500/40"
               }`}
-              style={{ padding: "12px 24px", borderRadius: "12px" }}
             >
               <span className="relative z-10">{tab}</span>
-              {activeTab === tab && (
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400/5 to-transparent animate-[fadeInScale_0.3s_ease-out]"></div>
-              )}
             </button>
           ))}
         </div>
-        {}
+
         {activeTab === "BAN HISTORY" ? (
           <div className="flex-1 min-h-0 relative w-full overflow-hidden flex flex-col">
             {renderBanHistory()}
           </div>
         ) : (
-          <div className="mapping-card-container bg-bg-200 rounded-2xl border border-slate-800/60 shadow-2xl mb-12 min-h-[600px]">
+          <div className="hud-card mapping-card-container shadow-2xl mb-8 min-h-[540px] p-4 sm:p-6">
             {activeTab === "CURRENT MATCH" && renderCurrentMatch()}
             {activeTab === "MAP POOL SETTINGS" && renderMapPoolSettings()}
             {activeTab === "ADMIN TOOLS" && renderAdminTools()}
@@ -1273,7 +1222,7 @@ const Mapping = ({ globalGame, globalTournament }) => {
 
         {/* Floating Toast Notification */}
         {toastMessage && (
-          <div className="fixed top-6 right-8 z-50 flex items-center gap-2.5 px-5 py-3 rounded-xl bg-slate-900/95 border border-cyan-500/50 text-cyan-300 text-xs font-bold shadow-[0_10px_35px_rgba(6,182,212,0.3)] backdrop-blur-md animate-[fadeInScale_0.2s_ease-out]">
+          <div className="hud-chamfer-sm fixed top-6 right-8 z-50 flex items-center gap-2.5 px-5 py-3 bg-slate-900/95 border border-cyan-500/50 text-cyan-300 font-tactical text-xs font-extrabold uppercase tracking-wider shadow-[0_10px_35px_rgba(6,182,212,0.3)] backdrop-blur-md animate-[fadeInScale_0.2s_ease-out]">
             <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
             <span>{toastMessage}</span>
           </div>
