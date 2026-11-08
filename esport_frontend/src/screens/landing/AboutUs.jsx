@@ -10,23 +10,6 @@ const navItems = [
   { key: 'Services', label: 'SERVICES', path: '/services' },
   { key: 'AboutUs', label: 'ABOUT US', path: '/about' },
 ];
-
-const IntegrityIcon = () => (
-  <ShieldCheck size={42} strokeWidth={1.75} />
-);
-
-const InnovationIcon = () => (
-  <Cpu size={42} strokeWidth={1.75} />
-);
-
-const ExecutionIcon = () => (
-  <Crosshair size={42} strokeWidth={1.75} />
-);
-
-const CommunityIcon = () => (
-  <Trophy size={42} strokeWidth={1.75} />
-);
-
 const EmailIcon = () => (
   <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent-neon)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
@@ -34,7 +17,8 @@ const EmailIcon = () => (
   </svg>
 );
 
-const AboutUs = ({ onLoginSuccess }) => {
+const AboutUs = ({ onLoginSuccess, isLoggedIn }) => {
+  const userLoggedIn = isLoggedIn || (typeof window !== 'undefined' && localStorage.getItem('isLoggedIn') === 'true');
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ name: '', email: '', contact: '', message: '' });
   const [activePage, setActivePage] = useState('AboutUs');
@@ -77,34 +61,23 @@ const AboutUs = ({ onLoginSuccess }) => {
             </button>
           ))}
         </nav>
-        <button type="button" className="login-btn" onClick={() => setShowLogin(true)}>
-          LOGIN
-        </button>
+        {userLoggedIn ? (
+          <button 
+            type="button" 
+            className="login-btn glow-on-hover"
+            style={{ background: 'var(--accent-neon, #00e5ff)', color: '#040814', border: '1.5px solid var(--accent-neon, #00e5ff)', boxShadow: '0 0 16px rgba(0, 229, 255, 0.4)' }}
+            onClick={() => navigate('/dashboard')}
+          >
+            DASHBOARD →
+          </button>
+        ) : (
+          <button type="button" className="login-btn" onClick={() => setShowLogin(true)}>
+            LOGIN
+          </button>
+        )}
       </header>
       <main className="maximized-main-content">
-        <div className="glass-about-panel fade-in-up">
-          <div className="about-header-glow" />
-          <h1 className="about-main-title">
-            STUDENT <span className="text-highlight">CAPSTONE PROJECT</span>
-          </h1>
-          <p className="about-sub-desc">
-            As students, our mission is to support our TNC Beneficiary by organizing tournaments, managing teams, and creating seamless content. This centralized dashboard helps us achieve those goals efficiently.
-          </p>
-          <div className="values-grid-modern">
-            {[
-              { icon: <IntegrityIcon />, label: 'INTEGRITY' },
-              { icon: <InnovationIcon />, label: 'INNOVATION' },
-              { icon: <ExecutionIcon />, label: 'EXECUTION' },
-              { icon: <CommunityIcon />, label: 'COMMUNITY' }
-            ].map((value, idx) => (
-              <div key={idx} className="value-card">
-                <div className="value-icon">{value.icon}</div>
-                <span>{value.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="contact-section-modern fade-in-up" style={{ animationDelay: '0.2s' }}>
+        <div className="contact-section-modern fade-in-up">
           <div className="contact-info-glass">
             <h2 className="contact-greeting-neon">GET IN TOUCH.</h2>
             <p className="contact-subtext">Have questions about our Capstone Project or want to collaborate? Send us a message.</p>

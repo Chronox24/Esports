@@ -1802,23 +1802,6 @@ const Admin = ({ globalGame, globalTournament }) => {
                       Please enter the 6-digit confirmation code dispatched to <strong className="text-white font-mono">{newEmail}</strong>.
                     </p>
 
-                    {devPreviewUrl && (
-                      <div className="flex items-center justify-between bg-blue-950/40 border border-blue-500/30 rounded-lg px-4 py-2.5 text-xs text-blue-200">
-                        <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
-                          <span>Delivered to test mailbox:</span>
-                        </div>
-                        <a
-                          href={devPreviewUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-400 hover:text-blue-300 font-semibold underline flex items-center gap-1"
-                        >
-                          View Delivered Email ↗
-                        </a>
-                      </div>
-                    )}
-
                     {devPreviewCode && (
                       <div className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-lg px-4 py-2 text-sm text-slate-400">
                         <span>Environment Code: <strong className="text-slate-100 font-mono tracking-wider">{devPreviewCode}</strong></span>

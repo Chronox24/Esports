@@ -226,6 +226,27 @@ const generateRoundRobin = (teamPool, encounters = 1) => {
   return matches;
 };
 
+const CARD_H = 88;
+const BASE_GAP = 16;
+const ROUND_GAP = 60;
+const K_VAL = (CARD_H + BASE_GAP) / 2; // 52
+const HEADER_H = 36;
+const HEADER_MB = 16;
+
+const getRoundGap = (rIndex) => {
+  return 2 * K_VAL * Math.pow(2, rIndex) - CARD_H;
+};
+
+const getRoundTopOffset = (rIndex) => {
+  return K_VAL * (Math.pow(2, rIndex) - 1);
+};
+
+const getMatchCenterY = (rIndex, mIndex) => {
+  const topOffset = getRoundTopOffset(rIndex);
+  const gap = getRoundGap(rIndex);
+  return topOffset + mIndex * (CARD_H + gap) + CARD_H / 2;
+};
+
 /* ── Match Card ─────────────────────────────────────────── */
 const MatchCard = ({ match, onChange, matchNumber }) => {
   const s1 = parseInt(match.score1) || 0;
@@ -244,7 +265,10 @@ const MatchCard = ({ match, onChange, matchNumber }) => {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '10px 12px',
+    padding: '0 12px',
+    flex: 1,
+    minHeight: 0,
+    boxSizing: 'border-box',
     position: 'relative',
     background: isWinner
       ? 'linear-gradient(90deg, rgba(0, 229, 255, 0.16) 0%, rgba(11, 17, 26, 0.96) 100%)'
@@ -286,10 +310,13 @@ const MatchCard = ({ match, onChange, matchNumber }) => {
     <div
       style={{
         width: 280,
-        borderRadius: '0px',
+        height: CARD_H,
+        boxSizing: 'border-box',
         overflow: 'hidden',
         border: cardBorder,
         position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
         transition: 'transform 0.3s, box-shadow 0.3s',
       }}
       className="hud-chamfer-sm hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.6),0_0_16px_rgba(0,229,255,0.12)]"
@@ -335,7 +362,7 @@ const MatchCard = ({ match, onChange, matchNumber }) => {
       </div>
 
       {/* Divider */}
-      <div style={{ height: 1, background: 'rgba(0, 229, 255, 0.12)' }} />
+      <div style={{ height: 1, background: 'rgba(0, 229, 255, 0.15)', flexShrink: 0 }} />
 
       {/* ─── Team 2 Row ─── */}
       <div style={rowStyle(isTeam2Winner)}>
@@ -856,51 +883,42 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
 
   /* ── Bracket Renderers ─────────────────────────────────── */
 
-  /* Bracket connector component — draws elbow lines between rounds */
-  const BracketConnector = ({ fromCount, roundGap, cardHeight, roundSpacing, isLower }) => {
-    // fromCount = number of matches in the current round that feed into next round
-    // Each pair of matches merges into one next-round match
-    const pairCount = Math.floor(fromCount / 2);
+  /* Bracket connector component — draws precise lines between rounds */
+  const BracketConnector = ({ rIndex, pairCount, isLower }) => {
     const connectors = [];
-    const color = isLower ? "rgba(248,113,113,0.3)" : "var(--color-cyan-500)";
-    const dotColor = isLower ? "rgba(248,113,113,0.4)" : "var(--color-cyan-400)";
+    const color = isLower ? "rgba(248,113,113,0.45)" : "var(--color-cyan-500)";
+    const dotColor = isLower ? "rgba(248,113,113,0.75)" : "var(--color-cyan-400)";
+    const hLen = ROUND_GAP * 0.5;
 
     for (let i = 0; i < pairCount; i++) {
-      const topMatchIdx = i * 2;
-      const botMatchIdx = i * 2 + 1;
-
-      // Calculate Y positions based on card heights and spacing
-      const topY = topMatchIdx * (cardHeight + roundSpacing) + cardHeight / 2;
-      const botY = botMatchIdx * (cardHeight + roundSpacing) + cardHeight / 2;
+      const topY = getMatchCenterY(rIndex, i * 2);
+      const botY = getMatchCenterY(rIndex, i * 2 + 1);
       const midY = (topY + botY) / 2;
-
-      const hLen = roundGap * 0.4;  // horizontal segment length
-      const startX = 0;
-      const endX = roundGap;
 
       connectors.push(
         <g key={i}>
-          {/* Top match → horizontal right */}
-          <line x1={startX} y1={topY} x2={startX + hLen} y2={topY} stroke={color} strokeWidth="2" />
-          {/* Bottom match → horizontal right */}
-          <line x1={startX} y1={botY} x2={startX + hLen} y2={botY} stroke={color} strokeWidth="2" />
+          {/* Top match -> horizontal right */}
+          <line x1={0} y1={topY} x2={hLen} y2={topY} stroke={color} strokeWidth="2" />
+          {/* Bottom match -> horizontal right */}
+          <line x1={0} y1={botY} x2={hLen} y2={botY} stroke={color} strokeWidth="2" />
           {/* Vertical line connecting top and bottom */}
-          <line x1={startX + hLen} y1={topY} x2={startX + hLen} y2={botY} stroke={color} strokeWidth="2" />
-          {/* Middle → horizontal right to next match */}
-          <line x1={startX + hLen} y1={midY} x2={endX} y2={midY} stroke={color} strokeWidth="2" />
+          <line x1={hLen} y1={topY} x2={hLen} y2={botY} stroke={color} strokeWidth="2" />
+          {/* Middle -> horizontal right to next match */}
+          <line x1={hLen} y1={midY} x2={ROUND_GAP} y2={midY} stroke={color} strokeWidth="2" />
           {/* Glow dot at merge point */}
-          <circle cx={startX + hLen} cy={midY} r="3" fill={dotColor} />
+          <circle cx={hLen} cy={midY} r="3" fill={dotColor} />
         </g>
       );
     }
 
-    const totalHeight = fromCount * cardHeight + (fromCount - 1) * roundSpacing;
+    const lastBotY = pairCount > 0 ? getMatchCenterY(rIndex, (pairCount - 1) * 2 + 1) : 0;
+    const totalHeight = lastBotY + CARD_H;
 
     return (
       <svg
-        width={roundGap}
+        width={ROUND_GAP}
         height={totalHeight}
-        style={{ flexShrink: 0, display: 'block' }}
+        style={{ flexShrink: 0, display: 'block', overflow: 'visible' }}
         className="pointer-events-none"
       >
         {connectors}
@@ -908,34 +926,27 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
     );
   };
 
-  const StraightConnector = ({ count, roundGap, cardHeight, roundSpacing, isLower }) => {
+  const StraightConnector = ({ rIndex, count, isLower }) => {
     const connectors = [];
-    const color = isLower ? "rgba(248,113,113,0.3)" : "var(--color-cyan-500)";
-    const dotColor = isLower ? "rgba(248,113,113,0.4)" : "var(--color-cyan-400)";
+    const color = isLower ? "rgba(248,113,113,0.45)" : "var(--color-cyan-500)";
+    const dotColor = isLower ? "rgba(248,113,113,0.75)" : "var(--color-cyan-400)";
 
     for (let i = 0; i < count; i++) {
-      const y = i * (cardHeight + roundSpacing) + cardHeight / 2;
+      const y = getMatchCenterY(rIndex, i);
       connectors.push(
         <g key={i}>
-          <line x1={0} y1={y} x2={roundGap} y2={y} stroke={color} strokeWidth="2" />
-          <circle cx={roundGap - 4} cy={y} r="3" fill={dotColor} />
+          <line x1={0} y1={y} x2={ROUND_GAP} y2={y} stroke={color} strokeWidth="2" />
+          <circle cx={ROUND_GAP - 4} cy={y} r="3" fill={dotColor} />
         </g>
       );
     }
-    const totalHeight = count * cardHeight + (count > 0 ? (count - 1) * roundSpacing : 0);
+    const lastY = count > 0 ? getMatchCenterY(rIndex, count - 1) : 0;
+    const totalHeight = lastY + CARD_H;
     return (
-      <svg width={roundGap} height={totalHeight || cardHeight} style={{ flexShrink: 0, display: 'block' }} className="pointer-events-none">
+      <svg width={ROUND_GAP} height={totalHeight} style={{ flexShrink: 0, display: 'block', overflow: 'visible' }} className="pointer-events-none">
         {connectors}
       </svg>
     );
-  };
-
-  const getSpacing = (rIndex, cardH) => {
-    let s = 14;
-    for (let i = 1; i <= rIndex; i++) {
-      s = 2 * s + cardH;
-    }
-    return s;
   };
 
 
@@ -1006,32 +1017,31 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
   const renderSingleElimination = () => {
     if (!Array.isArray(singleElimData)) return null;
     const totalRounds = singleElimData.length;
-    const CARD_H = 76;    // approximate card height (2 rows × ~38px)
-    const ROUND_GAP = 60; // gap between columns for connector SVG
 
     return (
-      <div style={{ display: 'flex', alignItems: 'center', overflowX: 'auto', paddingBottom: 16, paddingTop: 8, paddingLeft: 32, paddingRight: 32, width: '100%', minHeight: 500 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', overflowX: 'auto', paddingBottom: 24, paddingTop: 12, paddingLeft: 32, paddingRight: 32, width: '100%', minHeight: 500 }}>
         {singleElimData.map((round, rIndex) => {
-          const spacing = getSpacing(rIndex, CARD_H);
+          const gap = getRoundGap(rIndex);
+          const topOffset = getRoundTopOffset(rIndex);
 
           return (
             <React.Fragment key={rIndex}>
               {/* Connector SVG between previous round and this round */}
               {rIndex > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+                  <div style={{ height: HEADER_H, marginBottom: HEADER_MB }} />
                   <BracketConnector
-                    fromCount={singleElimData[rIndex - 1].length}
-                    roundGap={ROUND_GAP}
-                    cardHeight={CARD_H}
-                    roundSpacing={getSpacing(rIndex - 1, CARD_H)}
+                    rIndex={rIndex - 1}
+                    pairCount={round.length}
+                    isLower={false}
                   />
                 </div>
               )}
 
               {/* Round column */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, minWidth: 290 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, width: 280 }}>
                 {/* Round label */}
-                <div style={{ marginBottom: 16, textAlign: 'center' }}>
+                <div style={{ height: HEADER_H, marginBottom: HEADER_MB, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span style={{
                     fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.2em',
                     padding: '4px 12px', borderRadius: 20,
@@ -1044,7 +1054,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
                 </div>
 
                 {/* Match cards */}
-                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-around', flex: 1, gap: spacing }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap, paddingTop: topOffset }}>
                   {round.map((match, mIndex) => (
                     <MatchCard
                       key={match.id}
@@ -1063,13 +1073,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
   };
 
   const renderDoubleElimination = () => {
-    if (!doubleElimData || !Array.isArray(doubleElimData.upper)) return null;
-    const CARD_H = 76;
-    const ROUND_GAP = 60;
-
-    // Connects Upper Bracket to Finals. Needs dynamic Y offset if sizes differ.
-    // We'll center it roughly.
-    const upperFinalsConnectorY = CARD_H / 2;
+    if (!doubleElimData) return null;
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', width: '100%', minHeight: 700, paddingBottom: 24, paddingTop: 16, paddingLeft: 32, paddingRight: 32, gap: 40, overflowX: 'auto' }}>
@@ -1081,45 +1085,82 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
               <CrownIcon size={14} className="mr-2" /> Upper Bracket
             </h3>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start' }}>
             {doubleElimData.upper.map((round, rIndex) => {
-              const spacing = getSpacing(rIndex, CARD_H);
+              const gap = getRoundGap(rIndex);
+              const topOffset = getRoundTopOffset(rIndex);
               return (
                 <React.Fragment key={rIndex}>
                   {rIndex > 0 && (
-                    <div style={{ flexShrink: 0 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+                      <div style={{ height: HEADER_H, marginBottom: HEADER_MB }} />
                       <BracketConnector
-                        fromCount={doubleElimData.upper[rIndex - 1].length}
-                        roundGap={ROUND_GAP}
-                        cardHeight={CARD_H}
-                        roundSpacing={getSpacing(rIndex - 1, CARD_H)}
+                        rIndex={rIndex - 1}
+                        pairCount={round.length}
+                        isLower={false}
                       />
                     </div>
                   )}
-                  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-around', flexShrink: 0, minWidth: 290, gap: spacing }}>
-                    {round.map((match, mIndex) => (
-                      <MatchCard key={match.id} match={match} matchNumber={match.id}
-                        onChange={(field, value) => updateDoubleMatch('upper', rIndex, mIndex, field, value)} />
-                    ))}
+                  <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, width: 280 }}>
+                    <div style={{ height: HEADER_H, marginBottom: HEADER_MB, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.2em',
+                        padding: '4px 12px', borderRadius: 20,
+                        color: rIndex === doubleElimData.upper.length - 1 ? '#facc15' : '#64748b',
+                        background: rIndex === doubleElimData.upper.length - 1 ? 'rgba(250,204,21,0.08)' : 'rgba(30,41,59,0.4)',
+                        border: rIndex === doubleElimData.upper.length - 1 ? '1px solid rgba(250,204,21,0.2)' : '1px solid rgba(51,65,85,0.3)',
+                      }}>
+                        {rIndex === doubleElimData.upper.length - 1 ? "Upper Finals" : `UB Round ${rIndex + 1}`}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap, paddingTop: topOffset }}>
+                      {round.map((match, mIndex) => (
+                        <MatchCard key={match.id} match={match} matchNumber={match.id}
+                          onChange={(field, value) => updateDoubleMatch('upper', rIndex, mIndex, field, value)} />
+                      ))}
+                    </div>
                   </div>
                 </React.Fragment>
-              )
+              );
             })}
+
             {/* Connector to Grand Finals */}
-            <div style={{ flexShrink: 0 }}>
-              <svg width={ROUND_GAP} height={CARD_H} className="pointer-events-none">
-                <line x1={0} y1={upperFinalsConnectorY} x2={ROUND_GAP} y2={upperFinalsConnectorY}
-                  stroke="var(--color-cyan-500)" strokeWidth="2" />
-                <circle cx={ROUND_GAP - 4} cy={upperFinalsConnectorY} r="3" fill="var(--color-cyan-400)" />
-              </svg>
-            </div>
-            {/* Grand Finals */}
-            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', flexShrink: 0, minWidth: 290 }}>
-              {doubleElimData.finals[0].map((match, mIndex) => (
-                <MatchCard key={match.id} match={match} matchNumber="GF"
-                  onChange={(field, value) => updateDoubleMatch('finals', 0, mIndex, field, value)} />
-              ))}
-            </div>
+            {(() => {
+              const lastUpperRIndex = doubleElimData.upper.length - 1;
+              const gfCenterY = getMatchCenterY(lastUpperRIndex, 0);
+              return (
+                <>
+                  <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+                    <div style={{ height: HEADER_H, marginBottom: HEADER_MB }} />
+                    <svg width={ROUND_GAP} height={gfCenterY + CARD_H} style={{ flexShrink: 0, display: 'block', overflow: 'visible' }} className="pointer-events-none">
+                      <line x1={0} y1={gfCenterY} x2={ROUND_GAP} y2={gfCenterY}
+                        stroke="var(--color-cyan-500)" strokeWidth="2" />
+                      <circle cx={ROUND_GAP - 4} cy={gfCenterY} r="3" fill="var(--color-cyan-400)" />
+                    </svg>
+                  </div>
+                  {/* Grand Finals */}
+                  <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, width: 280 }}>
+                    <div style={{ height: HEADER_H, marginBottom: HEADER_MB, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.2em',
+                        padding: '4px 12px', borderRadius: 20,
+                        color: '#facc15',
+                        background: 'rgba(250,204,21,0.08)',
+                        border: '1px solid rgba(250,204,21,0.2)',
+                      }}>
+                        Grand Finals
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', paddingTop: gfCenterY - CARD_H / 2 }}>
+                      {doubleElimData.finals[0].map((match, mIndex) => (
+                        <MatchCard key={match.id} match={match} matchNumber="GF"
+                          onChange={(field, value) => updateDoubleMatch('finals', 0, mIndex, field, value)} />
+                      ))}
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
 
@@ -1131,46 +1172,55 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
               <SwordsIcon size={14} className="mr-2" /> Lower Bracket
             </h3>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start' }}>
             <div style={{ width: ROUND_GAP, flexShrink: 0 }} />
             {doubleElimData.lower.map((round, rIndex) => {
-              const abstractUpperRIndex = Math.floor(rIndex / 2);
-              const spacing = getSpacing(abstractUpperRIndex, CARD_H);
-              const prevSpacing = rIndex > 0 ? getSpacing(Math.floor((rIndex - 1) / 2), CARD_H) : 14;
-              const prevCount = rIndex > 0 ? doubleElimData.lower[rIndex - 1].length : 0;
+              const u = Math.floor(rIndex / 2);
+              const gap = getRoundGap(u);
+              const topOffset = getRoundTopOffset(u);
               const isStraight = rIndex % 2 === 1;
 
               return (
                 <React.Fragment key={rIndex}>
                   {rIndex > 0 && (
-                    <div style={{ flexShrink: 0 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+                      <div style={{ height: HEADER_H, marginBottom: HEADER_MB }} />
                       {isStraight ? (
                         <StraightConnector
-                          count={prevCount}
-                          roundGap={ROUND_GAP}
-                          cardHeight={CARD_H}
-                          roundSpacing={prevSpacing}
+                          rIndex={u}
+                          count={round.length}
                           isLower={true}
                         />
                       ) : (
                         <BracketConnector
-                          fromCount={prevCount}
-                          roundGap={ROUND_GAP}
-                          cardHeight={CARD_H}
-                          roundSpacing={prevSpacing}
+                          rIndex={u - 1}
+                          pairCount={round.length}
                           isLower={true}
                         />
                       )}
                     </div>
                   )}
-                  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-around', flexShrink: 0, minWidth: 290, gap: spacing }}>
-                    {round.map((match, mIndex) => (
-                      <MatchCard key={match.id} match={match} matchNumber={match.id}
-                        onChange={(field, value) => updateDoubleMatch('lower', rIndex, mIndex, field, value)} />
-                    ))}
+                  <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, width: 280 }}>
+                    <div style={{ height: HEADER_H, marginBottom: HEADER_MB, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.2em',
+                        padding: '4px 12px', borderRadius: 20,
+                        color: '#f87171',
+                        background: 'rgba(248,113,113,0.08)',
+                        border: '1px solid rgba(248,113,113,0.2)',
+                      }}>
+                        {rIndex === doubleElimData.lower.length - 1 ? "Lower Finals" : `LB Round ${rIndex + 1}`}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap, paddingTop: topOffset }}>
+                      {round.map((match, mIndex) => (
+                        <MatchCard key={match.id} match={match} matchNumber={match.id}
+                          onChange={(field, value) => updateDoubleMatch('lower', rIndex, mIndex, field, value)} />
+                      ))}
+                    </div>
                   </div>
                 </React.Fragment>
-              )
+              );
             })}
           </div>
         </div>

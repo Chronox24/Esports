@@ -148,10 +148,30 @@ const Mapping = ({ globalGame, globalTournament }) => {
       setToastMessage((prev) => (prev === msg ? null : prev));
     }, 3200);
   };
+  const [matchWeek, setMatchWeek] = useState(() => getStickyValue("de_week", "1"));
+  const [matchDay, setMatchDay] = useState(() => getStickyValue("de_day", "1"));
+  const [matchNumber, setMatchNumber] = useState(() => getStickyValue("de_match", "1"));
 
-  const matchWeek = getStickyValue("de_week", "1");
-  const matchDay = getStickyValue("de_day", "1");
-  const matchNumber = getStickyValue("de_match", "1");
+  const handleWeekChange = (val) => {
+    setMatchWeek(val);
+    try {
+      window.sessionStorage.setItem("de_week", JSON.stringify(val));
+    } catch (e) {}
+  };
+
+  const handleDayChange = (val) => {
+    setMatchDay(val);
+    try {
+      window.sessionStorage.setItem("de_day", JSON.stringify(val));
+    } catch (e) {}
+  };
+
+  const handleMatchChange = (val) => {
+    setMatchNumber(val);
+    try {
+      window.sessionStorage.setItem("de_match", JSON.stringify(val));
+    } catch (e) {}
+  };
   const [activeTab, setActiveTab] = useState("CURRENT MATCH");
   const game = globalGame === "CROSSFIRE" ? "Crossfire" : "Valorant";
   const [teamA, setTeamA] = useState("Team A");
@@ -558,25 +578,37 @@ const Mapping = ({ globalGame, globalTournament }) => {
                 <span className="font-tactical text-[9px] text-slate-400 font-bold tracking-widest uppercase mb-1">
                   Week
                 </span>
-                <div className="hud-chamfer-sm bg-slate-950/90 border border-cyan-500/25 px-3 py-1.5 text-xs font-tactical font-extrabold text-white text-center shadow-inner">
-                  {matchWeek}
-                </div>
+                <input
+                  type="text"
+                  value={matchWeek}
+                  onChange={(e) => handleWeekChange(e.target.value)}
+                  className="hud-chamfer-sm bg-slate-950/90 border border-cyan-500/25 px-2 py-1.5 text-xs font-tactical font-extrabold text-white text-center shadow-inner focus:outline-none focus:border-cyan-400 w-full"
+                  placeholder="1"
+                />
               </div>
               <div className="flex flex-col">
                 <span className="font-tactical text-[9px] text-slate-400 font-bold tracking-widest uppercase mb-1">
                   Day
                 </span>
-                <div className="hud-chamfer-sm bg-slate-950/90 border border-cyan-500/25 px-3 py-1.5 text-xs font-tactical font-extrabold text-white text-center shadow-inner">
-                  {matchDay}
-                </div>
+                <input
+                  type="text"
+                  value={matchDay}
+                  onChange={(e) => handleDayChange(e.target.value)}
+                  className="hud-chamfer-sm bg-slate-950/90 border border-cyan-500/25 px-2 py-1.5 text-xs font-tactical font-extrabold text-white text-center shadow-inner focus:outline-none focus:border-cyan-400 w-full"
+                  placeholder="1"
+                />
               </div>
               <div className="flex flex-col">
                 <span className="font-tactical text-[9px] text-slate-400 font-bold tracking-widest uppercase mb-1">
                   Match
                 </span>
-                <div className="hud-chamfer-sm bg-slate-950/90 border border-cyan-500/25 px-3 py-1.5 text-xs font-tactical font-extrabold text-white text-center shadow-inner">
-                  {matchNumber}
-                </div>
+                <input
+                  type="text"
+                  value={matchNumber}
+                  onChange={(e) => handleMatchChange(e.target.value)}
+                  className="hud-chamfer-sm bg-slate-950/90 border border-cyan-500/25 px-2 py-1.5 text-xs font-tactical font-extrabold text-white text-center shadow-inner focus:outline-none focus:border-cyan-400 w-full"
+                  placeholder="1"
+                />
               </div>
             </div>
           </div>

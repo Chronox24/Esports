@@ -42,7 +42,8 @@ const servicesData = [
   { id: 'partnership', title: 'ESPORT PARTNERSHIP', icon: <PartnershipIcon />, description: 'Connect with collegiate partners, view recruitment scouts, and monetize varsity event sponsorships.' },
 ];
 
-const Services = ({ onLoginSuccess }) => {
+const Services = ({ onLoginSuccess, isLoggedIn }) => {
+  const userLoggedIn = isLoggedIn || (typeof window !== 'undefined' && localStorage.getItem('isLoggedIn') === 'true');
   const navigate = useNavigate();
   const [activePage, setActivePage] = useState('Services');
   const [showLogin, setShowLogin] = useState(false);
@@ -70,13 +71,24 @@ const Services = ({ onLoginSuccess }) => {
             </button>
           ))}
         </nav>
-        <button 
-          type="button" 
-          className="login-btn glow-on-hover"
-          onClick={() => setShowLogin(true)}
-        >
-          LOGIN
-        </button>
+        {userLoggedIn ? (
+          <button 
+            type="button" 
+            className="login-btn glow-on-hover"
+            style={{ background: 'var(--accent-neon, #00e5ff)', color: '#040814', border: '1.5px solid var(--accent-neon, #00e5ff)', boxShadow: '0 0 16px rgba(0, 229, 255, 0.4)' }}
+            onClick={() => navigate('/dashboard')}
+          >
+            DASHBOARD →
+          </button>
+        ) : (
+          <button 
+            type="button" 
+            className="login-btn glow-on-hover"
+            onClick={() => setShowLogin(true)}
+          >
+            LOGIN
+          </button>
+        )}
       </header>
       <main className="content-container z-relative">
         <section className="services-grid-section fade-in-up" style={{ animationDelay: '0.2s' }}>

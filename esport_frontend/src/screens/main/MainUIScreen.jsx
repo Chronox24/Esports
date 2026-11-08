@@ -61,6 +61,21 @@ const MainUIScreen = ({ onLogout }) => {
   const [folderToDelete, setFolderToDelete] = useState(null);
   const [isDeletingFolder, setIsDeletingFolder] = useState(false);
 
+  // Prevent browser back button from bouncing back to landing page
+  useEffect(() => {
+    window.history.pushState({ isApp: true }, '', window.location.href);
+
+    const handlePopState = () => {
+      window.history.pushState({ isApp: true }, '', window.location.href);
+      setActiveTab((prev) => (prev !== 'Dashboard' ? 'Dashboard' : 'Dashboard'));
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
   useEffect(() => {
     localStorage.setItem('themeBg', themeBg);
     document.documentElement.style.setProperty('--theme-bg-base', themeBg);

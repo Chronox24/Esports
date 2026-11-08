@@ -1,4 +1,5 @@
 const API_URL = import.meta.env.VITE_API_URL || '';
+
 const getAuthToken = () => {
   try {
     const sessionStr = localStorage.getItem('supabase.auth.token');
@@ -24,6 +25,7 @@ const getAuthToken = () => {
   } catch (e) {}
   return null;
 };
+
 let isRefreshing = false;
 let failedQueue = [];
 
@@ -96,68 +98,64 @@ export const apiFetch = async (endpoint, options = {}) => {
     ...options,
     headers,
   });
+
   if (response.status === 401) {
-    const sessionStr = localStorage.getItem('supabase.auth.token');
-    const session = sessionStr ? JSON.parse(sessionStr) : null;
+    let session = null;
+    try {
+      const sessionStr = localStorage.getItem('supabase.auth.token');
+      session = sessionStr ? JSON.parse(sessionStr) : null;
+    } catch (e) {}
+
     const refreshToken = session?.refresh_token;
 
+    // Never abruptly wipe session or redirect on a single failed read
     if (!refreshToken) {
-      localStorage.removeItem('isLoggedIn');
-      localStorage.removeItem('supabase.auth.token');
-      localStorage.removeItem('token');
-      window.location.href = '/';
+      console.warn(`[apiFetch] 401 received for ${endpoint}. Session kept active.`);
       return response;
     }
 
     if (isRefreshing) {
-      return new Promise(function(resolve, reject) {
+      return new Promise((resolve, reject) => {
         failedQueue.push({ resolve, reject });
       }).then(newToken => {
         headers['Authorization'] = `Bearer ${newToken}`;
         return fetch(url, { ...options, headers });
       }).catch(err => {
+        console.warn(`[apiFetch] Queued request retry failed for ${endpoint}:`, err);
         return response;
       });
     }
 
     isRefreshing = true;
-    
-    return new Promise(async (resolve, reject) => {
-      try {
-        const refreshRes = await fetch(`${API_URL}/api/refresh`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refresh_token: refreshToken })
-        });
-        
-        if (refreshRes.ok) {
-          const data = await refreshRes.json();
+
+    try {
+      const refreshRes = await fetch(`${API_URL}/api/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken })
+      });
+
+      if (refreshRes.ok) {
+        const data = await refreshRes.json();
+        if (data?.session?.access_token) {
           localStorage.setItem('supabase.auth.token', JSON.stringify(data.session));
           localStorage.setItem('token', data.session.access_token);
-          
           processQueue(null, data.session.access_token);
-          
           headers['Authorization'] = `Bearer ${data.session.access_token}`;
-          resolve(await fetch(url, { ...options, headers }));
-        } else {
-          processQueue(new Error('Refresh token failed'), null);
-          localStorage.removeItem('isLoggedIn');
-          localStorage.removeItem('supabase.auth.token');
-          localStorage.removeItem('token');
-          window.location.href = '/';
-          resolve(response);
+          return await fetch(url, { ...options, headers });
         }
-      } catch (err) {
-        processQueue(err, null);
-        localStorage.removeItem('isLoggedIn');
-        localStorage.removeItem('supabase.auth.token');
-        localStorage.removeItem('token');
-        window.location.href = '/';
-        resolve(response);
-      } finally {
-        isRefreshing = false;
       }
-    });
+      processQueue(new Error('Refresh token failed'), null);
+      console.warn(`[apiFetch] Refresh attempt failed for ${endpoint}. Session kept active.`);
+      return response;
+    } catch (err) {
+      processQueue(err, null);
+      console.warn(`[apiFetch] Refresh network error for ${endpoint}:`, err);
+      return response;
+    } finally {
+      isRefreshing = false;
+    }
   }
+
   return response;
 };
