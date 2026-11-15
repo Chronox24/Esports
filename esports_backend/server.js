@@ -1246,7 +1246,7 @@ app.post('/api/teams', authenticateToken, isAdmin, upload.single('logo'), async 
     const tName = tournament_name || 'Default';
     const payload = { team_name, tournament_name: tName };
     if (req.file) {
-      payload.logo_url = `http://localhost:5000/uploads/${req.file.filename}`;
+      payload.logo_url = `/uploads/${req.file.filename}`;
     } else if (req.body.logo_url) {
       payload.logo_url = req.body.logo_url;
     }
