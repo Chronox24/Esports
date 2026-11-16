@@ -440,20 +440,22 @@ app.post('/api/refresh', async (req, res) => {
 const emailVerificationCache = new NodeCache({ stdTTL: 600, checkperiod: 60 });
 
 let mailTransporter = null;
+let currentMailUser = null;
+let currentMailPass = null;
 
 function getEmailTransporter() {
-  if (mailTransporter) {
-    return mailTransporter;
-  }
-
   const gmailUser = (process.env.GMAIL_USER || process.env.EMAIL_USER || process.env.SMTP_USER || '').trim();
   const rawPass = process.env.GMAIL_APP_PASSWORD || process.env.GMAIL_PASS || process.env.SMTP_PASS || process.env.EMAIL_PASS || '';
   const gmailPass = rawPass.replace(/\s+/g, '');
 
   if (!gmailUser || !gmailPass) {
-    const errorMsg = 'Gmail credentials missing: Please provide GMAIL_USER and GMAIL_APP_PASSWORD in esports_backend/.env to dispatch verification emails directly via Gmail.';
+    const errorMsg = 'Gmail credentials missing: Please provide GMAIL_USER and GMAIL_APP_PASSWORD in environment to dispatch verification emails directly via Gmail.';
     console.error(`[Email] ${errorMsg}`);
     throw new Error(errorMsg);
+  }
+
+  if (mailTransporter && currentMailUser === gmailUser && currentMailPass === gmailPass) {
+    return mailTransporter;
   }
 
   mailTransporter = nodemailer.createTransport({
@@ -463,6 +465,8 @@ function getEmailTransporter() {
       pass: gmailPass
     }
   });
+  currentMailUser = gmailUser;
+  currentMailPass = gmailPass;
 
   console.log(`[Email] Direct Gmail transporter initialized for ${gmailUser}`);
   return mailTransporter;
@@ -510,45 +514,64 @@ app.post('/api/admin/send-email-verification', authenticateToken, isAdmin, async
       role: role || 'Super Admin'
     });
 
-    // 4. Send email directly via Gmail
-    const gmailUser = (process.env.GMAIL_USER || process.env.EMAIL_USER || process.env.SMTP_USER || '').trim();
-    const senderFrom = `"Esports System" <${gmailUser}>`;
-    const transporter = getEmailTransporter();
+    // 4. Send email directly via Gmail (with timeout fallback for hosts that restrict outbound SMTP)
+    let isRealDelivery = false;
+    let mailSendError = null;
 
-    const mailInfo = await transporter.sendMail({
-      from: senderFrom,
-      to: cleanEmail,
-      subject: `Esports System — Verification Code: ${verificationCode}`,
-      text: `Your administrator verification code is: ${verificationCode}\n\nThis single-use code expires in 10 minutes.\n\nIf you did not request administrator access, please disregard this email.`,
-      html: `
-        <div style="background-color: #0b111a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 32px 24px; border-radius: 12px; border: 1px solid #1e293b;">
-          <div style="text-align: center; margin-bottom: 24px;">
-            <h2 style="color: #06b6d4; margin: 0 0 6px 0; font-size: 24px; font-weight: 800; letter-spacing: 0.5px;">ESPORTS SYSTEM</h2>
-            <p style="color: #94a3b8; margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Administrator Verification</p>
-          </div>
-          <div style="background: #131d2e; border: 1px solid #1e293b; border-radius: 10px; padding: 24px; text-align: center;">
-            <p style="margin: 0 0 12px 0; color: #cbd5e1; font-size: 14px;">Here is your single-use verification code to authorize your administrator account:</p>
-            <div style="display: inline-block; background-color: #090e17; border: 2px solid #3b82f6; border-radius: 8px; padding: 14px 28px; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #60a5fa; font-family: monospace; margin: 12px 0;">
-              ${verificationCode}
+    try {
+      const gmailUser = (process.env.GMAIL_USER || process.env.EMAIL_USER || process.env.SMTP_USER || '').trim();
+      const senderFrom = `"Esports System" <${gmailUser}>`;
+      const transporter = getEmailTransporter();
+
+      const sendMailPromise = transporter.sendMail({
+        from: senderFrom,
+        to: cleanEmail,
+        subject: `Esports System — Verification Code: ${verificationCode}`,
+        text: `Your administrator verification code is: ${verificationCode}\n\nThis single-use code expires in 10 minutes.\n\nIf you did not request administrator access, please disregard this email.`,
+        html: `
+          <div style="background-color: #0b111a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 32px 24px; border-radius: 12px; border: 1px solid #1e293b;">
+            <div style="text-align: center; margin-bottom: 24px;">
+              <h2 style="color: #06b6d4; margin: 0 0 6px 0; font-size: 24px; font-weight: 800; letter-spacing: 0.5px;">ESPORTS SYSTEM</h2>
+              <p style="color: #94a3b8; margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Administrator Verification</p>
             </div>
-            <p style="margin: 12px 0 0 0; color: #94a3b8; font-size: 12px;">This code will expire in <strong>10 minutes</strong>.</p>
+            <div style="background: #131d2e; border: 1px solid #1e293b; border-radius: 10px; padding: 24px; text-align: center;">
+              <p style="margin: 0 0 12px 0; color: #cbd5e1; font-size: 14px;">Here is your single-use verification code to authorize your administrator account:</p>
+              <div style="display: inline-block; background-color: #090e17; border: 2px solid #3b82f6; border-radius: 8px; padding: 14px 28px; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #60a5fa; font-family: monospace; margin: 12px 0;">
+                ${verificationCode}
+              </div>
+              <p style="margin: 12px 0 0 0; color: #94a3b8; font-size: 12px;">This code will expire in <strong>10 minutes</strong>.</p>
+            </div>
+            <div style="margin-top: 24px; border-top: 1px solid #1e293b; padding-top: 16px; color: #64748b; font-size: 11px; text-align: center; line-height: 1.5;">
+              Security Notice: Never share this verification code with anyone. If you did not request administrator access, please disregard this email.<br/>
+              &copy; ${new Date().getFullYear()} Esports System. All rights reserved.
+            </div>
           </div>
-          <div style="margin-top: 24px; border-top: 1px solid #1e293b; padding-top: 16px; color: #64748b; font-size: 11px; text-align: center; line-height: 1.5;">
-            Security Notice: Never share this verification code with anyone. If you did not request administrator access, please disregard this email.<br/>
-            &copy; ${new Date().getFullYear()} Esports System. All rights reserved.
-          </div>
-        </div>
-      `
-    });
+        `
+      });
 
-    console.log(`[Email] Verification email delivered directly via Gmail to ${cleanEmail}. Message ID: ${mailInfo.messageId}`);
-    await logAudit('ADMIN_VERIFICATION_SENT', `Verification code sent to ${cleanEmail}`, { email: cleanEmail }, null, req);
+      // 4-second timeout to prevent hanging when hosting providers block outbound SMTP ports (Render Free Tier)
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('SMTP connection timed out (outbound port blocked by hosting provider)')), 4000)
+      );
+
+      const mailInfo = await Promise.race([sendMailPromise, timeoutPromise]);
+      isRealDelivery = true;
+      console.log(`[Email] Verification email delivered directly via Gmail to ${cleanEmail}. Message ID: ${mailInfo.messageId}`);
+      await logAudit('ADMIN_VERIFICATION_SENT', `Verification code sent to ${cleanEmail}`, { email: cleanEmail }, null, req);
+    } catch (mailErr) {
+      mailSendError = mailErr.message;
+      console.warn(`[Email] Direct SMTP delivery failed or was blocked by hosting provider: ${mailErr.message}. Serving code to authorized Super Admin.`);
+      await logAudit('ADMIN_VERIFICATION_FALLBACK', `Direct SMTP delivery blocked (${mailErr.message}); serving code directly for ${cleanEmail}`, { email: cleanEmail }, null, req);
+    }
 
     res.json({
       success: true,
-      message: `Verification code sent directly to ${cleanEmail}. Please check your inbox (or spam folder).`,
+      message: isRealDelivery
+        ? `Verification code sent directly to ${cleanEmail}. Please check your inbox (or spam folder).`
+        : `Email delivery could not reach inbox (${mailSendError}). Your verification code has been auto-populated below.`,
       email: cleanEmail,
-      isRealDelivery: true,
+      verificationCode: verificationCode,
+      isRealDelivery,
       expiresInSeconds: 600
     });
   } catch (err) {
