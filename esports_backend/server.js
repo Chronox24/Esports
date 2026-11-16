@@ -512,18 +512,18 @@ app.post('/api/admin/send-email-verification', authenticateToken, isAdmin, async
 
     // 4. Send email directly via Gmail
     const gmailUser = (process.env.GMAIL_USER || process.env.EMAIL_USER || process.env.SMTP_USER || '').trim();
-    const senderFrom = `"TNC Esports Admin" <${gmailUser}>`;
+    const senderFrom = `"Esports System" <${gmailUser}>`;
     const transporter = getEmailTransporter();
 
     const mailInfo = await transporter.sendMail({
       from: senderFrom,
       to: cleanEmail,
-      subject: `TNC Esports — Verification Code: ${verificationCode}`,
+      subject: `Esports System — Verification Code: ${verificationCode}`,
       text: `Your administrator verification code is: ${verificationCode}\n\nThis single-use code expires in 10 minutes.\n\nIf you did not request administrator access, please disregard this email.`,
       html: `
         <div style="background-color: #0b111a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 32px 24px; border-radius: 12px; border: 1px solid #1e293b;">
           <div style="text-align: center; margin-bottom: 24px;">
-            <h2 style="color: #f97316; margin: 0 0 6px 0; font-size: 24px; font-weight: 800; letter-spacing: 0.5px;">TNC ESPORTS</h2>
+            <h2 style="color: #06b6d4; margin: 0 0 6px 0; font-size: 24px; font-weight: 800; letter-spacing: 0.5px;">ESPORTS SYSTEM</h2>
             <p style="color: #94a3b8; margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Administrator Verification</p>
           </div>
           <div style="background: #131d2e; border: 1px solid #1e293b; border-radius: 10px; padding: 24px; text-align: center;">
@@ -535,7 +535,7 @@ app.post('/api/admin/send-email-verification', authenticateToken, isAdmin, async
           </div>
           <div style="margin-top: 24px; border-top: 1px solid #1e293b; padding-top: 16px; color: #64748b; font-size: 11px; text-align: center; line-height: 1.5;">
             Security Notice: Never share this verification code with anyone. If you did not request administrator access, please disregard this email.<br/>
-            &copy; ${new Date().getFullYear()} TNC Esports Platform. All rights reserved.
+            &copy; ${new Date().getFullYear()} Esports System. All rights reserved.
           </div>
         </div>
       `
