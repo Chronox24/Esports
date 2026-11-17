@@ -31,19 +31,43 @@ app.use('/api/', limiter);
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
 app.use(express.json({ limit: '10kb' }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  try {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  } catch (e) {
+    console.warn('Could not create uploads directory:', e.message);
+  }
+}
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/');
+    if (!fs.existsSync(uploadsDir)) {
+      try {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      } catch (e) {}
+    }
+    cb(null, uploadsDir);
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
+    cb(null, uniqueSuffix + path.extname(file.originalname || '.png'));
   }
 });
 const upload = multer({
   storage: storage,
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
 });
+
+const handleUpload = (fieldName) => (req, res, next) => {
+  upload.single(fieldName)(req, res, (err) => {
+    if (err) {
+      console.error(`Multer upload error on ${fieldName}:`, err);
+      req.fileValidationError = err.message;
+      return next();
+    }
+    next();
+  });
+};
 let rawSupabaseUrl = process.env.SUPABASE_URL ? process.env.SUPABASE_URL.trim().replace(/^['"]|['"]$/g, '') : '';
 const supabaseMatch = rawSupabaseUrl.match(/([a-z0-9-]+\.supabase\.co)/i);
 if (supabaseMatch) {
@@ -1698,23 +1722,60 @@ app.get('/api/teams', cacheMiddleware, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-app.post('/api/teams', authenticateToken, isAdmin, canEdit, upload.single('logo'), async (req, res) => {
+app.post('/api/teams', authenticateToken, isAdmin, canEdit, handleUpload('logo'), async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   try {
     const { team_name, tournament_name } = req.body;
-    if (!team_name) return res.status(400).json({ error: 'Team name is required.' });
-    const tName = tournament_name || 'Default';
-    const payload = { team_name, tournament_name: tName };
+    if (!team_name || !team_name.trim()) return res.status(400).json({ error: 'Team name is required.' });
+    const tName = (tournament_name && tournament_name.trim()) || 'Default';
+    const cleanTeamName = team_name.trim();
+
+    // Check if team already exists in this tournament to prevent duplicate key errors
+    const { data: existingTeams } = await supabase
+      .from('teams')
+      .select('*')
+      .ilike('tournament_name', tName);
+    if (Array.isArray(existingTeams)) {
+      const match = existingTeams.find(t => t.team_name && t.team_name.toLowerCase() === cleanTeamName.toLowerCase());
+      if (match) {
+        return res.json(match);
+      }
+    }
+
+    const payload = { team_name: cleanTeamName, tournament_name: tName };
     if (req.file) {
-      payload.logo_url = `/uploads/${req.file.filename}`;
+      let logo_url = `/uploads/${req.file.filename}`;
+      try {
+        const fileBuffer = fs.readFileSync(req.file.path);
+        const safeFilename = `${Date.now()}-${req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+        const { data: uploadData, error: uploadErr } = await supabase.storage
+          .from('logos')
+          .upload(safeFilename, fileBuffer, {
+            contentType: req.file.mimetype || 'image/png',
+            upsert: true
+          });
+
+        if (!uploadErr && uploadData) {
+          const { data: publicUrlData } = supabase.storage
+            .from('logos')
+            .getPublicUrl(safeFilename);
+          if (publicUrlData && publicUrlData.publicUrl) {
+            logo_url = publicUrlData.publicUrl;
+          }
+        }
+      } catch (storageErr) {
+        console.warn('Supabase storage logo upload fallback:', storageErr.message);
+      }
+      payload.logo_url = logo_url;
     } else if (req.body.logo_url) {
       payload.logo_url = req.body.logo_url;
     }
     const { data, error } = await supabase.from('teams').insert([payload]).select();
     if (error) throw error;
-    await logAudit('TEAM_CREATED', `Created new team: ${team_name} in ${tName}`, { team_name, tournament_name: tName, data: data[0] }, null, req);
+    await logAudit('TEAM_CREATED', `Created new team: ${cleanTeamName} in ${tName}`, { team_name: cleanTeamName, tournament_name: tName, data: data[0] }, null, req);
     res.json(data[0]);
   } catch (err) {
+    console.error('Error in POST /api/teams:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -2607,7 +2668,7 @@ app.delete('/api/admin/rulebook/:id', authenticateToken, isAdmin, canEdit, async
   }
 });
 
-app.post('/api/admin/rulebook', authenticateToken, isAdmin, canEdit, upload.single('rulebook'), async (req, res) => {
+app.post('/api/admin/rulebook', authenticateToken, isAdmin, canEdit, handleUpload('rulebook'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
     let file_url = `/uploads/${req.file.filename}`;

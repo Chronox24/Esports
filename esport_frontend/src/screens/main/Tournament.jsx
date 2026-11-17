@@ -2179,34 +2179,66 @@ const ManageBracketTab = ({ globalGame, globalTournament }) => {
   }, [globalTournament?.name, activeGame]);
 
   const getOrCreateTeam = async (teamName, teamLogoUrl, teamFile) => {
-    const res = await apiFetch(
-      `/api/teams?tournament=${globalTournament?.name || "Default"}`,
-    );
-    const teams = await res.json();
-    const existing = teams.find(
-      (t) => t.team_name.toLowerCase() === teamName.toLowerCase(),
-    );
-    if (existing) return existing.team_id;
+    const tourneyName = typeof globalTournament === 'string'
+      ? globalTournament.trim()
+      : (globalTournament?.name?.trim() || "Default");
+
+    try {
+      const res = await apiFetch(
+        `/api/teams?tournament=${encodeURIComponent(tourneyName)}`,
+      );
+      if (res.ok) {
+        const teams = await res.json();
+        if (Array.isArray(teams)) {
+          const existing = teams.find(
+            (t) => t.team_name && t.team_name.toLowerCase() === teamName.trim().toLowerCase(),
+          );
+          if (existing) return existing.team_id;
+        }
+      }
+    } catch (e) {
+      console.warn("Could not fetch teams list:", e);
+    }
 
     const formData = new FormData();
-    formData.append("team_name", teamName);
-    formData.append("tournament_name", globalTournament?.name || "Default");
+    formData.append("team_name", teamName.trim());
+    formData.append("tournament_name", tourneyName);
 
     if (teamFile) {
       formData.append("logo", teamFile);
     } else if (teamLogoUrl && teamLogoUrl.startsWith("data:")) {
-      const res = await fetch(teamLogoUrl);
-      const blob = await res.blob();
-      formData.append("logo", blob, "logo.png");
+      try {
+        const res = await fetch(teamLogoUrl);
+        const blob = await res.blob();
+        formData.append("logo", blob, "logo.png");
+      } catch (e) {}
     }
 
-    const createRes = await apiFetch("/api/teams", {
-      method: "POST",
-      body: formData,
-    });
-    if (createRes.ok) {
-      const newTeam = await createRes.json();
-      return newTeam.team_id;
+    try {
+      const createRes = await apiFetch("/api/teams", {
+        method: "POST",
+        body: formData,
+      });
+      if (createRes.ok) {
+        const newTeam = await createRes.json();
+        return newTeam.team_id;
+      } else {
+        if (teamFile || (teamLogoUrl && teamLogoUrl.startsWith("data:"))) {
+          const fallbackData = new FormData();
+          fallbackData.append("team_name", teamName.trim());
+          fallbackData.append("tournament_name", tourneyName);
+          const retryRes = await apiFetch("/api/teams", {
+            method: "POST",
+            body: fallbackData,
+          });
+          if (retryRes.ok) {
+            const retryTeam = await retryRes.json();
+            return retryTeam.team_id;
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Failed to create team in bracket:", e);
     }
     return null;
   };
@@ -2529,9 +2561,12 @@ const ManageScheduleTab = ({
   availableTournaments = [],
 }) => {
   const activeGame = (globalGame || "VALORANT").toUpperCase();
+  const globalTournName = typeof globalTournament === 'string'
+    ? globalTournament.trim()
+    : (globalTournament?.name?.trim() || "");
   const activeTournamentName = embedded
-    ? (globalTournament?.name?.trim() || "")
-    : (selectedTournamentForEdit?.trim() || "");
+    ? globalTournName
+    : (selectedTournamentForEdit?.trim() || globalTournName);
 
   const safeFolder = activeTournamentName
     ? activeTournamentName.replace(/[^a-zA-Z0-9]/g, "_")
@@ -2659,7 +2694,7 @@ const ManageScheduleTab = ({
         const teams = await res.json();
         if (Array.isArray(teams)) {
           const existing = teams.find(
-            (t) => t.team_name.toLowerCase() === teamName.toLowerCase(),
+            (t) => t.team_name && t.team_name.toLowerCase() === teamName.trim().toLowerCase(),
           );
           if (existing) return existing.team_id;
         }
@@ -2669,7 +2704,7 @@ const ManageScheduleTab = ({
     }
 
     const formData = new FormData();
-    formData.append("team_name", teamName);
+    formData.append("team_name", teamName.trim());
     formData.append("tournament_name", activeTournamentName);
 
     if (teamFile) {
@@ -2690,11 +2725,27 @@ const ManageScheduleTab = ({
       if (createRes.ok) {
         const newTeam = await createRes.json();
         return newTeam.team_id;
+      } else {
+        if (teamFile || (teamLogoUrl && teamLogoUrl.startsWith("data:"))) {
+          const fallbackData = new FormData();
+          fallbackData.append("team_name", teamName.trim());
+          fallbackData.append("tournament_name", activeTournamentName);
+          const retryRes = await apiFetch("/api/teams", {
+            method: "POST",
+            body: fallbackData,
+          });
+          if (retryRes.ok) {
+            const retryTeam = await retryRes.json();
+            return retryTeam.team_id;
+          }
+        }
+        const errData = await createRes.json().catch(() => ({}));
+        throw new Error(errData.error || `Failed to create team "${teamName}".`);
       }
     } catch (e) {
       console.error("Failed to create team:", e);
+      throw e;
     }
-    return null;
   };
 
   const addMatch = async () => {
@@ -2712,42 +2763,45 @@ const ManageScheduleTab = ({
       const teamAId = await getOrCreateTeam(teamA.trim(), teamALogo, teamAFile);
       const teamBId = await getOrCreateTeam(teamB.trim(), teamBLogo, teamBFile);
 
-      if (teamAId && teamBId) {
-        const parsedDay = day.includes("-")
-          ? parseInt(day.split("-")[2], 10)
-          : parseInt(day, 10);
-
-        const matchRes = await apiFetch("/api/matches", {
-          method: "POST",
-          body: JSON.stringify({
-            tournament_name: activeTournamentName,
-            team_a_id: teamAId,
-            team_b_id: teamBId,
-            game_title: activeGame,
-            status: "scheduled",
-            match_day: parsedDay.toString(),
-            match_time: time,
-            match_timezone: "Local",
-          }),
-        });
-
-        if (!matchRes.ok) {
-          const errText = await matchRes.text();
-          console.error("Failed to create match:", errText);
-        }
-        await fetchMatches();
-
-        setTeamA("");
-        setTeamALogo("");
-        setTeamAFile(null);
-        setTeamB("");
-        setTeamBLogo("");
-        setTeamBFile(null);
-        setShowErrors(false);
-        showToast("Match successfully added to tournament schedule!");
+      if (!teamAId || !teamBId) {
+        throw new Error("Unable to create or link teams for this matchup. Please verify permissions.");
       }
+
+      const parsedDay = day.includes("-")
+        ? parseInt(day.split("-")[2], 10)
+        : parseInt(day, 10);
+
+      const matchRes = await apiFetch("/api/matches", {
+        method: "POST",
+        body: JSON.stringify({
+          tournament_name: activeTournamentName,
+          team_a_id: teamAId,
+          team_b_id: teamBId,
+          game_title: activeGame,
+          status: "scheduled",
+          match_day: parsedDay.toString(),
+          match_time: time,
+          match_timezone: "Local",
+        }),
+      });
+
+      if (!matchRes.ok) {
+        const errData = await matchRes.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to create match schedule.");
+      }
+      await fetchMatches();
+
+      setTeamA("");
+      setTeamALogo("");
+      setTeamAFile(null);
+      setTeamB("");
+      setTeamBLogo("");
+      setTeamBFile(null);
+      setShowErrors(false);
+      showToast("Match successfully added to tournament schedule!");
     } catch (err) {
       console.error(err);
+      showToast(err.message || "Failed to add match. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
