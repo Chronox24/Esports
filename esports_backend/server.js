@@ -514,21 +514,14 @@ app.post('/api/admin/send-email-verification', authenticateToken, isAdmin, async
       role: role || 'Super Admin'
     });
 
-    // 4. Send email directly via Gmail (with timeout fallback for hosts that restrict outbound SMTP)
+    // 4. Send email directly (supporting HTTPS Email APIs like Resend/Brevo for Render/Vercel, or Gmail SMTP)
     let isRealDelivery = false;
     let mailSendError = null;
 
     try {
-      const gmailUser = (process.env.GMAIL_USER || process.env.EMAIL_USER || process.env.SMTP_USER || '').trim();
-      const senderFrom = `"Esports System" <${gmailUser}>`;
-      const transporter = getEmailTransporter();
-
-      const sendMailPromise = transporter.sendMail({
-        from: senderFrom,
-        to: cleanEmail,
-        subject: `Esports System — Verification Code: ${verificationCode}`,
-        text: `Your administrator verification code is: ${verificationCode}\n\nThis single-use code expires in 10 minutes.\n\nIf you did not request administrator access, please disregard this email.`,
-        html: `
+      const emailSubject = `Esports System — Verification Code: ${verificationCode}`;
+      const emailText = `Your administrator verification code is: ${verificationCode}\n\nThis single-use code expires in 10 minutes.\n\nIf you did not request administrator access, please disregard this email.`;
+      const emailHtml = `
           <div style="background-color: #0b111a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 32px 24px; border-radius: 12px; border: 1px solid #1e293b;">
             <div style="text-align: center; margin-bottom: 24px;">
               <h2 style="color: #06b6d4; margin: 0 0 6px 0; font-size: 24px; font-weight: 800; letter-spacing: 0.5px;">ESPORTS SYSTEM</h2>
@@ -546,22 +539,86 @@ app.post('/api/admin/send-email-verification', authenticateToken, isAdmin, async
               &copy; ${new Date().getFullYear()} Esports System. All rights reserved.
             </div>
           </div>
-        `
-      });
+      `;
 
-      // 4-second timeout to prevent hanging when hosting providers block outbound SMTP ports (Render Free Tier)
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('SMTP connection timed out (outbound port blocked by hosting provider)')), 4000)
-      );
+      if (process.env.RESEND_API_KEY) {
+        // Option A: Resend HTTPS API (Port 443 - NEVER blocked by cloud hosts like Render)
+        const resendFrom = process.env.RESEND_FROM || 'Esports System <onboarding@resend.dev>';
+        const resendRes = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.RESEND_API_KEY.trim()}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            from: resendFrom,
+            to: [cleanEmail],
+            subject: emailSubject,
+            text: emailText,
+            html: emailHtml
+          })
+        });
 
-      const mailInfo = await Promise.race([sendMailPromise, timeoutPromise]);
-      isRealDelivery = true;
-      console.log(`[Email] Verification email delivered directly via Gmail to ${cleanEmail}. Message ID: ${mailInfo.messageId}`);
-      await logAudit('ADMIN_VERIFICATION_SENT', `Verification code sent to ${cleanEmail}`, { email: cleanEmail }, null, req);
+        const resendData = await resendRes.json().catch(() => ({}));
+        if (!resendRes.ok) {
+          throw new Error(resendData.message || `Resend API failed with status ${resendRes.status}`);
+        }
+        isRealDelivery = true;
+        console.log(`[Email] Verification email delivered via Resend HTTP API to ${cleanEmail}. ID: ${resendData.id}`);
+        await logAudit('ADMIN_VERIFICATION_SENT', `Verification code sent via Resend API to ${cleanEmail}`, { email: cleanEmail }, null, req);
+      } else if (process.env.BREVO_API_KEY) {
+        // Option B: Brevo HTTPS API (Port 443 - NEVER blocked)
+        const senderEmail = (process.env.GMAIL_USER || process.env.EMAIL_USER || 'esportsystem24@gmail.com').trim();
+        const brevoRes = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: {
+            'api-key': process.env.BREVO_API_KEY.trim(),
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            sender: { name: 'Esports System', email: senderEmail },
+            to: [{ email: cleanEmail }],
+            subject: emailSubject,
+            textContent: emailText,
+            htmlContent: emailHtml
+          })
+        });
+
+        const brevoData = await brevoRes.json().catch(() => ({}));
+        if (!brevoRes.ok) {
+          throw new Error(brevoData.message || `Brevo API failed with status ${brevoRes.status}`);
+        }
+        isRealDelivery = true;
+        console.log(`[Email] Verification email delivered via Brevo HTTP API to ${cleanEmail}. ID: ${brevoData.messageId}`);
+        await logAudit('ADMIN_VERIFICATION_SENT', `Verification code sent via Brevo API to ${cleanEmail}`, { email: cleanEmail }, null, req);
+      } else {
+        // Option C: Direct Gmail SMTP via Nodemailer (Default for local development & unblocked hosts)
+        const gmailUser = (process.env.GMAIL_USER || process.env.EMAIL_USER || process.env.SMTP_USER || '').trim();
+        const senderFrom = `"Esports System" <${gmailUser}>`;
+        const transporter = getEmailTransporter();
+
+        const sendMailPromise = transporter.sendMail({
+          from: senderFrom,
+          to: cleanEmail,
+          subject: emailSubject,
+          text: emailText,
+          html: emailHtml
+        });
+
+        // 7.5-second timeout to prevent hanging when hosting providers block outbound SMTP ports (Render Free Tier)
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('SMTP connection timed out (outbound port blocked by hosting provider)')), 7500)
+        );
+
+        const mailInfo = await Promise.race([sendMailPromise, timeoutPromise]);
+        isRealDelivery = true;
+        console.log(`[Email] Verification email delivered directly via Gmail to ${cleanEmail}. Message ID: ${mailInfo.messageId}`);
+        await logAudit('ADMIN_VERIFICATION_SENT', `Verification code sent to ${cleanEmail}`, { email: cleanEmail }, null, req);
+      }
     } catch (mailErr) {
       mailSendError = mailErr.message;
-      console.warn(`[Email] Direct SMTP delivery failed or was blocked by hosting provider: ${mailErr.message}. Serving code to authorized Super Admin.`);
-      await logAudit('ADMIN_VERIFICATION_FALLBACK', `Direct SMTP delivery blocked (${mailErr.message}); serving code directly for ${cleanEmail}`, { email: cleanEmail }, null, req);
+      console.warn(`[Email] Direct email delivery failed or was blocked: ${mailErr.message}. Serving code to authorized Super Admin.`);
+      await logAudit('ADMIN_VERIFICATION_FALLBACK', `Email delivery blocked (${mailErr.message}); serving code directly for ${cleanEmail}`, { email: cleanEmail }, null, req);
     }
 
     res.json({
