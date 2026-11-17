@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, Cpu, Crosshair, Trophy } from 'lucide-react';
 import LoginScreen from './LoginScreen';
@@ -24,8 +24,29 @@ const AboutUs = ({ onLoginSuccess, isLoggedIn }) => {
   const [formData, setFormData] = useState({ name: '', email: '', contact: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
+  const [systemModal, setSystemModal] = useState(null);
   const [activePage, setActivePage] = useState('AboutUs');
   const [showLogin, setShowLogin] = useState(false);
+
+  
+  // Auto-dismiss and keyboard escape/enter handler for tactical system notification
+  useEffect(() => {
+    if (!systemModal) return;
+    const timer = setTimeout(() => {
+      setSystemModal(null);
+    }, 6000);
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' || e.key === 'Enter') {
+        setSystemModal(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [systemModal]);
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -35,9 +56,10 @@ const AboutUs = ({ onLoginSuccess, isLoggedIn }) => {
     e.preventDefault();
     setSubmitStatus(null);
     if (!formData.name || !formData.email || !formData.message) {
-      setSubmitStatus({
-        type: 'error',
-        text: 'Please fill out all required fields (Name, Email, Message).'
+      setSystemModal({
+        type: 'warning',
+        title: 'INCOMPLETE DATA',
+        message: 'Please complete all required fields (Name, Email, and Message).'
       });
       return;
     }
@@ -52,15 +74,22 @@ const AboutUs = ({ onLoginSuccess, isLoggedIn }) => {
       if (!res.ok) {
         throw new Error(data?.error || 'Failed to dispatch message.');
       }
-      setSubmitStatus({
+      
+      const cleanName = formData.name.trim();
+      setSystemModal({
         type: 'success',
-        text: data?.message || `Thank you, ${formData.name}! Your message has been sent to esportsystem24@gmail.com.`
+        title: 'REQUEST SENT SUCCESSFULLY!',
+        message: `Thank you, ${cleanName}. Our team will review your message.`,
+        recipient: 'esportsystem24@gmail.com',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
       });
       setFormData({ name: '', email: '', contact: '', message: '' });
     } catch (err) {
-      setSubmitStatus({
+      setSystemModal({
         type: 'error',
-        text: err.message || 'Unable to deliver message. Please contact us directly at esportsystem24@gmail.com.'
+        title: 'TRANSMISSION FAILED',
+        message: err.message || 'Unable to deliver message. Please contact us directly at esportsystem24@gmail.com.',
+        recipient: 'esportsystem24@gmail.com'
       });
     } finally {
       setIsSubmitting(false);
@@ -204,6 +233,94 @@ const AboutUs = ({ onLoginSuccess, isLoggedIn }) => {
           </div>
         </div>
       </main>
+      
+      {/* ─────────────── TACTICAL HUD SYSTEM NOTIFICATION MODAL ─────────────── */}
+      {systemModal && (
+        <div className="tactical-notification-overlay" onClick={() => setSystemModal(null)}>
+          <div
+            className={`tactical-notification-card ${systemModal.type === 'error' ? 'is-error' : systemModal.type === 'warning' ? 'is-warning' : ''}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="hud-corner-tr"></div>
+            <div className="hud-corner-bl"></div>
+
+            <div className="tactical-header-strip">
+              <span className="tactical-system-tag">
+                ESPORT // SYSTEM NOTIFICATION
+              </span>
+              <button
+                type="button"
+                className="tactical-close-btn"
+                onClick={() => setSystemModal(null)}
+                aria-label="Close notification"
+              >
+                &times;
+              </button>
+            </div>
+
+            <div className="tactical-content-body">
+              <div className="tactical-icon-badge">
+                {systemModal.type === 'error' ? (
+                  <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                ) : systemModal.type === 'warning' ? (
+                  <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                  </svg>
+                ) : (
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                  </svg>
+                )}
+              </div>
+
+              <h3 className="tactical-title">{systemModal.title}</h3>
+              <p className="tactical-desc">{systemModal.message}</p>
+
+              {systemModal.recipient && (
+                <div className="tactical-meta-box">
+                  <div className="tactical-meta-row">
+                    <span className="tactical-meta-label">Dispatched To:</span>
+                    <span className="tactical-meta-val">{systemModal.recipient}</span>
+                  </div>
+                  {systemModal.timestamp && (
+                    <div className="tactical-meta-row">
+                      <span className="tactical-meta-label">Timestamp:</span>
+                      <span className="tactical-meta-val">{systemModal.timestamp}</span>
+                    </div>
+                  )}
+                  <div className="tactical-meta-row">
+                    <span className="tactical-meta-label">Status:</span>
+                    <span className="tactical-meta-val">
+                      {systemModal.type === 'success' ? 'TRANSMITTED // 200 OK' : 'FAILED // ERROR'}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <button
+                type="button"
+                className="tactical-action-btn"
+                onClick={() => setSystemModal(null)}
+                autoFocus
+              >
+                ACKNOWLEDGE
+              </button>
+            </div>
+
+            <div className="tactical-progress-track">
+              <div className="tactical-progress-bar"></div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showLogin && (
         <LoginScreen
           onClose={() => setShowLogin(false)}

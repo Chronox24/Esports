@@ -492,3 +492,362 @@
   .maximized-about-wrapper .form-row-split-modern { grid-template-columns: 1fr; } 
   .maximized-about-wrapper .contact-greeting-neon { font-size: 2rem; } 
 }
+
+
+/* ==========================================================================
+   Tactical HUD System Notification Modal
+   ========================================================================== */
+.tactical-notification-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(3, 6, 12, 0.86);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  animation: hudNotifyFadeIn 0.22s ease-out forwards;
+}
+
+@keyframes hudNotifyFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.tactical-notification-card {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  background: linear-gradient(165deg, rgba(10, 18, 32, 0.98) 0%, rgba(5, 9, 16, 0.99) 100%);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.95), 0 0 35px rgba(0, 229, 255, 0.2);
+  padding: 2.2rem 2.2rem 2rem;
+  color: #ffffff;
+  overflow: hidden;
+  animation: hudNotifyPopIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.tactical-notification-card.is-error {
+  border-color: rgba(255, 70, 85, 0.5);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.95), 0 0 35px rgba(255, 70, 85, 0.25);
+}
+
+.tactical-notification-card.is-warning {
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.95), 0 0 35px rgba(245, 158, 11, 0.25);
+}
+
+@keyframes hudNotifyPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Tactical Corner Brackets (┌ ┐ └ ┘) */
+.tactical-notification-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  border-top: 3px solid var(--accent-neon, #00e5ff);
+  border-left: 3px solid var(--accent-neon, #00e5ff);
+  pointer-events: none;
+}
+
+.tactical-notification-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 16px;
+  height: 16px;
+  border-bottom: 3px solid var(--accent-neon, #00e5ff);
+  border-right: 3px solid var(--accent-neon, #00e5ff);
+  pointer-events: none;
+}
+
+.hud-corner-tr {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 16px;
+  height: 16px;
+  border-top: 3px solid var(--accent-neon, #00e5ff);
+  border-right: 3px solid var(--accent-neon, #00e5ff);
+  pointer-events: none;
+}
+
+.hud-corner-bl {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  border-bottom: 3px solid var(--accent-neon, #00e5ff);
+  border-left: 3px solid var(--accent-neon, #00e5ff);
+  pointer-events: none;
+}
+
+.tactical-notification-card.is-error .hud-corner-tr,
+.tactical-notification-card.is-error .hud-corner-bl,
+.tactical-notification-card.is-error::before,
+.tactical-notification-card.is-error::after {
+  border-color: #ff4655 !important;
+}
+
+.tactical-notification-card.is-warning .hud-corner-tr,
+.tactical-notification-card.is-warning .hud-corner-bl,
+.tactical-notification-card.is-warning::before,
+.tactical-notification-card.is-warning::after {
+  border-color: #f59e0b !important;
+}
+
+/* Header Strip */
+.tactical-header-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(0, 229, 255, 0.2);
+  padding-bottom: 0.85rem;
+  margin-bottom: 1.5rem;
+}
+
+.tactical-notification-card.is-error .tactical-header-strip {
+  border-bottom-color: rgba(255, 70, 85, 0.25);
+}
+
+.tactical-notification-card.is-warning .tactical-header-strip {
+  border-bottom-color: rgba(245, 158, 11, 0.25);
+}
+
+.tactical-system-tag {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent-neon, #00e5ff);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tactical-system-tag::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  background: var(--accent-neon, #00e5ff);
+  box-shadow: 0 0 10px var(--accent-neon, #00e5ff);
+  border-radius: 50%;
+}
+
+.tactical-notification-card.is-error .tactical-system-tag {
+  color: #ff4655;
+}
+.tactical-notification-card.is-error .tactical-system-tag::before {
+  background: #ff4655;
+  box-shadow: 0 0 10px #ff4655;
+}
+
+.tactical-notification-card.is-warning .tactical-system-tag {
+  color: #f59e0b;
+}
+.tactical-notification-card.is-warning .tactical-system-tag::before {
+  background: #f59e0b;
+  box-shadow: 0 0 10px #f59e0b;
+}
+
+.tactical-close-btn {
+  background: transparent;
+  border: none;
+  color: rgba(148, 163, 184, 0.7);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.2rem 0.5rem;
+  transition: all 0.2s;
+}
+
+.tactical-close-btn:hover {
+  color: #ff4655;
+  transform: scale(1.15);
+}
+
+/* Icon & Message Body */
+.tactical-content-body {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.tactical-icon-badge {
+  width: 68px;
+  height: 68px;
+  border-radius: 12px;
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  box-shadow: 0 0 25px rgba(0, 229, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+  color: var(--accent-neon, #00e5ff);
+}
+
+.tactical-notification-card.is-error .tactical-icon-badge {
+  background: rgba(255, 70, 85, 0.1);
+  border-color: rgba(255, 70, 85, 0.5);
+  box-shadow: 0 0 25px rgba(255, 70, 85, 0.25);
+  color: #ff4655;
+}
+
+.tactical-notification-card.is-warning .tactical-icon-badge {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow: 0 0 25px rgba(245, 158, 11, 0.25);
+  color: #f59e0b;
+}
+
+.tactical-title {
+  font-family: 'Chakra Petch', 'Rajdhani', sans-serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #ffffff;
+  margin: 0 0 0.65rem;
+}
+
+.tactical-desc {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #cbd5e1;
+  margin: 0 0 1.5rem;
+  max-width: 92%;
+}
+
+/* Meta Data Box */
+.tactical-meta-box {
+  width: 100%;
+  background: rgba(2, 6, 23, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 2px solid var(--accent-neon, #00e5ff);
+  padding: 0.85rem 1.1rem;
+  margin-bottom: 1.75rem;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  font-family: 'Inter', monospace;
+}
+
+.tactical-notification-card.is-error .tactical-meta-box {
+  border-left-color: #ff4655;
+}
+
+.tactical-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tactical-meta-label {
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.tactical-meta-val {
+  color: var(--accent-neon, #00e5ff);
+  font-weight: 600;
+}
+
+.tactical-notification-card.is-error .tactical-meta-val {
+  color: #ff4655;
+}
+
+/* Action Button */
+.tactical-action-btn {
+  width: 100%;
+  font-family: 'Chakra Petch', 'Rajdhani', sans-serif;
+  background: var(--accent-neon, #00e5ff);
+  color: #040814;
+  border: none;
+  padding: 0.95rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.35);
+  transition: all 0.25s ease;
+}
+
+.tactical-action-btn:hover {
+  background: var(--accent-crimson, #ff4655);
+  color: #ffffff;
+  box-shadow: 0 0 25px rgba(255, 70, 85, 0.5);
+  transform: translateY(-1px);
+}
+
+.tactical-notification-card.is-error .tactical-action-btn {
+  background: #ff4655;
+  color: #ffffff;
+  box-shadow: 0 0 20px rgba(255, 70, 85, 0.4);
+}
+
+.tactical-notification-card.is-error .tactical-action-btn:hover {
+  background: #ffffff;
+  color: #ff4655;
+}
+
+/* Auto-dismiss progress bar */
+.tactical-progress-track {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.tactical-progress-bar {
+  height: 100%;
+  background: var(--accent-neon, #00e5ff);
+  box-shadow: 0 0 8px var(--accent-neon, #00e5ff);
+  animation: hudProgressBar 6s linear forwards;
+}
+
+.tactical-notification-card.is-error .tactical-progress-bar {
+  background: #ff4655;
+  box-shadow: 0 0 8px #ff4655;
+}
+
+.tactical-notification-card.is-warning .tactical-progress-bar {
+  background: #f59e0b;
+  box-shadow: 0 0 8px #f59e0b;
+}
+
+@keyframes hudProgressBar {
+  from { width: 100%; }
+  to { width: 0%; }
+}
