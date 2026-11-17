@@ -912,9 +912,9 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
             const s2 = m.team_b_score ?? m.score_b ?? 0;
             return {
               id: m.id || m.match_id,
-              team1: m.team_a?.team_name || "TBD",
+              team1: m.team_a?.team_name || "",
               team1Logo: m.team_a?.logo_url || null,
-              team2: m.team_b?.team_name || "TBD",
+              team2: m.team_b?.team_name || "",
               team2Logo: m.team_b?.logo_url || null,
               score1: s1,
               score2: s2,
@@ -4010,7 +4010,7 @@ const TournamentHubTab = ({
       case "bracket":
         return (
           <div className="hud-card w-full overflow-hidden shadow-2xl animate-fade-in">
-            <Bracket globalGame={game} globalTournament={tournamentName} isReadOnly={false} />
+            <Bracket globalGame={game} globalTournament={tournamentName} isReadOnly={true} />
           </div>
         );
       default:
@@ -4667,7 +4667,7 @@ const Tournament = ({ globalGame, setGlobalGame, globalTournament, setGlobalTour
 
               {step === 3 && (
                 <div className="w-full" style={{ minHeight: '600px' }}>
-                  <Bracket globalGame={tournData.game} globalTournament={{ name: tournData.name }} />
+                  <Bracket globalGame={tournData.game} globalTournament={{ name: tournData.name }} isReadOnly={true} />
                 </div>
               )}
 

@@ -83,8 +83,8 @@ const generateSingleElimBracket = (numTeams, teamPool) => {
         match.nextSlot = m % 2 === 0 ? "team1" : "team2";
       }
       if (r === 0) {
-        match.team1 = teamPool[m * 2] || "TBD";
-        match.team2 = teamPool[m * 2 + 1] || "TBD";
+        match.team1 = teamPool[m * 2] || "";
+        match.team2 = teamPool[m * 2 + 1] || "";
       }
     }
   }
@@ -107,8 +107,8 @@ const generateDoubleElimBracket = (numTeams, teamPool) => {
     for (let m = 0; m < matchesInRound; m++) {
       round.push({
         id: matchId++,
-        team1: r === 0 ? (teamPool[m * 2] || "TBD") : "",
-        team2: r === 0 ? (teamPool[m * 2 + 1] || "TBD") : "",
+        team1: r === 0 ? (teamPool[m * 2] || "") : "",
+        team2: r === 0 ? (teamPool[m * 2 + 1] || "") : "",
         score1: 0, score2: 0,
         nextMatchId: null, nextSlot: null,
         loserMatchId: null, loserSlot: null
@@ -189,7 +189,8 @@ const generateDoubleElimBracket = (numTeams, teamPool) => {
 };
 
 const generateRoundRobin = (teamPool, encounters = 1) => {
-  let teams = teamPool.length >= 2 ? [...teamPool] : ["TBD", "TBD"];
+  let teams = teamPool.length >= 2 ? [...teamPool] : [];
+  if (teams.length < 2) return [];
   if (teams.length % 2 !== 0) {
     teams.push("BYE");
   }
@@ -247,21 +248,34 @@ const getMatchCenterY = (rIndex, mIndex) => {
   return topOffset + mIndex * (CARD_H + gap) + CARD_H / 2;
 };
 
+/* ── Clean Team Name Helper ─────────────────────────────── */
+const cleanTeamName = (name) => {
+  if (!name || typeof name !== 'string') return '';
+  const trimmed = name.trim();
+  if (trimmed.toUpperCase() === 'TBD') return '';
+  return trimmed;
+};
+
 /* ── Match Card ─────────────────────────────────────────── */
-const MatchCard = ({ match, onChange, matchNumber }) => {
-  const s1 = parseInt(match.score1) || 0;
-  const s2 = parseInt(match.score2) || 0;
-  const isTeam1Winner = s1 > s2 && match.played !== false;
-  const isTeam2Winner = s2 > s1 && match.played !== false;
+const MatchCard = ({ match, onChange, matchNumber, isReadOnly = false }) => {
+  const team1Name = cleanTeamName(match?.team1);
+  const team2Name = cleanTeamName(match?.team2);
+  const hasTeam1 = Boolean(team1Name);
+  const hasTeam2 = Boolean(team2Name);
+
+  const s1 = parseInt(match?.score1) || 0;
+  const s2 = parseInt(match?.score2) || 0;
+  const isTeam1Winner = hasTeam1 && s1 > s2 && match?.played !== false;
+  const isTeam2Winner = hasTeam2 && s2 > s1 && match?.played !== false;
   const hasWinner = isTeam1Winner || isTeam2Winner;
 
-  const cardBorder = match.isFinals
+  const cardBorder = match?.isFinals
     ? '1px solid rgba(234,179,8,0.45)'
     : hasWinner
       ? '1px solid rgba(0, 229, 255, 0.5)'
       : '1px solid rgba(0, 229, 255, 0.18)';
 
-  const rowStyle = (isWinner) => ({
+  const rowStyle = (isWinner, hasTeam) => ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -273,7 +287,8 @@ const MatchCard = ({ match, onChange, matchNumber }) => {
     background: isWinner
       ? 'linear-gradient(90deg, rgba(0, 229, 255, 0.16) 0%, rgba(11, 17, 26, 0.96) 100%)'
       : 'rgba(11, 17, 26, 0.92)',
-    transition: 'background 0.2s',
+    opacity: hasTeam ? 1 : 0.6,
+    transition: 'background 0.2s, opacity 0.2s',
   });
 
   const teamNameStyle = (isWinner, hasName) => ({
@@ -281,7 +296,7 @@ const MatchCard = ({ match, onChange, matchNumber }) => {
     fontSize: '12px',
     fontWeight: 700,
     color: isWinner ? '#ffffff' : hasName ? '#e2e8f0' : '#64748b',
-    fontStyle: hasName ? 'normal' : 'italic',
+    fontStyle: 'normal',
     textShadow: isWinner ? '0 0 8px rgba(0,229,255,0.35)' : 'none',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
@@ -322,7 +337,7 @@ const MatchCard = ({ match, onChange, matchNumber }) => {
       className="hud-chamfer-sm hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.6),0_0_16px_rgba(0,229,255,0.12)]"
     >
       {/* Finals glow */}
-      {match.isFinals && (
+      {match?.isFinals && (
         <div style={{
           position: 'absolute', inset: 0, pointerEvents: 'none',
           background: 'linear-gradient(90deg, transparent, rgba(234,179,8,0.1), transparent)',
@@ -331,7 +346,7 @@ const MatchCard = ({ match, onChange, matchNumber }) => {
       )}
 
       {/* ─── Team 1 Row ─── */}
-      <div style={rowStyle(isTeam1Winner)}>
+      <div style={rowStyle(isTeam1Winner, hasTeam1)}>
         {isTeam1Winner && (
           <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'linear-gradient(180deg, #00e5ff, #0284c7)', boxShadow: '0 0 8px #00e5ff' }} />
         )}
@@ -339,33 +354,55 @@ const MatchCard = ({ match, onChange, matchNumber }) => {
           <div style={{
             width: 22, height: 22, borderRadius: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
             background: isTeam1Winner ? 'rgba(0, 229, 255, 0.18)' : '#060a12',
-            border: isTeam1Winner ? '1px solid rgba(0, 229, 255, 0.6)' : '1px solid rgba(0, 229, 255, 0.2)',
+            border: isTeam1Winner ? '1px solid rgba(0, 229, 255, 0.6)' : hasTeam1 ? '1px solid rgba(0, 229, 255, 0.2)' : '1px solid rgba(255, 255, 255, 0.05)',
+            opacity: hasTeam1 ? 1 : 0.35,
           }}>
             {isTeam1Winner
               ? <CrownIcon size={11} className="text-cyan-400" />
-              : <SwordsIcon size={11} className="text-slate-500" />
+              : <SwordsIcon size={11} className={hasTeam1 ? "text-slate-500" : "text-slate-700"} />
             }
           </div>
-          <span style={teamNameStyle(isTeam1Winner, !!match.team1)}>
-            {match.team1 || "TBD"}
+          <span style={teamNameStyle(isTeam1Winner, hasTeam1)}>
+            {team1Name}
           </span>
         </div>
         {matchNumber != null && (
-          <span style={{ fontFamily: 'var(--font-tactical)', fontSize: '9px', fontWeight: 700, color: '#64748b', marginRight: 6, flexShrink: 0 }}>{matchNumber}</span>
+          <span style={{ fontFamily: 'var(--font-tactical)', fontSize: '9px', fontWeight: 700, color: hasTeam1 ? '#64748b' : '#334155', marginRight: 6, flexShrink: 0 }}>{matchNumber}</span>
         )}
-        <input
-          type="number"
-          value={match.score1}
-          onChange={(e) => onChange("score1", e.target.value)}
-          style={scoreStyle(isTeam1Winner)}
-        />
+        {isReadOnly ? (
+          <div
+            style={{
+              ...scoreStyle(isTeam1Winner),
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: hasTeam1 ? 1 : 0.15,
+              userSelect: 'none',
+              cursor: 'default',
+            }}
+          >
+            {hasTeam1 ? (match?.score1 ?? 0) : ''}
+          </div>
+        ) : (
+          <input
+            type="number"
+            disabled={!hasTeam1}
+            value={hasTeam1 ? (match?.score1 ?? '') : ''}
+            onChange={(e) => onChange && onChange("score1", e.target.value)}
+            style={{
+              ...scoreStyle(isTeam1Winner),
+              opacity: hasTeam1 ? 1 : 0.15,
+              cursor: hasTeam1 ? 'text' : 'not-allowed',
+            }}
+          />
+        )}
       </div>
 
       {/* Divider */}
       <div style={{ height: 1, background: 'rgba(0, 229, 255, 0.15)', flexShrink: 0 }} />
 
       {/* ─── Team 2 Row ─── */}
-      <div style={rowStyle(isTeam2Winner)}>
+      <div style={rowStyle(isTeam2Winner, hasTeam2)}>
         {isTeam2Winner && (
           <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'linear-gradient(180deg, #00e5ff, #0284c7)', boxShadow: '0 0 8px #00e5ff' }} />
         )}
@@ -373,26 +410,48 @@ const MatchCard = ({ match, onChange, matchNumber }) => {
           <div style={{
             width: 22, height: 22, borderRadius: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
             background: isTeam2Winner ? 'rgba(0, 229, 255, 0.18)' : '#060a12',
-            border: isTeam2Winner ? '1px solid rgba(0, 229, 255, 0.6)' : '1px solid rgba(0, 229, 255, 0.2)',
+            border: isTeam2Winner ? '1px solid rgba(0, 229, 255, 0.6)' : hasTeam2 ? '1px solid rgba(0, 229, 255, 0.2)' : '1px solid rgba(255, 255, 255, 0.05)',
+            opacity: hasTeam2 ? 1 : 0.35,
           }}>
             {isTeam2Winner
               ? <CrownIcon size={11} className="text-cyan-400" />
-              : <SwordsIcon size={11} className="text-slate-500" />
+              : <SwordsIcon size={11} className={hasTeam2 ? "text-slate-500" : "text-slate-700"} />
             }
           </div>
-          <span style={teamNameStyle(isTeam2Winner, !!match.team2)}>
-            {match.team2 || "TBD"}
+          <span style={teamNameStyle(isTeam2Winner, hasTeam2)}>
+            {team2Name}
           </span>
         </div>
         {matchNumber != null && (
-          <span style={{ fontFamily: 'var(--font-tactical)', fontSize: '9px', fontWeight: 700, color: '#64748b', marginRight: 6, flexShrink: 0 }}>{matchNumber}</span>
+          <span style={{ fontFamily: 'var(--font-tactical)', fontSize: '9px', fontWeight: 700, color: hasTeam2 ? '#64748b' : '#334155', marginRight: 6, flexShrink: 0 }}>{matchNumber}</span>
         )}
-        <input
-          type="number"
-          value={match.score2}
-          onChange={(e) => onChange("score2", e.target.value)}
-          style={scoreStyle(isTeam2Winner)}
-        />
+        {isReadOnly ? (
+          <div
+            style={{
+              ...scoreStyle(isTeam2Winner),
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: hasTeam2 ? 1 : 0.15,
+              userSelect: 'none',
+              cursor: 'default',
+            }}
+          >
+            {hasTeam2 ? (match?.score2 ?? 0) : ''}
+          </div>
+        ) : (
+          <input
+            type="number"
+            disabled={!hasTeam2}
+            value={hasTeam2 ? (match?.score2 ?? '') : ''}
+            onChange={(e) => onChange && onChange("score2", e.target.value)}
+            style={{
+              ...scoreStyle(isTeam2Winner),
+              opacity: hasTeam2 ? 1 : 0.15,
+              cursor: hasTeam2 ? 'text' : 'not-allowed',
+            }}
+          />
+        )}
       </div>
     </div>
   );
@@ -573,8 +632,8 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
           if (newProcessed.includes(match.match_id)) continue;
 
           // Resolve names
-          const teamA = match.team_a?.team_name || "TBD";
-          const teamB = match.team_b?.team_name || "TBD";
+          const teamA = match.team_a?.team_name || "";
+          const teamB = match.team_b?.team_name || "";
           const scoreA = match.team_a_score || 0;
           const scoreB = match.team_b_score || 0;
           let winner = null;
@@ -1060,6 +1119,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
                       key={match.id}
                       match={match}
                       matchNumber={match.id}
+                      isReadOnly={isReadOnly}
                       onChange={(field, value) => updateSingleMatch(rIndex, mIndex, field, value)}
                     />
                   ))}
@@ -1116,6 +1176,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap, paddingTop: topOffset }}>
                       {round.map((match, mIndex) => (
                         <MatchCard key={match.id} match={match} matchNumber={match.id}
+                          isReadOnly={isReadOnly}
                           onChange={(field, value) => updateDoubleMatch('upper', rIndex, mIndex, field, value)} />
                       ))}
                     </div>
@@ -1154,6 +1215,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
                     <div style={{ display: 'flex', flexDirection: 'column', paddingTop: gfCenterY - CARD_H / 2 }}>
                       {doubleElimData.finals[0].map((match, mIndex) => (
                         <MatchCard key={match.id} match={match} matchNumber="GF"
+                          isReadOnly={isReadOnly}
                           onChange={(field, value) => updateDoubleMatch('finals', 0, mIndex, field, value)} />
                       ))}
                     </div>
@@ -1215,6 +1277,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap, paddingTop: topOffset }}>
                       {round.map((match, mIndex) => (
                         <MatchCard key={match.id} match={match} matchNumber={match.id}
+                          isReadOnly={isReadOnly}
                           onChange={(field, value) => updateDoubleMatch('lower', rIndex, mIndex, field, value)} />
                       ))}
                     </div>
@@ -1344,7 +1407,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
                         const mIndex = roundRobinData.findIndex(m => m.id === match.id);
                         return (
                           <div key={match.id} className="relative group flex justify-center shrink-0 w-full">
-                            <MatchCard match={match} matchNumber={match.id} onChange={(field, value) => updateRoundRobinMatch(mIndex, field, value)} />
+                            <MatchCard match={match} matchNumber={match.id} isReadOnly={isReadOnly} onChange={(field, value) => updateRoundRobinMatch(mIndex, field, value)} />
                           </div>
                         );
                       })}
