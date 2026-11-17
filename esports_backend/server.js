@@ -442,91 +442,6 @@ app.get('/api/me', authenticateToken, async (req, res) => {
   }
 });
 
-app.post('/api/reset-key', async (req, res) => {
-  if (!supabase) {
-    return res.status(500).json({ error: 'Supabase client not initialized.' });
-  }
-  const { email, newPassword } = req.body;
-  if (!email || !newPassword) {
-    return res.status(400).json({ error: 'Email and new security key are required.' });
-  }
-  if (typeof newPassword !== 'string' || newPassword.length < 6) {
-    return res.status(400).json({ error: 'Security key must be at least 6 characters long.' });
-  }
-  try {
-    const { data, error } = await supabase.auth.admin.listUsers();
-    if (error) throw error;
-    const targetUser = (data.users || []).find(
-      (u) => u.email && u.email.toLowerCase() === email.trim().toLowerCase()
-    );
-    if (!targetUser) {
-      return res.status(404).json({ error: 'No account registered with this email address.' });
-    }
-    const updateRes = await supabase.auth.admin.updateUserById(targetUser.id, {
-      password: newPassword,
-    });
-    if (updateRes.error) throw updateRes.error;
-    res.json({ message: 'Security key successfully updated! You can now log in.' });
-  } catch (err) {
-    console.error('Reset key error:', err);
-    res.status(500).json({ error: err.message || 'Failed to reset security key.' });
-  }
-});
-
-app.post('/api/forgot-key', async (req, res) => {
-  if (!supabase) {
-    return res.status(500).json({ error: 'Supabase client not initialized.' });
-  }
-  const { email } = req.body;
-  if (!email) {
-    return res.status(400).json({ error: 'Email address is required.' });
-  }
-  try {
-    const { data, error } = await supabase.auth.admin.listUsers();
-    if (error) throw error;
-    const targetUser = (data.users || []).find(
-      (u) => u.email && u.email.toLowerCase() === email.trim().toLowerCase()
-    );
-    if (!targetUser) {
-      return res.status(404).json({ error: 'No account registered with this email address.' });
-    }
-    await supabase.auth.resetPasswordForEmail(email.trim());
-    const linkRes = await supabase.auth.admin.generateLink({
-      type: 'recovery',
-      email: email.trim(),
-    });
-    const recoveryUrl = linkRes.data?.properties?.action_link || null;
-    res.json({
-      message: 'Recovery instructions dispatched! Check your email or use the recovery link.',
-      recoveryUrl,
-    });
-  } catch (err) {
-    console.error('Forgot key error:', err);
-    res.status(500).json({ error: err.message || 'Failed to dispatch recovery link.' });
-  }
-});
-
-app.post('/api/refresh', async (req, res) => {
-  if (!supabase) {
-    return res.status(500).json({ error: 'Supabase client not initialized.' });
-  }
-  const { refresh_token } = req.body;
-  if (!refresh_token) {
-    return res.status(400).json({ error: 'Refresh token is required.' });
-  }
-  try {
-    const authClient = createClient(supabaseUrl, supabaseKey, {
-      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
-    });
-    const { data, error } = await authClient.auth.refreshSession({ refresh_token });
-    if (error) {
-      return res.status(401).json({ error: error.message });
-    }
-    res.json({ message: 'Token refreshed', session: data.session });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 const emailVerificationCache = new NodeCache({ stdTTL: 600, checkperiod: 60 });
 
 let mailTransporter = null;
@@ -561,6 +476,256 @@ function getEmailTransporter() {
   console.log(`[Email] Direct Gmail transporter initialized for ${gmailUser}`);
   return mailTransporter;
 }
+
+async function sendEmailDelivery({ to, subject, text, html, req }) {
+  let delivered = false;
+  let errorMsg = null;
+  let messageId = null;
+
+  // Strategy 1: Resend HTTPS API (Port 443 - works on Render, Vercel, Supabase, etc.)
+  if (process.env.RESEND_API_KEY) {
+    try {
+      const resendFrom = process.env.RESEND_FROM || 'Esports System <onboarding@resend.dev>';
+      const resendRes = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.RESEND_API_KEY.trim()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: resendFrom,
+          to: [to],
+          subject,
+          text,
+          html
+        })
+      });
+
+      const resendData = await resendRes.json().catch(() => ({}));
+      if (resendRes.ok) {
+        delivered = true;
+        messageId = resendData.id;
+        console.log(`[Email] Email delivered via Resend API to ${to}. ID: ${resendData.id}`);
+        return { delivered: true, messageId, error: null };
+      } else {
+        console.warn(`[Email] Resend API returned ${resendRes.status}:`, resendData.message || JSON.stringify(resendData));
+        errorMsg = resendData.message || `Resend error (${resendRes.status})`;
+      }
+    } catch (e) {
+      console.warn('[Email] Resend API error:', e.message);
+      errorMsg = e.message;
+    }
+  }
+
+  // Strategy 2: Brevo HTTPS API
+  if (!delivered && process.env.BREVO_API_KEY) {
+    try {
+      const senderEmail = (process.env.GMAIL_USER || process.env.EMAIL_USER || 'esportsystem24@gmail.com').trim();
+      const brevoRes = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'api-key': process.env.BREVO_API_KEY.trim(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          sender: { name: 'Esports System', email: senderEmail },
+          to: [{ email: to }],
+          subject,
+          textContent: text,
+          htmlContent: html
+        })
+      });
+
+      const brevoData = await brevoRes.json().catch(() => ({}));
+      if (brevoRes.ok) {
+        delivered = true;
+        messageId = brevoData.messageId;
+        console.log(`[Email] Email delivered via Brevo API to ${to}. ID: ${brevoData.messageId}`);
+        return { delivered: true, messageId, error: null };
+      } else {
+        errorMsg = brevoData.message || `Brevo error (${brevoRes.status})`;
+      }
+    } catch (e) {
+      errorMsg = e.message;
+    }
+  }
+
+  // Strategy 3: Direct Gmail SMTP via Nodemailer
+  if (!delivered) {
+    try {
+      const gmailUser = (process.env.GMAIL_USER || process.env.EMAIL_USER || process.env.SMTP_USER || '').trim();
+      const rawPass = process.env.GMAIL_APP_PASSWORD || process.env.GMAIL_PASS || process.env.SMTP_PASS || process.env.EMAIL_PASS || '';
+      if (gmailUser && rawPass) {
+        const senderFrom = `"Esports System" <${gmailUser}>`;
+        const transporter = getEmailTransporter();
+        const sendMailPromise = transporter.sendMail({
+          from: senderFrom,
+          to,
+          subject,
+          text,
+          html
+        });
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('SMTP connection timed out (outbound port blocked by hosting provider)')), 7500)
+        );
+        const mailInfo = await Promise.race([sendMailPromise, timeoutPromise]);
+        delivered = true;
+        messageId = mailInfo.messageId;
+        console.log(`[Email] Email delivered directly via Gmail to ${to}. Message ID: ${mailInfo.messageId}`);
+        return { delivered: true, messageId, error: null };
+      }
+    } catch (smtpErr) {
+      errorMsg = errorMsg ? `${errorMsg} | SMTP: ${smtpErr.message}` : smtpErr.message;
+      console.warn(`[Email] SMTP delivery failed: ${smtpErr.message}`);
+    }
+  }
+
+  return { delivered, messageId, error: errorMsg };
+}
+
+app.post('/api/reset-key', async (req, res) => {
+  if (!supabase) {
+    return res.status(500).json({ error: 'Supabase client not initialized.' });
+  }
+  const { email, newPassword } = req.body;
+  if (!email || !newPassword) {
+    return res.status(400).json({ error: 'Email and new security key are required.' });
+  }
+  if (typeof newPassword !== 'string' || newPassword.length < 6) {
+    return res.status(400).json({ error: 'Security key must be at least 6 characters long.' });
+  }
+  try {
+    const { data, error } = await supabase.auth.admin.listUsers();
+    if (error) throw error;
+    const targetUser = (data.users || []).find(
+      (u) => u.email && u.email.toLowerCase() === email.trim().toLowerCase()
+    );
+    if (!targetUser) {
+      return res.status(404).json({ error: 'No account registered with this email address.' });
+    }
+    const updateRes = await supabase.auth.admin.updateUserById(targetUser.id, {
+      password: newPassword,
+    });
+    if (updateRes.error) throw updateRes.error;
+    await supabase.from('users').update({ password: newPassword }).eq('user_id', targetUser.id);
+    await logAudit('SECURITY_KEY_RESET', `Security key updated for ${email.trim()}`, { email: email.trim() }, null, req);
+    res.json({ message: 'Security key successfully updated! You can now log in.' });
+  } catch (err) {
+    console.error('Reset key error:', err);
+    res.status(500).json({ error: err.message || 'Failed to reset security key.' });
+  }
+});
+
+app.post('/api/forgot-key', async (req, res) => {
+  if (!supabase) {
+    return res.status(500).json({ error: 'Supabase client not initialized.' });
+  }
+  const { email } = req.body;
+  if (!email || !email.trim()) {
+    return res.status(400).json({ error: 'Email address is required.' });
+  }
+  const cleanEmail = email.trim().toLowerCase();
+  try {
+    const { data, error } = await supabase.auth.admin.listUsers();
+    if (error) throw error;
+    const targetUser = (data.users || []).find(
+      (u) => u.email && u.email.toLowerCase() === cleanEmail
+    );
+    if (!targetUser) {
+      return res.status(404).json({ error: 'No account registered with this email address.' });
+    }
+
+    const appUrl = (process.env.APP_URL || 'https://esportsystem.site').replace(/\/$/, '');
+    const redirectTo = `${appUrl}/#type=recovery&email=${encodeURIComponent(cleanEmail)}`;
+
+    let recoveryUrl = null;
+    try {
+      const linkRes = await supabase.auth.admin.generateLink({
+        type: 'recovery',
+        email: cleanEmail,
+        options: { redirectTo }
+      });
+      recoveryUrl = linkRes.data?.properties?.action_link || null;
+    } catch (e) {
+      console.warn('[Forgot Key] generateLink error:', e.message);
+    }
+
+    try {
+      await supabase.auth.resetPasswordForEmail(cleanEmail, { redirectTo });
+    } catch (e) {
+      console.warn('[Forgot Key] resetPasswordForEmail error:', e.message);
+    }
+
+    const actionLink = recoveryUrl || redirectTo;
+    const emailSubject = 'Esports System — Account Recovery Link';
+    const emailText = `Hello,\n\nA password recovery request was initiated for your administrator account (${cleanEmail}).\n\nPlease click the recovery link below to set your new security key:\n${actionLink}\n\nIf you did not request this, please disregard this email.\n\n— Esports System Security`;
+    const emailHtml = `
+      <div style="background-color: #0b111a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 580px; margin: 0 auto; padding: 32px 24px; border-radius: 12px; border: 1px solid #1e293b;">
+        <div style="border-bottom: 1px solid #1e293b; padding-bottom: 20px; margin-bottom: 24px; text-align: center;">
+          <h1 style="color: #00ffcc; font-size: 22px; font-weight: 900; letter-spacing: 0.15em; margin: 0; text-transform: uppercase;">ESPORTS SYSTEM</h1>
+          <p style="color: #64748b; font-size: 11px; letter-spacing: 0.12em; margin: 4px 0 0; text-transform: uppercase;">Security Command &amp; Key Recovery</p>
+        </div>
+        <p style="color: #cbd5e1; font-size: 14px; line-height: 1.6; margin: 0 0 20px;">
+          A security key recovery request was initiated for your administrator account (<strong style="color: #00ffcc;">${cleanEmail}</strong>).
+        </p>
+        <div style="text-align: center; margin: 32px 0;">
+          <a href="${actionLink}" style="background-color: #00ffcc; color: #020617; font-weight: 800; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; text-decoration: none; padding: 14px 28px; border-radius: 8px; display: inline-block; box-shadow: 0 0 20px rgba(0, 255, 204, 0.4);">
+            RESET YOUR SECURITY KEY &rarr;
+          </a>
+        </div>
+        <p style="color: #64748b; font-size: 12px; line-height: 1.5; margin: 24px 0 0; border-top: 1px solid #1e293b; padding-top: 16px;">
+          If the button does not work, copy and paste this link into your browser:<br/>
+          <a href="${actionLink}" style="color: #38bdf8; word-break: break-all;">${actionLink}</a>
+        </p>
+        <p style="color: #475569; font-size: 11px; margin: 16px 0 0;">
+          If you did not request this recovery link, no action is required. Your security key remains safe.
+        </p>
+      </div>
+    `;
+
+    const delivery = await sendEmailDelivery({
+      to: cleanEmail,
+      subject: emailSubject,
+      text: emailText,
+      html: emailHtml,
+      req
+    });
+
+    await logAudit('ACCOUNT_RECOVERY_REQUESTED', `Dispatched recovery link to ${cleanEmail}`, { email: cleanEmail, delivered: delivery.delivered }, null, req);
+
+    res.json({
+      message: delivery.delivered
+        ? `Recovery link sent to ${cleanEmail}! Please check your Gmail or email inbox.`
+        : `Recovery link dispatched for ${cleanEmail}. Notice: ${delivery.error || 'Check email'}`,
+      recoveryUrl: recoveryUrl
+    });
+  } catch (err) {
+    console.error('Forgot key error:', err);
+    res.status(500).json({ error: err.message || 'Failed to dispatch recovery link.' });
+  }
+});
+
+app.post('/api/refresh', async (req, res) => {
+  if (!supabase) {
+    return res.status(500).json({ error: 'Supabase client not initialized.' });
+  }
+  const { refresh_token } = req.body;
+  if (!refresh_token) {
+    return res.status(400).json({ error: 'Refresh token is required.' });
+  }
+  try {
+    const authClient = createClient(supabaseUrl, supabaseKey, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+    });
+    const { data, error } = await authClient.auth.refreshSession({ refresh_token });
+    if (error) {
+      return res.status(401).json({ error: error.message });
+    }
+    res.json({ message: 'Token refreshed', session: data.session });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ----------------------------------------------------
 // ADMIN EMAIL VERIFICATION (SEND CODE)
@@ -631,111 +796,19 @@ app.post('/api/admin/send-email-verification', authenticateToken, isAdmin, async
         </div>
     `;
 
-    // Strategy 1: Resend HTTPS API (Port 443 - NEVER blocked by cloud hosts like Render)
-    if (process.env.RESEND_API_KEY) {
-      try {
-        const resendFrom = process.env.RESEND_FROM || 'Esports System <onboarding@resend.dev>';
-        const resendRes = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.RESEND_API_KEY.trim()}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            from: resendFrom,
-            to: [cleanEmail],
-            subject: emailSubject,
-            text: emailText,
-            html: emailHtml
-          })
-        });
+    const delivery = await sendEmailDelivery({
+      to: cleanEmail,
+      subject: emailSubject,
+      text: emailText,
+      html: emailHtml,
+      req
+    });
+    isRealDelivery = delivery.delivered;
+    mailSendError = delivery.error;
 
-        const resendData = await resendRes.json().catch(() => ({}));
-        if (resendRes.ok) {
-          isRealDelivery = true;
-          delivered = true;
-          console.log(`[Email] Verification email delivered via Resend HTTP API to ${cleanEmail}. ID: ${resendData.id}`);
-          await logAudit('ADMIN_VERIFICATION_SENT', `Verification code sent via Resend API to ${cleanEmail}`, { email: cleanEmail }, null, req);
-        } else {
-          console.warn(`[Email] Resend API returned ${resendRes.status}: ${resendData.message || JSON.stringify(resendData)}`);
-          mailSendError = resendData.message || `Resend error (${resendRes.status})`;
-        }
-      } catch (resendErr) {
-        console.warn('[Email] Resend API error:', resendErr.message);
-        mailSendError = resendErr.message;
-      }
-    }
-
-    // Strategy 2: Brevo HTTPS API (Port 443 - fallback if configured)
-    if (!delivered && process.env.BREVO_API_KEY) {
-      try {
-        const senderEmail = (process.env.GMAIL_USER || process.env.EMAIL_USER || 'esportsystem24@gmail.com').trim();
-        const brevoRes = await fetch('https://api.brevo.com/v3/smtp/email', {
-          method: 'POST',
-          headers: {
-            'api-key': process.env.BREVO_API_KEY.trim(),
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            sender: { name: 'Esports System', email: senderEmail },
-            to: [{ email: cleanEmail }],
-            subject: emailSubject,
-            textContent: emailText,
-            htmlContent: emailHtml
-          })
-        });
-
-        const brevoData = await brevoRes.json().catch(() => ({}));
-        if (brevoRes.ok) {
-          isRealDelivery = true;
-          delivered = true;
-          console.log(`[Email] Verification email delivered via Brevo HTTP API to ${cleanEmail}. ID: ${brevoData.messageId}`);
-          await logAudit('ADMIN_VERIFICATION_SENT', `Verification code sent via Brevo API to ${cleanEmail}`, { email: cleanEmail }, null, req);
-        } else {
-          console.warn(`[Email] Brevo API returned ${brevoRes.status}: ${brevoData.message || JSON.stringify(brevoData)}`);
-          mailSendError = brevoData.message || `Brevo error (${brevoRes.status})`;
-        }
-      } catch (brevoErr) {
-        console.warn('[Email] Brevo API error:', brevoErr.message);
-        mailSendError = brevoErr.message;
-      }
-    }
-
-    // Strategy 3: Direct Gmail SMTP via Nodemailer (Default for local development & unblocked hosts)
-    if (!delivered) {
-      try {
-        const gmailUser = (process.env.GMAIL_USER || process.env.EMAIL_USER || process.env.SMTP_USER || '').trim();
-        const rawPass = process.env.GMAIL_APP_PASSWORD || process.env.GMAIL_PASS || process.env.SMTP_PASS || process.env.EMAIL_PASS || '';
-        if (gmailUser && rawPass) {
-          const senderFrom = `"Esports System" <${gmailUser}>`;
-          const transporter = getEmailTransporter();
-
-          const sendMailPromise = transporter.sendMail({
-            from: senderFrom,
-            to: cleanEmail,
-            subject: emailSubject,
-            text: emailText,
-            html: emailHtml
-          });
-
-          // 7.5-second timeout to prevent hanging when hosting providers block outbound SMTP ports (Render Free Tier)
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('SMTP connection timed out (outbound port blocked by hosting provider)')), 7500)
-          );
-
-          const mailInfo = await Promise.race([sendMailPromise, timeoutPromise]);
-          isRealDelivery = true;
-          delivered = true;
-          console.log(`[Email] Verification email delivered directly via Gmail to ${cleanEmail}. Message ID: ${mailInfo.messageId}`);
-          await logAudit('ADMIN_VERIFICATION_SENT', `Verification code sent to ${cleanEmail}`, { email: cleanEmail }, null, req);
-        }
-      } catch (smtpErr) {
-        mailSendError = mailSendError ? `${mailSendError} | SMTP: ${smtpErr.message}` : smtpErr.message;
-        console.warn(`[Email] Direct SMTP delivery failed: ${smtpErr.message}`);
-      }
-    }
-
-    if (!delivered) {
+    if (isRealDelivery) {
+      await logAudit('ADMIN_VERIFICATION_SENT', `Verification code sent to ${cleanEmail}`, { email: cleanEmail }, null, req);
+    } else {
       await logAudit('ADMIN_VERIFICATION_FALLBACK', `Email delivery blocked (${mailSendError}); serving code directly for ${cleanEmail}`, { email: cleanEmail }, null, req);
     }
 

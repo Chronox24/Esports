@@ -25,6 +25,21 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
     }
   }, [onLoginSuccess]);
 
+  // Automatically detect recovery link redirect from email
+  useEffect(() => {
+    try {
+      const hash = window.location.hash || '';
+      const search = window.location.search || '';
+      if (hash.includes('type=recovery') || search.includes('type=recovery')) {
+        setAuthMode('reset-password');
+        const hashParams = new URLSearchParams(hash.replace(/^#/, '?'));
+        const searchParams = new URLSearchParams(search);
+        const emailFromUrl = hashParams.get('email') || searchParams.get('email');
+        if (emailFromUrl) setEmail(emailFromUrl);
+      }
+    } catch (_) {}
+  }, []);
+
   // Prevent background scrolling kapag bukas ang modal
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -141,7 +156,8 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
     }
   };
 
-  const handleSendRecoveryLink = async () => {
+  const handleSendRecoveryLink = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
     if (!email) {
@@ -281,9 +297,9 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
             <div className="login-screen-header">
               <div className="brand-logo-login">ESPORT</div>
               <h2>RECOVER KEY</h2>
-              <p>Reset your security key or request recovery instructions for your admin account.</p>
+              <p>Enter your registered email address to receive a secure recovery link in your Gmail.</p>
             </div>
-            <form className="login-form" onSubmit={handleResetKey}>
+            <form className="login-form" onSubmit={handleSendRecoveryLink}>
               {errorMsg && (
                 <div className="login-error-badge">
                   {errorMsg}
@@ -308,6 +324,43 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
                 />
               </div>
 
+              <button type="submit" className="login-submit-btn" disabled={isSendingLink}>
+                {isSendingLink ? 'SENDING RECOVERY LINK...' : 'SEND RECOVERY LINK VIA EMAIL'}
+              </button>
+
+              <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
+                <button
+                  type="button"
+                  className="login-back-to-login-btn"
+                  onClick={switchToLogin}
+                >
+                  ← Back to Login
+                </button>
+              </div>
+            </form>
+          </>
+        )}
+
+        {/* ─────────────── RESET KEY MODE (Via Email Link) ─────────────── */}
+        {authMode === 'reset-password' && (
+          <>
+            <div className="login-screen-header">
+              <div className="brand-logo-login">ESPORT</div>
+              <h2>SET NEW SECURITY KEY</h2>
+              <p>Enter your new security key for {email || 'your account'}.</p>
+            </div>
+            <form className="login-form" onSubmit={handleResetKey}>
+              {errorMsg && (
+                <div className="login-error-badge">
+                  {errorMsg}
+                </div>
+              )}
+              {successMsg && (
+                <div className="login-success-badge">
+                  {successMsg}
+                </div>
+              )}
+
               <div className="login-input-group">
                 <label htmlFor="new-password">New Security Key</label>
                 <div className="login-password-wrapper">
@@ -318,6 +371,7 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     required
+                    autoFocus
                   />
                   <button
                     type="button"
@@ -372,17 +426,8 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
                 </div>
               </div>
 
-              <button type="submit" className="login-submit-btn" disabled={isLoading || isSendingLink}>
-                {isLoading ? 'RESETTING KEY...' : 'RESET SECURITY KEY'}
-              </button>
-
-              <button
-                type="button"
-                className="login-secondary-link-btn"
-                onClick={handleSendRecoveryLink}
-                disabled={isLoading || isSendingLink}
-              >
-                {isSendingLink ? 'DISPATCHING EMAIL...' : 'SEND RECOVERY LINK VIA EMAIL'}
+              <button type="submit" className="login-submit-btn" disabled={isLoading}>
+                {isLoading ? 'UPDATING KEY...' : 'UPDATE SECURITY KEY'}
               </button>
 
               <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
@@ -407,13 +452,13 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
                 <polyline points="22 4 12 14.01 9 11.01"></polyline>
               </svg>
             </div>
-            <h2 className="login-success-title">ACTION SUCCESSFUL</h2>
+            <h2 className="login-success-title">RECOVERY LINK SENT</h2>
             <p className="login-success-desc">
-              {successMsg || 'Your security key has been updated successfully.'}
+              {successMsg || 'A recovery link has been dispatched to your Gmail. Please check your inbox or spam folder to reset your security key.'}
             </p>
             {recoveryUrl && (
               <div className="login-recovery-box">
-                <span className="login-recovery-label">Recovery Link Ready:</span>
+                <span className="login-recovery-label">Direct Action Link:</span>
                 <a
                   href={recoveryUrl}
                   target="_blank"
@@ -430,10 +475,11 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
               style={{ width: '100%', marginTop: '1.5rem' }}
               onClick={switchToLogin}
             >
-              PROCEED TO LOGIN
+              RETURN TO LOGIN
             </button>
           </div>
         )}
+
       </div>
     </div>
   );
