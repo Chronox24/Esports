@@ -4,8 +4,8 @@ import { apiFetch } from '../../utils/api';
 
 const LoginScreen = ({ onClose, onLoginSuccess }) => {
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'forgot' | 'success'
-  const [email, setEmail] = useState('admin@esport.ph');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -63,6 +63,10 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
   const handleClose = () => {
     setIsAnimatingOut(true);
     setTimeout(() => {
+      setEmail('');
+      setPassword('');
+      setErrorMsg('');
+      setSuccessMsg('');
       if (onClose) {
         onClose();
       }
@@ -201,6 +205,7 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
+    setPassword('');
     setNewPassword('');
     setConfirmPassword('');
     setAuthMode('forgot');
@@ -209,6 +214,8 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
   const switchToLogin = () => {
     setErrorMsg('');
     setSuccessMsg('');
+    setEmail('');
+    setPassword('');
     setRecoveryToken('');
     setAuthMode('login');
     try {
@@ -250,7 +257,7 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
                 <input
                   type="email"
                   id="email"
-                  placeholder="admin@esport.ph"
+                  placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -332,7 +339,7 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
                 <input
                   type="email"
                   id="recovery-email"
-                  placeholder="admin@esport.ph"
+                  placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
