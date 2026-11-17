@@ -806,100 +806,131 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
   const [showFinishedBracket, setShowFinishedBracket] = React.useState(false);
   const [isTogglingStatus, setIsTogglingStatus] = React.useState(false);
 
-  const loadTournaments = React.useCallback(async () => {
+  React.useEffect(() => {
+    let isCancelled = false;
     setIsLoading(true);
-    try {
-      const [tRes, brRes, dashRes] = await Promise.all([
-        apiFetch('/api/tournaments').then(r => r.json()).catch(() => []),
-        apiFetch('/api/bracket-results').then(r => r.json()).catch(() => []),
-        apiFetch('/api/tournaments-dashboard').then(r => r.json()).catch(() => [])
-      ]);
 
-      const completedSet = new Set([
-        ...(Array.isArray(brRes) ? brRes.map(b => b.tournament_name) : []),
-        ...(Array.isArray(dashRes) ? dashRes.filter(d => d.status === 'COMPLETE').map(d => d.name) : [])
-      ]);
+    const runLoad = async () => {
+      try {
+        const [tRes, brRes, dashRes] = await Promise.all([
+          apiFetch('/api/tournaments').then(r => r.json()).catch(() => []),
+          apiFetch('/api/bracket-results').then(r => r.json()).catch(() => []),
+          apiFetch('/api/tournaments-dashboard').then(r => r.json()).catch(() => [])
+        ]);
 
-      const allTourns = Array.isArray(tRes) ? tRes : [];
-      const gameTourns = allTourns.filter(
-        t => (t.game || 'VALORANT').toUpperCase() === game.toUpperCase()
-      );
+        if (isCancelled) return;
 
-      const live = [];
-      const finished = [];
+        const completedSet = new Set([
+          ...(Array.isArray(brRes) ? brRes.map(b => b.tournament_name) : []),
+          ...(Array.isArray(dashRes) ? dashRes.filter(d => d.status === 'COMPLETE').map(d => d.name) : [])
+        ]);
 
-      gameTourns.forEach(t => {
-        const isFinished = t.is_finished || completedSet.has(t.name) || t.status === 'COMPLETE';
-        if (isFinished) {
-          finished.push({ ...t, is_finished: true });
-        } else {
-          live.push({ ...t, is_finished: false });
-        }
-      });
+        const allTourns = Array.isArray(tRes) ? tRes : [];
+        const currentSelectedGame = (game || 'VALORANT').toUpperCase();
 
-      // Include any completed tournaments from dashboard/results for this game that might not be in tournaments table
-      if (Array.isArray(dashRes)) {
-        dashRes.forEach(d => {
-          if (d.status === 'COMPLETE' && (d.game_title || 'VALORANT').toUpperCase() === game.toUpperCase()) {
-            if (!finished.some(f => f.name === d.name)) {
-              finished.push({
-                id: d.id,
-                name: d.name,
-                game: d.game_title || game,
-                is_finished: true
-              });
-            }
+        const gameTourns = allTourns.filter(
+          t => (t.game || 'VALORANT').toUpperCase() === currentSelectedGame
+        );
+
+        const live = [];
+        const finished = [];
+
+        gameTourns.forEach(t => {
+          const isFinished = t.is_finished || completedSet.has(t.name) || t.status === 'COMPLETE';
+          if (isFinished) {
+            finished.push({ ...t, is_finished: true });
+          } else {
+            live.push({ ...t, is_finished: false });
           }
         });
-      }
 
-      // CRITICAL: Ensure the current tournament that was clicked is present in LIVE & UPCOMING if it matches current game
-      if (currentTournamentName && typeof currentTournamentName === 'string' && currentTournamentName.trim()) {
-        const trimmedCurrent = currentTournamentName.trim();
-        const inAll = allTourns.find(t => typeof t?.name === 'string' && t.name.toLowerCase() === trimmedCurrent.toLowerCase());
-        const tournGame = (inAll?.game || (typeof globalTournament === 'object' && globalTournament?.game) || game).toUpperCase();
+        // Include any completed tournaments from dashboard/results for this game that might not be in tournaments table
+        if (Array.isArray(dashRes)) {
+          dashRes.forEach(d => {
+            if (d.status === 'COMPLETE' && (d.game_title || 'VALORANT').toUpperCase() === currentSelectedGame) {
+              if (!finished.some(f => f.name === d.name)) {
+                finished.push({
+                  id: d.id,
+                  name: d.name,
+                  game: d.game_title || currentSelectedGame,
+                  is_finished: true
+                });
+              }
+            }
+          });
+        }
 
-        if (tournGame === (game || 'VALORANT').toUpperCase()) {
-          const existingLiveIdx = live.findIndex(t => typeof t?.name === 'string' && t.name.toLowerCase() === trimmedCurrent.toLowerCase());
+        // CRITICAL: Ensure the current tournament that was clicked is present in LIVE & UPCOMING if it matches current game
+        if (currentTournamentName && typeof currentTournamentName === 'string' && currentTournamentName.trim()) {
+          const trimmedCurrent = currentTournamentName.trim();
+          const inAll = allTourns.find(t => typeof t?.name === 'string' && t.name.toLowerCase() === trimmedCurrent.toLowerCase());
+          const tournGame = (inAll?.game || (typeof globalTournament === 'object' && globalTournament?.game) || currentSelectedGame).toUpperCase();
 
-          if (existingLiveIdx > -1) {
-            // If already in live, move to index 0 so it's the very first card visible
-            const [curr] = live.splice(existingLiveIdx, 1);
-            live.unshift({ ...curr, is_current: true });
-          } else {
-            // If not in live (e.g. categorized as finished or from another list), add it to live at index 0
-            const inFinished = finished.find(t => typeof t?.name === 'string' && t.name.toLowerCase() === trimmedCurrent.toLowerCase());
-            const currentObj = inFinished || inAll || (typeof globalTournament === 'object' && globalTournament ? globalTournament : {
-              id: 'curr-' + trimmedCurrent,
-              name: trimmedCurrent,
-              game: game
-            });
-            live.unshift({ ...currentObj, is_current: true });
+          if (tournGame === currentSelectedGame) {
+            const existingLiveIdx = live.findIndex(t => typeof t?.name === 'string' && t.name.toLowerCase() === trimmedCurrent.toLowerCase());
+
+            if (existingLiveIdx > -1) {
+              // If already in live, move to index 0 so it's the very first card visible
+              const [curr] = live.splice(existingLiveIdx, 1);
+              live.unshift({ ...curr, is_current: true });
+            } else {
+              // If not in live (e.g. categorized as finished or from another list), add it to live at index 0
+              const inFinished = finished.find(t => typeof t?.name === 'string' && t.name.toLowerCase() === trimmedCurrent.toLowerCase());
+              const currentObj = inFinished || inAll || (typeof globalTournament === 'object' && globalTournament ? globalTournament : {
+                id: 'curr-' + trimmedCurrent,
+                name: trimmedCurrent,
+                game: currentSelectedGame
+              });
+              live.unshift({ ...currentObj, is_current: true });
+            }
           }
         }
-      }
 
-      setLiveTournaments(live);
-      setFinishedTournaments(finished);
-    } catch (e) {
-      console.error('Failed to load tournaments:', e);
-    } finally {
-      setIsLoading(false);
-    }
+        if (!isCancelled) {
+          setLiveTournaments(live);
+          setFinishedTournaments(finished);
+        }
+      } catch (e) {
+        if (!isCancelled) console.error('Failed to load tournaments:', e);
+      } finally {
+        if (!isCancelled) setIsLoading(false);
+      }
+    };
+
+    runLoad();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [game, currentTournamentName, globalTournament]);
 
+  // Synchronize expanded live tournament with current tournament and current game's tournaments
   React.useEffect(() => {
-    loadTournaments();
-  }, [loadTournaments]);
-
-  // Automatically expand the current clicked tournament and load its match data
-  React.useEffect(() => {
-    if (currentTournamentName && typeof currentTournamentName === 'string' && currentTournamentName.trim()) {
-      const trimmed = currentTournamentName.trim();
-      setExpandedLiveTournament(trimmed);
-      fetchTournamentData(trimmed);
+    if (liveTournaments.length === 0) {
+      setExpandedLiveTournament(null);
+      return;
     }
-  }, [currentTournamentName]);
+
+    const trimmedCurrent = currentTournamentName?.trim().toLowerCase();
+    const matchingLive = trimmedCurrent
+      ? liveTournaments.find(t => typeof t?.name === 'string' && t.name.toLowerCase() === trimmedCurrent)
+      : null;
+
+    if (matchingLive) {
+      setExpandedLiveTournament(matchingLive.name);
+      fetchTournamentData(matchingLive.name);
+    } else {
+      const currentlyExpandedMatches = expandedLiveTournament
+        ? liveTournaments.some(t => typeof t?.name === 'string' && t.name.toLowerCase() === expandedLiveTournament.toLowerCase())
+        : false;
+
+      if (!currentlyExpandedMatches) {
+        const first = liveTournaments[0]?.name || null;
+        setExpandedLiveTournament(first);
+        if (first) fetchTournamentData(first);
+      }
+    }
+  }, [liveTournaments, currentTournamentName]);
 
   const fetchTournamentData = async (tName) => {
     if (!matchesByTournament[tName]) {
@@ -959,6 +990,11 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
       setExpandedLiveTournament(null);
       return;
     }
+    const clickedTourn = liveTournaments.find(t => typeof t?.name === 'string' && t.name.toLowerCase() === tName?.toLowerCase());
+    const tournGame = (clickedTourn?.game || game).toUpperCase();
+    if (onGameChange && tournGame !== (game || 'VALORANT').toUpperCase()) {
+      onGameChange(tournGame);
+    }
     setExpandedLiveTournament(tName);
     setShowLiveBracket(false);
     fetchTournamentData(tName);
@@ -969,12 +1005,22 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
       setExpandedFinishedTournament(null);
       return;
     }
+    const clickedTourn = finishedTournaments.find(t => typeof t?.name === 'string' && t.name.toLowerCase() === tName?.toLowerCase());
+    const tournGame = (clickedTourn?.game || game).toUpperCase();
+    if (onGameChange && tournGame !== (game || 'VALORANT').toUpperCase()) {
+      onGameChange(tournGame);
+    }
     setExpandedFinishedTournament(tName);
     setShowFinishedBracket(false);
     fetchTournamentData(tName);
   };
 
   const handleLiveCardClick = (tName) => {
+    const clickedTourn = liveTournaments.find(t => typeof t?.name === 'string' && t.name.toLowerCase() === tName?.toLowerCase());
+    const tournGame = (clickedTourn?.game || game).toUpperCase();
+    if (onGameChange && tournGame !== (game || 'VALORANT').toUpperCase()) {
+      onGameChange(tournGame);
+    }
     if (setGlobalTournament) {
       setGlobalTournament(tName);
     }
@@ -986,6 +1032,11 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
   };
 
   const handleFinishedCardClick = (tName) => {
+    const clickedTourn = finishedTournaments.find(t => typeof t?.name === 'string' && t.name.toLowerCase() === tName?.toLowerCase());
+    const tournGame = (clickedTourn?.game || game).toUpperCase();
+    if (onGameChange && tournGame !== (game || 'VALORANT').toUpperCase()) {
+      onGameChange(tournGame);
+    }
     if (setGlobalTournament) {
       setGlobalTournament(tName);
     }
@@ -1146,15 +1197,21 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
               {liveTournaments.map(t => {
                 const isCurrent = t.is_current || (Boolean(currentTournamentName) && typeof currentTournamentName === 'string' && typeof t?.name === 'string' && t.name.toLowerCase() === currentTournamentName.toLowerCase());
                 const isExpanded = expandedLiveTournament === t.name;
+                const tGame = (t.game || game || 'VALORANT').toUpperCase();
+                const isVal = tGame === 'VALORANT';
 
                 return (
                   <div
                     key={t.id || t.name}
                     className={`hud-card hud-card-interactive flex-1 min-w-[260px] max-w-[360px] min-h-[245px] h-[245px] shrink-0 snap-center rounded-xl flex flex-col overflow-hidden cursor-pointer transition-all duration-300 group relative
                       ${isCurrent
-                        ? 'border-cyan-400 bg-slate-900/95 shadow-[0_0_25px_rgba(0,229,255,0.35)] ring-1 ring-cyan-400/60'
+                        ? (isVal
+                            ? 'border-rose-400 bg-slate-900/95 shadow-[0_0_25px_rgba(244,63,94,0.35)] ring-1 ring-rose-400/60'
+                            : 'border-cyan-400 bg-slate-900/95 shadow-[0_0_25px_rgba(0,229,255,0.35)] ring-1 ring-cyan-400/60')
                         : isExpanded
-                          ? 'border-cyan-500 bg-slate-900/90 shadow-[0_0_25px_rgba(0,229,255,0.25)]'
+                          ? (isVal
+                              ? 'border-rose-500 bg-slate-900/90 shadow-[0_0_25px_rgba(244,63,94,0.25)]'
+                              : 'border-cyan-500 bg-slate-900/90 shadow-[0_0_25px_rgba(0,229,255,0.25)]')
                           : ''}`}
                     onClick={() => handleLiveCardClick(t.name)}
                     title={`Open ${t.name} Tournament Hub`}
@@ -1163,26 +1220,41 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
                     <div style={{ padding: '22px 20px' }} className="flex-1 flex flex-col items-center justify-between p-5 text-center overflow-hidden relative z-10">
                       <div className="h-6 flex items-center justify-center">
                         {isCurrent ? (
-                          <div style={{ padding: '4px 12px' }} className="hud-chamfer-sm flex items-center gap-1.5 bg-cyan-400 text-slate-950 font-tactical text-[10px] font-extrabold uppercase tracking-[0.16em] shadow-[0_0_12px_rgba(0,229,255,0.5)]">
+                          <div
+                            style={{ padding: '4px 12px' }}
+                            className={`hud-chamfer-sm flex items-center gap-1.5 font-tactical text-[10px] font-extrabold uppercase tracking-[0.16em] ${
+                              isVal
+                                ? 'bg-rose-500 text-slate-950 shadow-[0_0_12px_rgba(244,63,94,0.5)]'
+                                : 'bg-cyan-400 text-slate-950 shadow-[0_0_12px_rgba(0,229,255,0.5)]'
+                            }`}
+                          >
                             <span className="w-1.5 h-1.5 rounded-full bg-slate-950"></span>
                             Active Folder
                           </div>
                         ) : (
-                          <span className="font-mono text-[10px] text-cyan-400/60 uppercase tracking-widest">// LIVE STAGE</span>
+                          <span className={`font-mono text-[10px] uppercase tracking-widest ${
+                            isVal ? 'text-rose-400/60' : 'text-cyan-400/60'
+                          }`}>// LIVE STAGE</span>
                         )}
                       </div>
 
                       <div style={{ padding: '0 8px' }} className="flex flex-col items-center justify-center my-auto px-2">
-                        <span className="font-tactical text-[10px] font-bold text-cyan-400/80 tracking-[0.22em] uppercase mb-1.5">
-                          {(t.game || game).toUpperCase()}
+                        <span className={`font-tactical text-[10px] font-bold tracking-[0.22em] uppercase mb-1.5 ${
+                          isVal ? 'text-rose-400/90' : 'text-cyan-400/90'
+                        }`}>
+                          {tGame}
                         </span>
-                        <h3 className="font-tactical text-sm sm:text-base font-extrabold text-white uppercase leading-snug line-clamp-2 px-2 text-center group-hover:text-cyan-300 transition-colors tracking-[0.12em]">
+                        <h3 className={`font-tactical text-sm sm:text-base font-extrabold text-white uppercase leading-snug line-clamp-2 px-2 text-center transition-colors tracking-[0.12em] ${
+                          isVal ? 'group-hover:text-rose-300' : 'group-hover:text-cyan-300'
+                        }`}>
                           {t.name}
                         </h3>
                       </div>
 
                       <div className="h-5 flex items-center justify-center">
-                        <span className="font-tactical text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-400/80 group-hover:text-cyan-300 transition-colors">
+                        <span className={`font-tactical text-[10px] font-bold uppercase tracking-[0.18em] transition-colors ${
+                          isVal ? 'text-rose-400/80 group-hover:text-rose-300' : 'text-cyan-400/80 group-hover:text-cyan-300'
+                        }`}>
                           Open Command Hub →
                         </span>
                       </div>
@@ -1191,10 +1263,16 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
                     <div
                       className={`h-[44px] border-t flex items-center justify-center gap-2 transition-colors shrink-0 relative z-10
                         ${isCurrent
-                          ? 'border-cyan-400/50 bg-cyan-950/60 text-cyan-300'
+                          ? (isVal
+                              ? 'border-rose-400/50 bg-rose-950/60 text-rose-300'
+                              : 'border-cyan-400/50 bg-cyan-950/60 text-cyan-300')
                           : isExpanded
-                            ? 'border-cyan-500/40 bg-cyan-900/30 text-cyan-400'
-                            : 'border-slate-800 bg-slate-950/80 group-hover:bg-slate-900 text-slate-400 group-hover:text-cyan-400'}`}
+                            ? (isVal
+                                ? 'border-rose-500/40 bg-rose-900/30 text-rose-400'
+                                : 'border-cyan-500/40 bg-cyan-900/30 text-cyan-400')
+                            : (isVal
+                                ? 'border-slate-800 bg-slate-950/80 group-hover:bg-slate-900 text-slate-400 group-hover:text-rose-400'
+                                : 'border-slate-800 bg-slate-950/80 group-hover:bg-slate-900 text-slate-400 group-hover:text-cyan-400')}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         toggleLiveTournament(t.name);
@@ -1206,7 +1284,7 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
                       </span>
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? 'text-cyan-400 rotate-180' : ''}`}
+                        className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? (isVal ? 'text-rose-400 rotate-180' : 'text-cyan-400 rotate-180') : ''}`}
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -1233,7 +1311,7 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
                     <span className="hud-diamond" />
                     <h3 className="font-tactical text-sm md:text-base font-extrabold text-white uppercase tracking-[0.16em] flex items-center gap-2 flex-wrap">
                       <span>{expandedLiveTournament}</span>
-                      <span className="text-cyan-400">// MATCHES</span>
+                      <span className={(game || 'VALORANT').toUpperCase() === 'VALORANT' ? 'text-rose-400' : 'text-cyan-400'}>// MATCHES</span>
                     </h3>
                   </div>
                   <div className="flex items-center gap-2.5 flex-wrap">
@@ -1801,6 +1879,7 @@ const ResultTab = ({ game, globalTournament, setGlobalTournament, availableTourn
               <option value="ALL">All Tournaments</option>
               {availableTournaments
                 .filter((t) => t.name && t.name.toLowerCase() !== "default")
+                .filter((t) => !game || (t.game || "VALORANT").toUpperCase() === game.toUpperCase())
                 .map((t) => (
                   <option key={t.id || t.name} value={t.name}>
                     {t.name}
@@ -3329,6 +3408,12 @@ const ManageScheduleTab = ({
 const ScheduleTab = ({ game, globalTournament, setGlobalTournament, availableTournaments = [] }) => {
   const d = DATA[game];
   const [activeGame, setActiveGame] = useState(game);
+
+  useEffect(() => {
+    if (game) {
+      setActiveGame(game);
+    }
+  }, [game]);
   const [filterByGame, setFilterByGame] = useState(true);
   const [reminders, setReminders] = useState({});
   const [selectedDay, setSelectedDay] = useState(null);
@@ -4158,7 +4243,7 @@ const Tournament = ({ globalGame, setGlobalGame, globalTournament, setGlobalTour
     }
   }, [globalGame]);
 
-  const handleGameChange = (newGame) => {
+  const handleGameChange = useCallback((newGame) => {
     const upper = (newGame || "VALORANT").toUpperCase();
     setSelectedGame(upper);
     if (setGlobalGame) {
@@ -4167,10 +4252,53 @@ const Tournament = ({ globalGame, setGlobalGame, globalTournament, setGlobalTour
     const matching = availableTournaments.filter(t => (t.game || 'VALORANT').toUpperCase() === upper);
     if (matching.length > 0) {
       if (setGlobalTournament) setGlobalTournament(matching[0].name);
-    } else {
-      if (setGlobalTournament) setGlobalTournament('');
     }
-  };
+  }, [availableTournaments, setGlobalGame, setGlobalTournament]);
+
+  // Synchronize selected game when currentTournamentName or globalTournament changes
+  useEffect(() => {
+    const directGame = typeof globalTournament === 'object' ? globalTournament?.game : null;
+    if (directGame) {
+      const upper = directGame.toUpperCase();
+      if (upper !== selectedGame) {
+        setSelectedGame(upper);
+      }
+      if (setGlobalGame && globalGame?.toUpperCase() !== upper) {
+        setGlobalGame(upper);
+      }
+      return;
+    }
+    if (currentTournamentName && availableTournaments.length > 0) {
+      const found = availableTournaments.find(
+        t => typeof t?.name === 'string' && t.name.toLowerCase() === currentTournamentName.toLowerCase()
+      );
+      if (found && found.game) {
+        const upper = found.game.toUpperCase();
+        if (upper !== selectedGame) {
+          setSelectedGame(upper);
+        }
+        if (setGlobalGame && globalGame?.toUpperCase() !== upper) {
+          setGlobalGame(upper);
+        }
+      }
+    }
+  }, [currentTournamentName, globalTournament, availableTournaments, selectedGame, globalGame, setGlobalGame]);
+
+  // If currentTournamentName doesn't belong to the activeGame, pick a matching tournament
+  useEffect(() => {
+    if (availableTournaments.length > 0 && currentTournamentName) {
+      const currentTourn = availableTournaments.find(
+        t => typeof t?.name === 'string' && t.name.toLowerCase() === currentTournamentName.toLowerCase()
+      );
+      const currentTournGame = (currentTourn?.game || 'VALORANT').toUpperCase();
+      if (currentTournGame !== activeGame) {
+        const matching = availableTournaments.filter(t => (t.game || 'VALORANT').toUpperCase() === activeGame);
+        if (matching.length > 0 && setGlobalTournament) {
+          setGlobalTournament(matching[0].name);
+        }
+      }
+    }
+  }, [activeGame, availableTournaments, currentTournamentName, setGlobalTournament]);
 
   useEffect(() => {
     apiFetch('/api/tournaments')

@@ -149,14 +149,19 @@ const MainUIScreen = ({ onLogout }) => {
         if (Array.isArray(data)) {
           setTournaments(data);
           if (data.length > 0) {
-            setGlobalTournament(prev => prev || data[0].name);
+            setGlobalTournament(prev => {
+              if (prev) return prev;
+              const currentUpperGame = (globalGame || 'VALORANT').toUpperCase();
+              const match = data.find(t => (t.game || 'VALORANT').toUpperCase() === currentUpperGame);
+              return match ? match.name : data[0].name;
+            });
           }
         }
       }
     } catch (err) {
       console.error('Failed to fetch tournaments:', err);
     }
-  }, []);
+  }, [globalGame]);
   useEffect(() => {
     loadTournaments();
   }, [loadTournaments]);
@@ -187,13 +192,26 @@ const MainUIScreen = ({ onLogout }) => {
     }
   };
   useEffect(() => {
-    if (globalTournament && tournaments.length > 0) {
-      const selected = tournaments.find(t => t.name === globalTournament);
+    const rawName = typeof globalTournament === 'string' 
+      ? globalTournament 
+      : (globalTournament && typeof globalTournament.name === 'string' ? globalTournament.name : '');
+    const directGame = typeof globalTournament === 'object' ? globalTournament?.game : null;
+
+    if (directGame) {
+      const upper = directGame.toUpperCase();
+      if ((globalGame || '').toUpperCase() !== upper) {
+        setGlobalGame(upper);
+      }
+    } else if (rawName && tournaments.length > 0) {
+      const selected = tournaments.find(t => typeof t?.name === 'string' && t.name.toLowerCase() === rawName.toLowerCase());
       if (selected && selected.game) {
-        setGlobalGame(selected.game);
+        const upper = selected.game.toUpperCase();
+        if ((globalGame || '').toUpperCase() !== upper) {
+          setGlobalGame(upper);
+        }
       }
     }
-  }, [globalTournament, tournaments]);
+  }, [globalTournament, tournaments, globalGame]);
   const sidebarData = [
     {
       category: 'Main',
