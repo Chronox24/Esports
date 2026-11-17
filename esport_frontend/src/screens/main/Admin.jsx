@@ -738,7 +738,14 @@ const Admin = ({ globalGame, globalTournament }) => {
       return;
     }
     setEditingUser(user);
-    setEditPermissions(user.permissions || { view: false, edit: false, full: false, manage_folders: false });
+    const p = user.permissions || {};
+    const isFull = Boolean(p.full);
+    setEditPermissions({
+      view: isFull ? true : Boolean(p.view),
+      edit: isFull ? true : Boolean(p.edit),
+      full: isFull,
+      manage_folders: isFull ? true : Boolean(p.manage_folders),
+    });
   };
   const handleUpdatePermissions = async () => {
     if (!editingUser) return;
@@ -1316,8 +1323,35 @@ const Admin = ({ globalGame, globalTournament }) => {
                                <span className="hud-chamfer-sm bg-slate-800/80 text-slate-400 font-tactical text-[10px] font-extrabold uppercase tracking-[0.14em] border border-slate-700" style={{ padding: "5px 16px" }}>No</span>
                              )}
                           </td>
-                          <td className="text-theme-text-muted font-mono text-[10px] tracking-wide max-w-[200px] truncate" style={{ padding: "18px 26px" }}>
-                             {user.permissions ? JSON.stringify(user.permissions) : 'None'}
+                          <td style={{ padding: "16px 24px" }}>
+                            <div className="flex items-center gap-1.5 flex-wrap max-w-[260px]">
+                              {user.is_super_admin || user.permissions?.full ? (
+                                <span className="hud-chamfer-sm px-2 py-0.5 text-[9px] font-tactical font-black uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-[0_0_8px_rgba(168,85,247,0.2)]">
+                                  FULL ACCESS
+                                </span>
+                              ) : (
+                                <>
+                                  {user.permissions?.view && (
+                                    <span className="hud-chamfer-sm px-1.5 py-0.5 text-[9px] font-tactical font-extrabold uppercase tracking-wider bg-blue-500/15 text-blue-300 border border-blue-500/30">
+                                      VIEW
+                                    </span>
+                                  )}
+                                  {user.permissions?.edit && (
+                                    <span className="hud-chamfer-sm px-1.5 py-0.5 text-[9px] font-tactical font-extrabold uppercase tracking-wider bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                                      EDIT
+                                    </span>
+                                  )}
+                                  {user.permissions?.manage_folders && (
+                                    <span className="hud-chamfer-sm px-1.5 py-0.5 text-[9px] font-tactical font-extrabold uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                                      FOLDERS
+                                    </span>
+                                  )}
+                                  {!user.permissions?.view && !user.permissions?.edit && !user.permissions?.manage_folders && (
+                                    <span className="text-[10px] text-slate-500 font-mono italic">None</span>
+                                  )}
+                                </>
+                              )}
+                            </div>
                           </td>
                           <td className="text-center" style={{ padding: "18px 26px" }}>
                             <div className="flex items-center justify-center w-full h-full">
@@ -2051,20 +2085,61 @@ const Admin = ({ globalGame, globalTournament }) => {
               <div>
                 <label className="text-[10px] font-bold text-theme-text-muted uppercase tracking-widest block" style={{ marginBottom: "12px" }}>Permissions</label>
                 <div className="grid grid-cols-2" style={{ gap: "12px" }}>
-                   {['view', 'edit', 'full', 'manage_folders'].map((perm) => (
-                      <label key={perm} className="flex items-center cursor-pointer group bg-bg-300 rounded-lg border border-theme-input hover:border-cyan-500/50 transition-all" style={{ padding: "12px", gap: "12px" }}>
-                        <div className={`w-5 h-5 flex-shrink-0 flex items-center justify-center rounded border ${editPermissions[perm] ? 'bg-cyan-500 border-cyan-500' : 'bg-bg-300 border-gray-600 group-hover:border-gray-500'} transition-colors`}>
-                           {editPermissions[perm] && <svg className="w-3.5 h-3.5 text-[#090e14]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={editPermissions[perm] || false}
-                          onChange={(e) => setEditPermissions({...editPermissions, [perm]: e.target.checked})}
-                          className="hidden"
-                        />
-                        <span className="text-sm font-medium text-theme-text-base capitalize group-hover:text-cyan-400 transition-colors whitespace-nowrap">{perm.replace('_', ' ')}</span>
-                      </label>
-                   ))}
+                   {[
+                      { key: 'view', label: 'View' },
+                      { key: 'edit', label: 'Edit' },
+                      { key: 'full', label: 'Full' },
+                      { key: 'manage_folders', label: 'Manage Folders' }
+                   ].map(({ key: perm, label }) => {
+                      const isChecked = !!editPermissions[perm];
+                      return (
+                        <label
+                          key={perm}
+                          className={`flex items-center cursor-pointer group bg-bg-300 rounded-lg border transition-all ${
+                            isChecked ? 'border-cyan-500/70 bg-cyan-950/20 shadow-[0_0_12px_rgba(6,182,212,0.15)]' : 'border-theme-input hover:border-cyan-500/40'
+                          }`}
+                          style={{ padding: "12px", gap: "12px" }}
+                        >
+                          <div className={`w-5 h-5 flex-shrink-0 flex items-center justify-center rounded border transition-colors ${
+                            isChecked ? 'bg-cyan-500 border-cyan-500 text-slate-950 shadow-[0_0_8px_rgba(6,182,212,0.6)]' : 'bg-bg-300 border-gray-600 group-hover:border-gray-500'
+                          }`}>
+                             {isChecked && (
+                               <svg className="w-3.5 h-3.5 text-[#090e14]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                               </svg>
+                             )}
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              if (perm === 'full') {
+                                if (checked) {
+                                  setEditPermissions({ view: true, edit: true, full: true, manage_folders: true });
+                                } else {
+                                  setEditPermissions(prev => ({ ...prev, full: false }));
+                                }
+                              } else {
+                                setEditPermissions(prev => {
+                                  const updated = { ...prev, [perm]: checked };
+                                  if (!checked) {
+                                    updated.full = false;
+                                  }
+                                  return updated;
+                                });
+                              }
+                            }}
+                            className="hidden"
+                          />
+                          <span className={`text-sm font-semibold transition-colors whitespace-nowrap ${
+                            isChecked ? 'text-cyan-300' : 'text-theme-text-base group-hover:text-cyan-400'
+                          }`}>
+                            {label}
+                          </span>
+                        </label>
+                      );
+                   })}
                 </div>
               </div>
               <button

@@ -1050,7 +1050,7 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
   const handleToggleCompletion = async (tName, currentIsFinished) => {
     try {
       setIsTogglingStatus(true);
-      await apiFetch('/api/tournaments/toggle-complete', {
+      const res = await apiFetch('/api/tournaments/toggle-complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1059,11 +1059,17 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
           is_completed: !currentIsFinished
         })
       });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        alert(errData.error || "Failed to update tournament completion status. Access denied.");
+        return;
+      }
       setExpandedLiveTournament(null);
       setExpandedFinishedTournament(null);
       await loadTournaments();
     } catch (e) {
       console.error(e);
+      alert("Error updating tournament completion status.");
     } finally {
       setIsTogglingStatus(false);
     }
@@ -4933,10 +4939,15 @@ const Tournament = ({ globalGame, setGlobalGame, globalTournament, setGlobalTour
                         return;
                       }
                       try {
-                        await apiFetch("/api/tournaments", {
+                        const res = await apiFetch("/api/tournaments", {
                           method: "POST",
                           body: JSON.stringify({ name: tournData.name, game: tournData.game }),
                         });
+                        if (!res.ok) {
+                          const errData = await res.json().catch(() => ({}));
+                          alert(errData.error || "Failed to create tournament. Please check your permissions.");
+                          return;
+                        }
                         setIsCreated(true);
                         setStep(2);
                       } catch (e) {

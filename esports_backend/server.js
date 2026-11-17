@@ -260,7 +260,14 @@ const isAdmin = async (req, res, next) => {
       data.role = 'Super Admin';
       data.permissions = { view: true, edit: true, full: true, manage_folders: true };
     }
-    if (data.is_super_admin || data.role === 'Super Admin' || data.permissions?.full || data.permissions?.edit || data.permissions?.manage_folders) {
+    if (
+      data.is_super_admin ||
+      data.role === 'Super Admin' ||
+      data.permissions?.full ||
+      data.permissions?.edit ||
+      data.permissions?.manage_folders ||
+      data.permissions?.view
+    ) {
       req.adminUser = data;
       next();
     } else {
@@ -269,6 +276,36 @@ const isAdmin = async (req, res, next) => {
   } catch (err) {
     return res.status(500).json({ error: 'Internal server error during authorization.' });
   }
+};
+
+const canEdit = (req, res, next) => {
+  if (!req.adminUser) {
+    return res.status(401).json({ error: 'Unauthorized.' });
+  }
+  if (
+    req.adminUser.is_super_admin ||
+    req.adminUser.role === 'Super Admin' ||
+    req.adminUser.permissions?.full ||
+    req.adminUser.permissions?.edit
+  ) {
+    return next();
+  }
+  return res.status(403).json({ error: 'Access denied. You do not have permission to edit or submit data.' });
+};
+
+const canManageFolders = (req, res, next) => {
+  if (!req.adminUser) {
+    return res.status(401).json({ error: 'Unauthorized.' });
+  }
+  if (
+    req.adminUser.is_super_admin ||
+    req.adminUser.role === 'Super Admin' ||
+    req.adminUser.permissions?.full ||
+    req.adminUser.permissions?.manage_folders
+  ) {
+    return next();
+  }
+  return res.status(403).json({ error: 'Access denied. You do not have permission to manage folders.' });
 };
 
 app.get('/api/streams/live', cacheMiddleware, async (req, res) => {
@@ -342,13 +379,66 @@ app.post('/api/login', async (req, res) => {
     if (error) {
       return res.status(401).json({ error: error.message });
     }
-    res.json({ message: 'Login successful', user: data.user, session: data.session });
+
+    let profile = null;
+    try {
+      const { data: userProfile } = await supabase
+        .from('users')
+        .select('user_id, username, role, is_super_admin, permissions')
+        .eq('user_id', data.user.id)
+        .single();
+      if (userProfile) profile = userProfile;
+    } catch (_) {}
+
+    const isSuper = profile?.is_super_admin || profile?.role === 'Super Admin';
+    const permissions = isSuper
+      ? { view: true, edit: true, full: true, manage_folders: true }
+      : (profile?.permissions || { view: true, edit: false, full: false, manage_folders: false });
+
+    const enrichedUser = {
+      ...data.user,
+      username: profile?.username || (data.user.email ? data.user.email.split('@')[0] : 'User'),
+      role: profile?.role || (isSuper ? 'Super Admin' : 'Standard Admin'),
+      is_super_admin: Boolean(isSuper),
+      permissions
+    };
+
+    res.json({ message: 'Login successful', user: enrichedUser, session: data.session });
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ 
       error: err.message, 
       cause: err.cause ? (err.cause.message || err.cause.code || String(err.cause)) : null 
     });
+  }
+});
+
+app.get('/api/me', authenticateToken, async (req, res) => {
+  if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
+  try {
+    const { data: profile, error } = await supabase
+      .from('users')
+      .select('user_id, username, role, is_super_admin, permissions')
+      .eq('user_id', req.user.id)
+      .single();
+    if (error || !profile) {
+      return res.status(404).json({ error: 'User profile not found' });
+    }
+    const isSuper = profile.is_super_admin || profile.role === 'Super Admin';
+    const permissions = isSuper
+      ? { view: true, edit: true, full: true, manage_folders: true }
+      : (profile.permissions || { view: true, edit: false, full: false, manage_folders: false });
+
+    res.json({
+      user_id: profile.user_id,
+      email: req.user.email,
+      username: profile.username || (req.user.email ? req.user.email.split('@')[0] : 'User'),
+      role: profile.role || (isSuper ? 'Super Admin' : 'Standard Admin'),
+      is_super_admin: Boolean(isSuper),
+      permissions
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -754,6 +844,9 @@ app.post('/api/admin/create-user', authenticateToken, isAdmin, async (req, res) 
 });
 app.put('/api/admin/user/:id/permissions', authenticateToken, isAdmin, async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
+  if (!req.adminUser?.is_super_admin && req.adminUser?.role !== 'Super Admin') {
+    return res.status(403).json({ error: 'Access denied. Only Super Admins can alter user permissions.' });
+  }
   const { id } = req.params;
   const { permissions } = req.body;
   if (!permissions) return res.status(400).json({ error: 'Permissions object required.' });
@@ -762,13 +855,23 @@ app.put('/api/admin/user/:id/permissions', authenticateToken, isAdmin, async (re
     if (userCheck && userCheck.is_super_admin) {
       return res.status(403).json({ error: 'Cannot manually alter permissions for the Super Admin.' });
     }
+    const cleanPermissions = {
+      view: Boolean(permissions.view || permissions.full),
+      edit: Boolean(permissions.edit || permissions.full),
+      full: Boolean(permissions.full),
+      manage_folders: Boolean(permissions.manage_folders || permissions.full)
+    };
     const { data, error } = await supabase
       .from('users')
-      .update({ permissions })
+      .update({ permissions: cleanPermissions })
       .eq('user_id', id)
       .select();
     if (error) throw error;
-    await logAudit('PERMISSIONS_UPDATED', `Permissions updated for user ${id}`, { userId: id, permissions }, null, req);
+    // Clear users cache so changes reflect instantly
+    apiCache.keys().forEach(k => {
+      if (k.includes('/api/users')) apiCache.del(k);
+    });
+    await logAudit('PERMISSIONS_UPDATED', `Permissions updated for user ${id}`, { userId: id, permissions: cleanPermissions }, null, req);
     res.json(data[0] || {});
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -842,7 +945,7 @@ app.get('/api/tournaments', async (req, res) => {
     res.json(data || []);
   }
 });
-app.post('/api/tournaments/toggle-complete', authenticateToken, isAdmin, async (req, res) => {
+app.post('/api/tournaments/toggle-complete', authenticateToken, isAdmin, canEdit, async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   try {
     const { tournament_name, game_title, is_completed } = req.body;
@@ -880,10 +983,7 @@ app.post('/api/tournaments/toggle-complete', authenticateToken, isAdmin, async (
     res.status(500).json({ error: err.message });
   }
 });
-app.post('/api/tournaments', authenticateToken, isAdmin, async (req, res) => {
-  if (!req.adminUser.is_super_admin && !req.adminUser.permissions?.manage_folders && !req.adminUser.permissions?.full && req.adminUser.role !== 'Super Admin') {
-    return res.status(403).json({ error: 'Access denied. You do not have permission to create folders.' });
-  }
+app.post('/api/tournaments', authenticateToken, isAdmin, canManageFolders, async (req, res) => {
   const { name, game } = req.body;
   if (!name || !name.trim()) return res.status(400).json({ error: 'Folder / tournament name is required.' });
   const trimmedName = name.trim();
@@ -908,10 +1008,7 @@ app.post('/api/tournaments', authenticateToken, isAdmin, async (req, res) => {
     res.status(500).json({ error: 'Internal server error while creating tournament folder.' });
   }
 });
-app.put('/api/tournaments', authenticateToken, isAdmin, async (req, res) => {
-  if (!req.adminUser.is_super_admin && !req.adminUser.permissions?.manage_folders && !req.adminUser.permissions?.full && req.adminUser.role !== 'Super Admin') {
-    return res.status(403).json({ error: 'Access denied. You do not have permission to edit folders.' });
-  }
+app.put('/api/tournaments', authenticateToken, isAdmin, canManageFolders, async (req, res) => {
   const { name, game } = req.body;
   if (!name || !game) return res.status(400).json({ error: 'Tournament name and game required' });
   const { data, error } = await supabase
@@ -923,10 +1020,7 @@ app.put('/api/tournaments', authenticateToken, isAdmin, async (req, res) => {
   await logAudit('TOURNAMENT_UPDATED', `Updated tournament game for ${name} to ${game}`, { name, game }, game, req);
   res.json({ message: 'Tournament updated successfully', data: data[0] });
 });
-app.delete('/api/tournaments/:id', authenticateToken, isAdmin, async (req, res) => {
-  if (!req.adminUser.is_super_admin && !req.adminUser.permissions?.manage_folders && !req.adminUser.permissions?.full && req.adminUser.role !== 'Super Admin') {
-    return res.status(403).json({ error: 'Access denied. You do not have permission to delete folders.' });
-  }
+app.delete('/api/tournaments/:id', authenticateToken, isAdmin, canManageFolders, async (req, res) => {
   const { id } = req.params;
   try {
     let query = supabase.from('tournaments').select('*');
@@ -972,7 +1066,7 @@ app.get('/api/stats/crossfire', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-app.post('/api/stats/crossfire/match', authenticateToken, isAdmin, async (req, res) => {
+app.post('/api/stats/crossfire/match', authenticateToken, isAdmin, canEdit, async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   try {
     const { players, rawEntries, matchHeader, tournamentName = 'Default' } = req.body;
@@ -1095,7 +1189,7 @@ app.get('/api/stats/valorant', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-app.post('/api/stats/valorant/match', authenticateToken, isAdmin, async (req, res) => {
+app.post('/api/stats/valorant/match', authenticateToken, isAdmin, canEdit, async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   try {
     const { players, matchHeader, tournamentName = 'Default' } = req.body;
@@ -1280,7 +1374,7 @@ app.get('/api/stats/heatmap', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-app.post('/api/stats/heatmap', authenticateToken, isAdmin, async (req, res) => {
+app.post('/api/stats/heatmap', authenticateToken, isAdmin, canEdit, async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   try {
     const { events } = req.body;
@@ -1317,7 +1411,7 @@ app.get('/api/vetoes', cacheMiddleware, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-app.post('/api/vetoes', authenticateToken, isAdmin, async (req, res) => {
+app.post('/api/vetoes', authenticateToken, isAdmin, canEdit, async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   try {
     const payload = req.body;
@@ -1346,7 +1440,7 @@ app.get('/api/teams', cacheMiddleware, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-app.post('/api/teams', authenticateToken, isAdmin, upload.single('logo'), async (req, res) => {
+app.post('/api/teams', authenticateToken, isAdmin, canEdit, upload.single('logo'), async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   try {
     const { team_name, tournament_name } = req.body;
@@ -1366,7 +1460,7 @@ app.post('/api/teams', authenticateToken, isAdmin, upload.single('logo'), async 
     res.status(500).json({ error: err.message });
   }
 });
-app.delete('/api/teams/:id', authenticateToken, isAdmin, async (req, res) => {
+app.delete('/api/teams/:id', authenticateToken, isAdmin, canEdit, async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   try {
     const { id } = req.params;
@@ -1397,7 +1491,7 @@ app.get('/api/players', cacheMiddleware, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-app.post('/api/players', authenticateToken, isAdmin, async (req, res) => {
+app.post('/api/players', authenticateToken, isAdmin, canEdit, async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   try {
     const { team_id, player_name, role_in_game } = req.body;
@@ -1410,7 +1504,7 @@ app.post('/api/players', authenticateToken, isAdmin, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-app.delete('/api/players/:id', authenticateToken, isAdmin, async (req, res) => {
+app.delete('/api/players/:id', authenticateToken, isAdmin, canEdit, async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   try {
     const { id } = req.params;
@@ -1446,7 +1540,7 @@ async function acquireSyncLock(key) {
   syncLocks[key] = true;
 }
 
-app.post('/api/matches/sync-live', authenticateToken, isAdmin, async (req, res) => {
+app.post('/api/matches/sync-live', authenticateToken, isAdmin, canEdit, async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   const { tournament_name, team_a_id, team_b_id, map_name, game_title, team_a_score, team_b_score, status } = req.body;
 
@@ -1496,7 +1590,7 @@ app.post('/api/matches/sync-live', authenticateToken, isAdmin, async (req, res) 
   }
 });
 
-app.post('/api/matches/finish-live', authenticateToken, isAdmin, async (req, res) => {
+app.post('/api/matches/finish-live', authenticateToken, isAdmin, canEdit, async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   const { tournament_name, team_a_name, team_b_name, team_a_score, team_b_score } = req.body;
 
@@ -1555,7 +1649,7 @@ app.post('/api/matches/finish-live', authenticateToken, isAdmin, async (req, res
   }
 });
 
-app.post('/api/matches', authenticateToken, isAdmin, async (req, res) => {
+app.post('/api/matches', authenticateToken, isAdmin, canEdit, async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   try {
     const { tournament_name, team_a_id, team_b_id, map_name, game_title, status, match_day, match_time, match_timezone } = req.body;
@@ -1570,7 +1664,7 @@ app.post('/api/matches', authenticateToken, isAdmin, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-app.put('/api/matches/:id', authenticateToken, isAdmin, async (req, res) => {
+app.put('/api/matches/:id', authenticateToken, isAdmin, canEdit, async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   try {
     const { id } = req.params;
@@ -1592,7 +1686,7 @@ app.put('/api/matches/:id', authenticateToken, isAdmin, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-app.delete('/api/matches/:id', authenticateToken, isAdmin, async (req, res) => {
+app.delete('/api/matches/:id', authenticateToken, isAdmin, canEdit, async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   try {
     const { id } = req.params;
@@ -1737,7 +1831,7 @@ app.get('/api/brackets', async (req, res) => {
 });
 
 // POST brackets
-app.post('/api/brackets', authenticateToken, isAdmin, async (req, res) => {
+app.post('/api/brackets', authenticateToken, isAdmin, canEdit, async (req, res) => {
   try {
     const { tournament_name, game_title, round, best_of, team_a_id, team_b_id, score_a, score_b, map_info } = req.body;
     const { data, error } = await supabase
@@ -1764,7 +1858,7 @@ app.post('/api/brackets', authenticateToken, isAdmin, async (req, res) => {
 });
 
 // DELETE brackets
-app.delete('/api/brackets/:id', authenticateToken, isAdmin, async (req, res) => {
+app.delete('/api/brackets/:id', authenticateToken, isAdmin, canEdit, async (req, res) => {
   try {
     const { id } = req.params;
     const { error } = await supabase
@@ -1870,7 +1964,7 @@ app.get('/api/bracket-state', async (req, res) => {
 });
 
 // POST bracket state (upsert)
-app.post('/api/bracket-state', authenticateToken, isAdmin, async (req, res) => {
+app.post('/api/bracket-state', authenticateToken, isAdmin, canEdit, async (req, res) => {
   try {
     const { tournament_name, game_title, format, team_pool, bracket_data } = req.body;
 
@@ -1901,7 +1995,7 @@ app.post('/api/bracket-state', authenticateToken, isAdmin, async (req, res) => {
 });
 
 // DELETE bracket state (full reset)
-app.delete('/api/bracket-state', authenticateToken, isAdmin, async (req, res) => {
+app.delete('/api/bracket-state', authenticateToken, isAdmin, canEdit, async (req, res) => {
   try {
     const { tournament_name, game_title } = req.query;
     const { error } = await supabase.from('bracket_states')
@@ -2022,7 +2116,7 @@ app.post('/api/map-pool', async (req, res) => {
 // ----------------------------------------------------
 // BRACKET RESULTS
 // ----------------------------------------------------
-app.post('/api/bracket-results', authenticateToken, isAdmin, async (req, res) => {
+app.post('/api/bracket-results', authenticateToken, isAdmin, canEdit, async (req, res) => {
   try {
     const { tournament_name, game_title, format, results } = req.body;
 
@@ -2226,7 +2320,7 @@ app.get('/api/rulebook', async (req, res) => {
   }
 });
 
-app.put('/api/admin/rulebook/:id', async (req, res) => {
+app.put('/api/admin/rulebook/:id', authenticateToken, isAdmin, canEdit, async (req, res) => {
   try {
     const { id } = req.params;
     const { tournament_name } = req.body;
@@ -2243,7 +2337,7 @@ app.put('/api/admin/rulebook/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/admin/rulebook/:id', async (req, res) => {
+app.delete('/api/admin/rulebook/:id', authenticateToken, isAdmin, canEdit, async (req, res) => {
   try {
     const { id } = req.params;
     const { error } = await supabase.from('rulebooks').delete().eq('id', id);
@@ -2255,7 +2349,7 @@ app.delete('/api/admin/rulebook/:id', async (req, res) => {
   }
 });
 
-app.post('/api/admin/rulebook', upload.single('rulebook'), async (req, res) => {
+app.post('/api/admin/rulebook', authenticateToken, isAdmin, canEdit, upload.single('rulebook'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
     let file_url = `/uploads/${req.file.filename}`;
@@ -2304,7 +2398,7 @@ app.get('/api/settings/formula', async (req, res) => {
   }
 });
 
-app.put('/api/settings/formula/:id', async (req, res) => {
+app.put('/api/settings/formula/:id', authenticateToken, isAdmin, canEdit, async (req, res) => {
   try {
     const { id } = req.params;
     const { kill_weight, death_weight, assist_weight, acs_weight, econ_weight, first_kill_weight, plants_weight, defuse_weight, ace_weight, excel_formula, acs_formula, kda_formula, base_multiplier, base_rating } = req.body;
@@ -2353,7 +2447,7 @@ app.post('/api/settings/reports', upload.single('evidence'), async (req, res) =>
   }
 });
 
-app.delete('/api/settings/reports/:id', async (req, res) => {
+app.delete('/api/settings/reports/:id', authenticateToken, isAdmin, canEdit, async (req, res) => {
   try {
     const { id } = req.params;
     const { error } = await supabase.from('cheat_reports').delete().eq('id', id);
@@ -2375,7 +2469,7 @@ app.get('/api/settings/bans', async (req, res) => {
   }
 });
 
-app.post('/api/settings/bans', async (req, res) => {
+app.post('/api/settings/bans', authenticateToken, isAdmin, canEdit, async (req, res) => {
   try {
     const { player_name, reason, duration, report_id } = req.body;
 
