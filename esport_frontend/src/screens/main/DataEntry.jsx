@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { apiFetch, getUserAccount } from "../../utils/api";
+import { apiFetch, getUserAccount, resolveLogoUrl } from "../../utils/api";
 import { io } from "socket.io-client";
 import { AgentBadge, getAgentImagePath } from "../../utils/agentHelper";
 
@@ -1369,21 +1369,27 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                 <div className="flex" style={{ display: 'flex', gap: '24px' }}>
                   <div className="flex-1 bg-blue-900/10 border border-blue-900/30 rounded-xl hover:border-blue-700/40 transition-colors" style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
                     <div className="bg-blue-900/30 border border-blue-800/40 text-blue-400 shrink-0 overflow-hidden font-black text-2xl" style={{ width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {dbTeams.find((t) => t.team_name === teamA.name)
-                        ?.logo_url ? (
-                        <img
-                          src={
-                            dbTeams.find((t) => t.team_name === teamA.name)
-                              .logo_url
-                          }
-                          alt="Logo"
-                          className="w-10 h-10 object-contain drop-shadow-md"
-                        />
-                      ) : teamA.name ? (
-                        teamA.name[0]
-                      ) : (
-                        "A"
-                      )}
+                      {(() => {
+                        const teamData = dbTeams.find((t) => t.team_name && t.team_name.trim().toLowerCase() === (teamA.name || '').trim().toLowerCase());
+                        const logoSrc = resolveLogoUrl(teamData?.logo_url);
+                        return logoSrc ? (
+                          <img
+                            src={logoSrc}
+                            alt={teamA.name || "Team A"}
+                            className="w-10 h-10 object-contain drop-shadow-md"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              if (e.currentTarget.parentElement) {
+                                e.currentTarget.parentElement.textContent = teamA.name ? teamA.name[0] : "A";
+                              }
+                            }}
+                          />
+                        ) : teamA.name ? (
+                          teamA.name[0]
+                        ) : (
+                          "A"
+                        );
+                      })()}
                     </div>
                     <div className="text-center w-full" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       <div className="text-[10px] font-black uppercase tracking-widest text-blue-500">
@@ -1415,21 +1421,27 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                   </div>
                   <div className="flex-1 bg-red-900/10 border border-red-900/30 rounded-xl hover:border-red-700/40 transition-colors" style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
                     <div className="bg-red-900/30 border border-red-800/40 text-red-400 shrink-0 overflow-hidden font-black text-2xl" style={{ width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {dbTeams.find((t) => t.team_name === teamB.name)
-                        ?.logo_url ? (
-                        <img
-                          src={
-                            dbTeams.find((t) => t.team_name === teamB.name)
-                              .logo_url
-                          }
-                          alt="Logo"
-                          className="w-10 h-10 object-contain drop-shadow-md"
-                        />
-                      ) : teamB.name ? (
-                        teamB.name[0]
-                      ) : (
-                        "B"
-                      )}
+                      {(() => {
+                        const teamData = dbTeams.find((t) => t.team_name && t.team_name.trim().toLowerCase() === (teamB.name || '').trim().toLowerCase());
+                        const logoSrc = resolveLogoUrl(teamData?.logo_url);
+                        return logoSrc ? (
+                          <img
+                            src={logoSrc}
+                            alt={teamB.name || "Team B"}
+                            className="w-10 h-10 object-contain drop-shadow-md"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              if (e.currentTarget.parentElement) {
+                                e.currentTarget.parentElement.textContent = teamB.name ? teamB.name[0] : "B";
+                              }
+                            }}
+                          />
+                        ) : teamB.name ? (
+                          teamB.name[0]
+                        ) : (
+                          "B"
+                        );
+                      })()}
                     </div>
                     <div className="text-center w-full" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       <div className="text-[10px] font-black uppercase tracking-widest text-red-500">

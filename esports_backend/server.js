@@ -1730,21 +1730,9 @@ app.post('/api/teams', authenticateToken, isAdmin, canEdit, handleUpload('logo')
     const tName = (tournament_name && tournament_name.trim()) || 'Default';
     const cleanTeamName = team_name.trim();
 
-    // Check if team already exists in this tournament to prevent duplicate key errors
-    const { data: existingTeams } = await supabase
-      .from('teams')
-      .select('*')
-      .ilike('tournament_name', tName);
-    if (Array.isArray(existingTeams)) {
-      const match = existingTeams.find(t => t.team_name && t.team_name.toLowerCase() === cleanTeamName.toLowerCase());
-      if (match) {
-        return res.json(match);
-      }
-    }
-
-    const payload = { team_name: cleanTeamName, tournament_name: tName };
+    let logo_url = null;
     if (req.file) {
-      let logo_url = `/uploads/${req.file.filename}`;
+      logo_url = `/uploads/${req.file.filename}`;
       try {
         const fileBuffer = fs.readFileSync(req.file.path);
         const safeFilename = `${Date.now()}-${req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
@@ -1766,9 +1754,33 @@ app.post('/api/teams', authenticateToken, isAdmin, canEdit, handleUpload('logo')
       } catch (storageErr) {
         console.warn('Supabase storage logo upload fallback:', storageErr.message);
       }
-      payload.logo_url = logo_url;
     } else if (req.body.logo_url) {
-      payload.logo_url = req.body.logo_url;
+      logo_url = req.body.logo_url;
+    }
+
+    // Check if team already exists in this tournament to prevent duplicate key errors
+    const { data: existingTeams } = await supabase
+      .from('teams')
+      .select('*')
+      .ilike('tournament_name', tName);
+    if (Array.isArray(existingTeams)) {
+      const match = existingTeams.find(t => t.team_name && t.team_name.toLowerCase() === cleanTeamName.toLowerCase());
+      if (match) {
+        if (logo_url && logo_url !== match.logo_url) {
+          const { data: updatedTeam } = await supabase
+            .from('teams')
+            .update({ logo_url })
+            .eq('team_id', match.team_id)
+            .select();
+          if (updatedTeam && updatedTeam[0]) return res.json(updatedTeam[0]);
+        }
+        return res.json(match);
+      }
+    }
+
+    const payload = { team_name: cleanTeamName, tournament_name: tName };
+    if (logo_url) {
+      payload.logo_url = logo_url;
     }
     const { data, error } = await supabase.from('teams').insert([payload]).select();
     if (error) throw error;

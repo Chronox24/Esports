@@ -159,3 +159,20 @@ export const apiFetch = async (endpoint, options = {}) => {
 
   return response;
 };
+
+export const resolveLogoUrl = (url) => {
+  if (!url || typeof url !== 'string' || !url.trim()) return '';
+  const trimmed = url.trim();
+  if (trimmed.startsWith('data:') || trimmed.startsWith('blob:')) return trimmed;
+  if (trimmed.startsWith('https://') || trimmed.startsWith('http://')) {
+    if (trimmed.includes('localhost:5000')) {
+      const path = trimmed.split('localhost:5000')[1];
+      return API_URL ? `${API_URL}${path}` : path;
+    }
+    return trimmed;
+  }
+  if (trimmed.startsWith('/uploads/')) {
+    return API_URL ? `${API_URL}${trimmed}` : trimmed;
+  }
+  return trimmed;
+};
