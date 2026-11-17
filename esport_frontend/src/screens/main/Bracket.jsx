@@ -256,6 +256,21 @@ const cleanTeamName = (name) => {
   return trimmed;
 };
 
+/* ── Check if a match slot is active (has teams or will receive teams) ── */
+const isMatchActive = (bracket, rIndex, mIndex) => {
+  if (!Array.isArray(bracket) || !bracket[rIndex] || !bracket[rIndex][mIndex]) return false;
+  const match = bracket[rIndex][mIndex];
+  const t1 = cleanTeamName(match?.team1);
+  const t2 = cleanTeamName(match?.team2);
+  const hasScore = (match?.score1 != null && match?.score1 !== 0 && match?.score1 !== '') ||
+                   (match?.score2 != null && match?.score2 !== 0 && match?.score2 !== '');
+  if (t1 || t2 || hasScore) return true;
+  if (rIndex === 0) return false;
+  const parent1Active = isMatchActive(bracket, rIndex - 1, mIndex * 2);
+  const parent2Active = isMatchActive(bracket, rIndex - 1, mIndex * 2 + 1);
+  return parent1Active || parent2Active;
+};
+
 /* ── Match Card ─────────────────────────────────────────── */
 const MatchCard = ({ match, onChange, matchNumber, isReadOnly = false }) => {
   const team1Name = cleanTeamName(match?.team1);
@@ -943,35 +958,63 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
   /* ── Bracket Renderers ─────────────────────────────────── */
 
   /* Bracket connector component — draws precise lines between rounds */
-  const BracketConnector = ({ rIndex, pairCount, isLower }) => {
+  const BracketConnector = ({ rIndex, pairCount, isLower, bracketData }) => {
     const connectors = [];
     const color = isLower ? "rgba(248,113,113,0.45)" : "var(--color-cyan-500)";
     const dotColor = isLower ? "rgba(248,113,113,0.75)" : "var(--color-cyan-400)";
     const hLen = ROUND_GAP * 0.5;
 
+    let maxBotY = 0;
     for (let i = 0; i < pairCount; i++) {
+      const isTopActive = bracketData ? isMatchActive(bracketData, rIndex, i * 2) : true;
+      const isBotActive = bracketData ? isMatchActive(bracketData, rIndex, i * 2 + 1) : true;
+      const isNextActive = bracketData ? isMatchActive(bracketData, rIndex + 1, i) : true;
+
+      if (!isNextActive && !isTopActive && !isBotActive) continue;
+
       const topY = getMatchCenterY(rIndex, i * 2);
       const botY = getMatchCenterY(rIndex, i * 2 + 1);
       const midY = (topY + botY) / 2;
 
-      connectors.push(
-        <g key={i}>
-          {/* Top match -> horizontal right */}
-          <line x1={0} y1={topY} x2={hLen} y2={topY} stroke={color} strokeWidth="2" />
-          {/* Bottom match -> horizontal right */}
-          <line x1={0} y1={botY} x2={hLen} y2={botY} stroke={color} strokeWidth="2" />
-          {/* Vertical line connecting top and bottom */}
-          <line x1={hLen} y1={topY} x2={hLen} y2={botY} stroke={color} strokeWidth="2" />
-          {/* Middle -> horizontal right to next match */}
-          <line x1={hLen} y1={midY} x2={ROUND_GAP} y2={midY} stroke={color} strokeWidth="2" />
-          {/* Glow dot at merge point */}
-          <circle cx={hLen} cy={midY} r="3" fill={dotColor} />
-        </g>
-      );
+      if (botY > maxBotY) maxBotY = botY;
+
+      if (isTopActive && isBotActive) {
+        connectors.push(
+          <g key={i}>
+            {/* Top match -> horizontal right */}
+            <line x1={0} y1={topY} x2={hLen} y2={topY} stroke={color} strokeWidth="2" />
+            {/* Bottom match -> horizontal right */}
+            <line x1={0} y1={botY} x2={hLen} y2={botY} stroke={color} strokeWidth="2" />
+            {/* Vertical line connecting top and bottom */}
+            <line x1={hLen} y1={topY} x2={hLen} y2={botY} stroke={color} strokeWidth="2" />
+            {/* Middle -> horizontal right to next match */}
+            <line x1={hLen} y1={midY} x2={ROUND_GAP} y2={midY} stroke={color} strokeWidth="2" />
+            {/* Glow dot at merge point */}
+            <circle cx={hLen} cy={midY} r="3" fill={dotColor} />
+          </g>
+        );
+      } else if (isTopActive && !isBotActive) {
+        connectors.push(
+          <g key={i}>
+            <line x1={0} y1={topY} x2={hLen} y2={topY} stroke={color} strokeWidth="2" />
+            <line x1={hLen} y1={topY} x2={hLen} y2={midY} stroke={color} strokeWidth="2" />
+            <line x1={hLen} y1={midY} x2={ROUND_GAP} y2={midY} stroke={color} strokeWidth="2" />
+            <circle cx={hLen} cy={midY} r="3" fill={dotColor} />
+          </g>
+        );
+      } else if (!isTopActive && isBotActive) {
+        connectors.push(
+          <g key={i}>
+            <line x1={0} y1={botY} x2={hLen} y2={botY} stroke={color} strokeWidth="2" />
+            <line x1={hLen} y1={botY} x2={hLen} y2={midY} stroke={color} strokeWidth="2" />
+            <line x1={hLen} y1={midY} x2={ROUND_GAP} y2={midY} stroke={color} strokeWidth="2" />
+            <circle cx={hLen} cy={midY} r="3" fill={dotColor} />
+          </g>
+        );
+      }
     }
 
-    const lastBotY = pairCount > 0 ? getMatchCenterY(rIndex, (pairCount - 1) * 2 + 1) : 0;
-    const totalHeight = lastBotY + CARD_H;
+    const totalHeight = maxBotY > 0 ? maxBotY + CARD_H : 0;
 
     return (
       <svg
@@ -1093,6 +1136,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
                     rIndex={rIndex - 1}
                     pairCount={round.length}
                     isLower={false}
+                    bracketData={singleElimData}
                   />
                 </div>
               )}
@@ -1114,15 +1158,18 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
 
                 {/* Match cards */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap, paddingTop: topOffset }}>
-                  {round.map((match, mIndex) => (
-                    <MatchCard
-                      key={match.id}
-                      match={match}
-                      matchNumber={match.id}
-                      isReadOnly={isReadOnly}
-                      onChange={(field, value) => updateSingleMatch(rIndex, mIndex, field, value)}
-                    />
-                  ))}
+                  {round.map((match, mIndex) => {
+                    if (!isMatchActive(singleElimData, rIndex, mIndex)) return null;
+                    return (
+                      <MatchCard
+                        key={match.id}
+                        match={match}
+                        matchNumber={match.id}
+                        isReadOnly={isReadOnly}
+                        onChange={(field, value) => updateSingleMatch(rIndex, mIndex, field, value)}
+                      />
+                    );
+                  })}
                 </div>
               </div>
             </React.Fragment>
@@ -1158,6 +1205,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
                         rIndex={rIndex - 1}
                         pairCount={round.length}
                         isLower={false}
+                        bracketData={doubleElimData.upper}
                       />
                     </div>
                   )}
@@ -1174,11 +1222,14 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
                       </span>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap, paddingTop: topOffset }}>
-                      {round.map((match, mIndex) => (
-                        <MatchCard key={match.id} match={match} matchNumber={match.id}
-                          isReadOnly={isReadOnly}
-                          onChange={(field, value) => updateDoubleMatch('upper', rIndex, mIndex, field, value)} />
-                      ))}
+                      {round.map((match, mIndex) => {
+                        if (!isMatchActive(doubleElimData.upper, rIndex, mIndex)) return null;
+                        return (
+                          <MatchCard key={match.id} match={match} matchNumber={match.id}
+                            isReadOnly={isReadOnly}
+                            onChange={(field, value) => updateDoubleMatch('upper', rIndex, mIndex, field, value)} />
+                        );
+                      })}
                     </div>
                   </div>
                 </React.Fragment>
