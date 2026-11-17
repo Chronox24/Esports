@@ -1176,7 +1176,7 @@ const Analytics = ({ globalGame, globalTournament }) => {
       const acs = Math.min(600, Math.max(0, Number(r.acs) || 0));
       const econ = Math.min(200, Math.max(0, Number(r.econ) || 0));
       const p = Math.min(20, Math.max(0, Number(r.plants) || 0));
-      const def = Math.min(20, Math.max(0, Number(r.defuse) || 0));
+      const def = Math.min(20, Math.max(0, Number(r.defuse ?? r.defuses) || 0));
       const aces = Math.min(10, Math.max(0, Number(r.aces) || 0));
       const fk = Math.min(20, Math.max(0, Number(r.first_kills) || 0));
       const isWin = String(r.win).toLowerCase() === 'true' || r.win === 1;
@@ -1196,39 +1196,39 @@ const Analytics = ({ globalGame, globalTournament }) => {
     const winRate = safeDiv(wins, n);
     const hsPct = totK > 0 ? (totHs / totK) * 100 : 0;
 
+    const kda = (totK + totA) / Math.max(1, totD);
+    const defusePerMatch = safeDiv(totDef, n);
+    const plantPerMatch = safeDiv(totP, n);
+    const tradeRate = safeDiv(totA + totFk, safeRnd);
+
     let s1, s2, s3, s4, s5, s6;
     if (isVal) {
       // 1. Agent Proficiency: Win Rate + ACS + K/D
       s1 = Math.round(Math.min(98, Math.max(25, (winRate * 45) + (Math.min(350, avgAcs) / 350 * 35) + (Math.min(2, kd) / 2 * 18))));
-      // 2. Reaction Time: KPR + First Kills + K/D
-      s2 = Math.round(Math.min(98, Math.max(30, (Math.min(1.2, kpr) / 1.2 * 50) + (Math.min(0.2, safeDiv(totFk, safeRnd)) / 0.2 * 25) + (Math.min(2, kd) / 2 * 23))));
-      // 3. Econ Management: Econ spending efficiency + ACS per round
-      const econScore = avgEcon > 10 ? Math.min(95, (avgEcon / 100) * 75 + 20) : Math.min(95, (avgAcs / 250) * 50 + (kd > 1 ? 30 : 20));
-      s3 = Math.round(Math.min(98, Math.max(30, econScore)));
-      // 4. Headshot %
-      const hsScore = hsPct > 0 ? Math.min(98, Math.max(25, (hsPct / 40) * 70 + 25)) : Math.min(92, Math.max(35, (kpr / 1.2) * 50 + 35));
-      s4 = Math.round(hsScore);
-      // 5. Utility Usage: APR + plants + defuses
-      const utilRate = apr + safeDiv(totP + totDef, safeRnd);
-      s5 = Math.round(Math.min(98, Math.max(25, (Math.min(0.8, utilRate) / 0.8) * 70 + 25)));
-      // 6. Clutch %: Survival rate + win rate + aces
-      const survRate = Math.max(0, safeDiv(safeRnd - totD, safeRnd));
-      s6 = Math.round(Math.min(98, Math.max(25, (winRate * 40) + (survRate * 40) + (Math.min(2, totAces) * 9) + 10)));
+      // 2. Highest K/DA: (K + A) / D ratio scaled from baseline 1.0 to 2.5+
+      s2 = Math.round(Math.min(98, Math.max(25, (Math.min(2.5, kda) / 2.5 * 65) + 30)));
+      // 3. Highest Defuse: Average defuses per match + defuse success
+      s3 = Math.round(Math.min(98, Math.max(25, (Math.min(3, defusePerMatch) / 3 * 55) + (totDef > 0 ? 35 : 25))));
+      // 4. Highest Trades: Assists + First Kills per round + HS trade precision
+      s4 = Math.round(Math.min(98, Math.max(25, (Math.min(0.5, tradeRate) / 0.5 * 60) + (hsPct > 0 ? Math.min(20, hsPct / 2) : 15) + 15)));
+      // 5. Highest Plant: Average plants per match + plant contribution
+      s5 = Math.round(Math.min(98, Math.max(25, (Math.min(4, plantPerMatch) / 4 * 55) + (totP > 0 ? 35 : 25))));
+      // 6. Ace: Recorded aces + multi-frag ace potential (KPR)
+      s6 = Math.round(Math.min(98, Math.max(25, (Math.min(3, totAces) / 3 * 60) + (totAces > 0 ? 35 : Math.min(30, kpr * 25 + 15)))));
     } else {
       // Crossfire
-      // 1. Weapon Mastery
+      // 1. Weapon Mastery: K/D + Headshot %
       s1 = Math.round(Math.min(98, Math.max(30, (Math.min(2.5, kd) / 2.5 * 55) + (Math.min(50, hsPct) / 50 * 43))));
-      // 2. Reaction Time
-      s2 = Math.round(Math.min(98, Math.max(30, (Math.min(1.2, kpr) / 1.2 * 70) + (Math.min(2, kd) / 2 * 28))));
-      // 3. Positioning
-      const surv = Math.max(0, safeDiv(safeRnd - totD, safeRnd));
-      s3 = Math.round(Math.min(98, Math.max(25, surv * 80 + 18)));
-      // 4. Headshot %
-      s4 = Math.round(Math.min(98, Math.max(25, (hsPct / 45) * 75 + 20)));
-      // 5. Utility Usage
-      s5 = Math.round(Math.min(98, Math.max(25, (Math.min(0.6, apr) / 0.6) * 70 + 25)));
-      // 6. Clutch %
-      s6 = Math.round(Math.min(98, Math.max(25, (winRate * 45) + (surv * 35) + 18)));
+      // 2. Highest K/DA
+      s2 = Math.round(Math.min(98, Math.max(25, (Math.min(2.5, kda) / 2.5 * 65) + 30)));
+      // 3. Highest Defuse
+      s3 = Math.round(Math.min(98, Math.max(25, (Math.min(3, defusePerMatch) / 3 * 55) + (totDef > 0 ? 35 : 25))));
+      // 4. Highest Trades
+      s4 = Math.round(Math.min(98, Math.max(25, (Math.min(0.5, tradeRate) / 0.5 * 60) + (hsPct > 0 ? Math.min(20, hsPct / 2) : 15) + 15)));
+      // 5. Highest Plant
+      s5 = Math.round(Math.min(98, Math.max(25, (Math.min(4, plantPerMatch) / 4 * 55) + (totP > 0 ? 35 : 25))));
+      // 6. Ace
+      s6 = Math.round(Math.min(98, Math.max(25, (Math.min(3, totAces) / 3 * 60) + (totAces > 0 ? 35 : Math.min(30, kpr * 25 + 15)))));
     }
 
     return {
@@ -1237,6 +1237,7 @@ const Analytics = ({ globalGame, globalTournament }) => {
         matches: pRecords.length,
         rounds: totRnd,
         kd: kd.toFixed(2),
+        kda: kda.toFixed(2),
         winRate: Math.round(winRate * 100),
         acs: Math.round(avgAcs),
         kpr: kpr.toFixed(2),
@@ -1247,6 +1248,7 @@ const Analytics = ({ globalGame, globalTournament }) => {
         plants: totP,
         defuses: totDef,
         aces: totAces,
+        trades: totA + totFk,
       },
     };
   };
@@ -1263,14 +1265,14 @@ const Analytics = ({ globalGame, globalTournament }) => {
     }
 
     const fallbackVal = [
-      { name: "Elite Player", color: "#00d0eb", stats: [80, 64, 85, 83, 59, 63], tier: "Elite Benchmark" },
-      { name: "Pro Player", color: "#ff3366", stats: [67, 57, 76, 75, 44, 53], tier: "Pro Benchmark" },
-      { name: "Average Player", color: "#a78bfa", stats: [55, 49, 68, 66, 46, 50], tier: "Average Benchmark" },
+      { name: "Elite Player", color: "#00d0eb", stats: [88, 92, 78, 86, 82, 85], tier: "Elite Benchmark" },
+      { name: "Pro Player", color: "#ff3366", stats: [78, 80, 68, 74, 72, 70], tier: "Pro Benchmark" },
+      { name: "Average Player", color: "#a78bfa", stats: [62, 60, 52, 58, 55, 48], tier: "Average Benchmark" },
     ];
     const fallbackCf = [
-      { name: "CF Elite", color: "#f59e0b", stats: [79, 77, 63, 79, 69, 68], tier: "Elite Benchmark" },
-      { name: "CF Pro", color: "#4c7fd6", stats: [60, 56, 61, 73, 56, 71], tier: "Pro Benchmark" },
-      { name: "Average Player", color: "#10b981", stats: [61, 65, 59, 67, 60, 58], tier: "Average Benchmark" },
+      { name: "CF Elite", color: "#f59e0b", stats: [86, 90, 75, 88, 80, 84], tier: "Elite Benchmark" },
+      { name: "CF Pro", color: "#4c7fd6", stats: [76, 78, 66, 76, 70, 68], tier: "Pro Benchmark" },
+      { name: "Average Player", color: "#10b981", stats: [60, 58, 50, 56, 52, 45], tier: "Average Benchmark" },
     ];
 
     if (gameRecords.length === 0) {
@@ -1394,11 +1396,11 @@ const Analytics = ({ globalGame, globalTournament }) => {
     theme: valorantTheme,
     radarAxes: [
       "Agent Proficiency",
-      "Reaction Time",
-      "Econ Management",
-      "Headshot %",
-      "Utility Usage",
-      "Clutch %",
+      "Highest K/DA",
+      "Highest Defuse",
+      "Highest Trades",
+      "Highest Plant",
+      "Ace",
     ],
     radar: dynamicRadar,
     econ: [
@@ -1428,11 +1430,11 @@ const Analytics = ({ globalGame, globalTournament }) => {
     theme: crossfireTheme,
     radarAxes: [
       "Weapon Mastery",
-      "Reaction Time",
-      "Positioning",
-      "Headshot %",
-      "Utility Usage",
-      "Clutch %",
+      "Highest K/DA",
+      "Highest Defuse",
+      "Highest Trades",
+      "Highest Plant",
+      "Ace",
     ],
     radar: dynamicRadar,
     econ: [
@@ -1919,21 +1921,40 @@ const Analytics = ({ globalGame, globalTournament }) => {
 
                 {/* Player Meta stats if available */}
                 {modalData.data?.meta && (
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="bg-bg-200/80 p-2.5 rounded-lg border border-slate-700/40 text-center">
-                      <div className="text-[9px] text-theme-text-muted font-bold uppercase tracking-wider">K/D Ratio</div>
-                      <div className="text-sm font-black text-theme-text-base">{modalData.data.meta.kd}</div>
-                      <div className="text-[8px] text-theme-text-faint">{modalData.data.meta.kills}K / {modalData.data.meta.deaths}D</div>
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-bg-200/80 p-2.5 rounded-lg border border-slate-700/40 text-center">
+                        <div className="text-[9px] text-theme-text-muted font-bold uppercase tracking-wider">K/DA Ratio</div>
+                        <div className="text-sm font-black text-theme-text-base">{modalData.data.meta.kda || modalData.data.meta.kd}</div>
+                        <div className="text-[8px] text-theme-text-faint">{modalData.data.meta.kills}K / {modalData.data.meta.deaths}D / {modalData.data.meta.assists}A</div>
+                      </div>
+                      <div className="bg-bg-200/80 p-2.5 rounded-lg border border-slate-700/40 text-center">
+                        <div className="text-[9px] text-theme-text-muted font-bold uppercase tracking-wider">Total Aces</div>
+                        <div className="text-sm font-black text-theme-text-base">{modalData.data.meta.aces}</div>
+                        <div className="text-[8px] text-theme-text-faint">{modalData.data.meta.rounds} Rounds</div>
+                      </div>
+                      <div className="bg-bg-200/80 p-2.5 rounded-lg border border-slate-700/40 text-center">
+                        <div className="text-[9px] text-theme-text-muted font-bold uppercase tracking-wider">Combat ACS</div>
+                        <div className="text-sm font-black text-theme-text-base">{modalData.data.meta.acs}</div>
+                        <div className="text-[8px] text-theme-text-faint">Headshot {modalData.data.meta.hsPct}%</div>
+                      </div>
                     </div>
-                    <div className="bg-bg-200/80 p-2.5 rounded-lg border border-slate-700/40 text-center">
-                      <div className="text-[9px] text-theme-text-muted font-bold uppercase tracking-wider">Win Rate</div>
-                      <div className="text-sm font-black text-theme-text-base">{modalData.data.meta.winRate}%</div>
-                      <div className="text-[8px] text-theme-text-faint">{modalData.data.meta.rounds} Rounds</div>
-                    </div>
-                    <div className="bg-bg-200/80 p-2.5 rounded-lg border border-slate-700/40 text-center">
-                      <div className="text-[9px] text-theme-text-muted font-bold uppercase tracking-wider">Combat ACS</div>
-                      <div className="text-sm font-black text-theme-text-base">{modalData.data.meta.acs}</div>
-                      <div className="text-[8px] text-theme-text-faint">Headshot {modalData.data.meta.hsPct}%</div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-bg-200/80 p-2.5 rounded-lg border border-slate-700/40 text-center">
+                        <div className="text-[9px] text-theme-text-muted font-bold uppercase tracking-wider">Plants</div>
+                        <div className="text-sm font-black text-theme-text-base">{modalData.data.meta.plants}</div>
+                        <div className="text-[8px] text-theme-text-faint">Spike Plants</div>
+                      </div>
+                      <div className="bg-bg-200/80 p-2.5 rounded-lg border border-slate-700/40 text-center">
+                        <div className="text-[9px] text-theme-text-muted font-bold uppercase tracking-wider">Defuses</div>
+                        <div className="text-sm font-black text-theme-text-base">{modalData.data.meta.defuses}</div>
+                        <div className="text-[8px] text-theme-text-faint">Spike Defuses</div>
+                      </div>
+                      <div className="bg-bg-200/80 p-2.5 rounded-lg border border-slate-700/40 text-center">
+                        <div className="text-[9px] text-theme-text-muted font-bold uppercase tracking-wider">Trades / Refrags</div>
+                        <div className="text-sm font-black text-theme-text-base">{modalData.data.meta.trades ?? modalData.data.meta.assists}</div>
+                        <div className="text-[8px] text-theme-text-faint">Assists &amp; FK</div>
+                      </div>
                     </div>
                   </div>
                 )}
