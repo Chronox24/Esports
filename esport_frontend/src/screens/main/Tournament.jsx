@@ -783,7 +783,7 @@ const MatchCard = ({ match, showCountdown, game, index = 0 }) => {
     </div>
   );
 };
-const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCreateModal, onNavigateToHub, onEditTournamentSchedule }) => {
+const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTournament, onOpenCreateModal, onNavigateToHub, onEditTournamentSchedule }) => {
   const currentTournamentName = typeof globalTournament === 'string'
     ? globalTournament
     : globalTournament?.name;
@@ -849,25 +849,29 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
         });
       }
 
-      // CRITICAL: Ensure the current tournament that was clicked is present in LIVE & UPCOMING
+      // CRITICAL: Ensure the current tournament that was clicked is present in LIVE & UPCOMING if it matches current game
       if (currentTournamentName && currentTournamentName.trim()) {
         const trimmedCurrent = currentTournamentName.trim();
-        const existingLiveIdx = live.findIndex(t => t.name.toLowerCase() === trimmedCurrent.toLowerCase());
+        const inAll = allTourns.find(t => t.name.toLowerCase() === trimmedCurrent.toLowerCase());
+        const tournGame = (inAll?.game || (typeof globalTournament === 'object' && globalTournament?.game) || game).toUpperCase();
 
-        if (existingLiveIdx > -1) {
-          // If already in live, move to index 0 so it's the very first card visible
-          const [curr] = live.splice(existingLiveIdx, 1);
-          live.unshift({ ...curr, is_current: true });
-        } else {
-          // If not in live (e.g. categorized as finished or from another list), add it to live at index 0
-          const inFinished = finished.find(t => t.name.toLowerCase() === trimmedCurrent.toLowerCase());
-          const inAll = allTourns.find(t => t.name.toLowerCase() === trimmedCurrent.toLowerCase());
-          const currentObj = inFinished || inAll || (typeof globalTournament === 'object' && globalTournament ? globalTournament : {
-            id: 'curr-' + trimmedCurrent,
-            name: trimmedCurrent,
-            game: game
-          });
-          live.unshift({ ...currentObj, is_current: true });
+        if (tournGame === (game || 'VALORANT').toUpperCase()) {
+          const existingLiveIdx = live.findIndex(t => t.name.toLowerCase() === trimmedCurrent.toLowerCase());
+
+          if (existingLiveIdx > -1) {
+            // If already in live, move to index 0 so it's the very first card visible
+            const [curr] = live.splice(existingLiveIdx, 1);
+            live.unshift({ ...curr, is_current: true });
+          } else {
+            // If not in live (e.g. categorized as finished or from another list), add it to live at index 0
+            const inFinished = finished.find(t => t.name.toLowerCase() === trimmedCurrent.toLowerCase());
+            const currentObj = inFinished || inAll || (typeof globalTournament === 'object' && globalTournament ? globalTournament : {
+              id: 'curr-' + trimmedCurrent,
+              name: trimmedCurrent,
+              game: game
+            });
+            live.unshift({ ...currentObj, is_current: true });
+          }
         }
       }
 
@@ -1072,24 +1076,64 @@ const LiveUpcomingTab = ({ game, globalTournament, setGlobalTournament, onOpenCr
       {/* LAYER 1: LIVE & UPCOMING TOURNAMENTS */}
       {/* ========================================================================= */}
       <div className="flex flex-col gap-6 w-full">
-        {/* Section Header: Active Tournaments */}
-        {liveTournaments.length > 0 && (
-          <div className="flex items-center justify-between px-1 mb-2">
-            <div className="flex items-center gap-3">
-              <span className="hud-diamond" />
-              <h3 className="font-tactical text-xs sm:text-sm font-extrabold uppercase tracking-[0.2em] text-theme-text-base">
-                Active Tournaments
-              </h3>
+        {/* Section Header: Active Tournaments & Game Navigation */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1 mb-2">
+          <div className="flex items-center gap-3">
+            <span className="hud-diamond" />
+            <h3 className="font-tactical text-xs sm:text-sm font-extrabold uppercase tracking-[0.2em] text-theme-text-base">
+              Active Tournaments
+            </h3>
+            <span className={`text-[10px] font-tactical font-black px-2 py-0.5 rounded border uppercase tracking-wider ${
+              (game || 'VALORANT').toUpperCase() === 'VALORANT'
+                ? 'text-rose-400 bg-rose-500/15 border-rose-500/30'
+                : 'text-cyan-400 bg-cyan-500/15 border-cyan-500/30'
+            }`}>
+              {game || 'VALORANT'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            {/* Quick Game Navigation Choices */}
+            <div className="inline-flex items-center p-0.5 bg-slate-950/90 border border-slate-700/80 rounded-lg shadow-inner gap-1">
+              <button
+                type="button"
+                onClick={() => onGameChange && onGameChange('VALORANT')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded font-tactical text-[11px] font-black tracking-wider uppercase transition-all duration-200 cursor-pointer ${
+                  (game || 'VALORANT').toUpperCase() === 'VALORANT'
+                    ? 'bg-rose-500/25 text-rose-300 border border-rose-500/60 shadow-[0_0_10px_rgba(244,63,94,0.4)]'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/60 border border-transparent'
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${
+                  (game || 'VALORANT').toUpperCase() === 'VALORANT' ? 'bg-rose-400' : 'bg-slate-600'
+                }`} />
+                VALORANT
+              </button>
+              <button
+                type="button"
+                onClick={() => onGameChange && onGameChange('CROSSFIRE')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded font-tactical text-[11px] font-black tracking-wider uppercase transition-all duration-200 cursor-pointer ${
+                  (game || 'VALORANT').toUpperCase() === 'CROSSFIRE'
+                    ? 'bg-cyan-500/25 text-cyan-300 border border-cyan-500/60 shadow-[0_0_10px_rgba(6,182,212,0.4)]'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/60 border border-transparent'
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${
+                  (game || 'VALORANT').toUpperCase() === 'CROSSFIRE' ? 'bg-cyan-400' : 'bg-slate-600'
+                }`} />
+                CROSSFIRE
+              </button>
             </div>
+
             <span style={{ padding: '5px 14px' }} className="hud-chamfer-sm font-tactical text-[11px] font-extrabold text-cyan-300 bg-cyan-500/15 border border-cyan-400/35 uppercase tracking-[0.16em]">
               {liveTournaments.length} Active
             </span>
           </div>
-        )}
+        </div>
 
         {liveTournaments.length === 0 ? (
           <div className="hud-card rounded-xl text-center py-14 font-tactical text-slate-400 font-bold uppercase tracking-[0.2em]">
-            No live or upcoming tournaments found.
+            No live or upcoming {game || 'VALORANT'} tournaments found.
           </div>
         ) : (
           <div className="flex flex-col gap-6 w-full">
@@ -4089,13 +4133,34 @@ const TournamentHubTab = ({
   );
 };
 
-const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initialTab, initialHubSubTab }) => {
-  const activeGame = (globalGame || "VALORANT").toUpperCase();
+const Tournament = ({ globalGame, setGlobalGame, globalTournament, setGlobalTournament, initialTab, initialHubSubTab }) => {
+  const [selectedGame, setSelectedGame] = useState((globalGame || "VALORANT").toUpperCase());
+  const activeGame = (selectedGame || globalGame || "VALORANT").toUpperCase();
   const currentTournamentName = typeof globalTournament === 'object' && globalTournament ? globalTournament.name : (globalTournament || '');
   const [activeTab, setActiveTab] = useState(initialTab || "LIVE & UPCOMING");
   const [hubSubTab, setHubSubTab] = useState(initialHubSubTab || "predictions");
   const [selectedTournamentForEdit, setSelectedTournamentForEdit] = useState(null);
   const [availableTournaments, setAvailableTournaments] = useState([]);
+
+  useEffect(() => {
+    if (globalGame) {
+      setSelectedGame(globalGame.toUpperCase());
+    }
+  }, [globalGame]);
+
+  const handleGameChange = (newGame) => {
+    const upper = (newGame || "VALORANT").toUpperCase();
+    setSelectedGame(upper);
+    if (setGlobalGame) {
+      setGlobalGame(upper);
+    }
+    const matching = availableTournaments.filter(t => (t.game || 'VALORANT').toUpperCase() === upper);
+    if (matching.length > 0) {
+      if (setGlobalTournament) setGlobalTournament(matching[0]);
+    } else {
+      if (setGlobalTournament) setGlobalTournament('');
+    }
+  };
 
   useEffect(() => {
     apiFetch('/api/tournaments')
@@ -4243,6 +4308,7 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
         return (
           <LiveUpcomingTab
             game={activeGame}
+            onGameChange={handleGameChange}
             globalTournament={globalTournament}
             setGlobalTournament={setGlobalTournament}
             onOpenCreateModal={handleOpenCreateModal}
@@ -4352,6 +4418,65 @@ const Tournament = ({ globalGame, globalTournament, setGlobalTournament, initial
               width: `${indicatorStyle.width}px`,
             }}
           />
+        </div>
+      </div>
+
+      {/* Tactical Game Discipline Switcher Bar */}
+      <div className="shrink-0 w-full bg-slate-950/70 backdrop-blur-md border-b border-cyan-500/15 py-1.5 px-3 sm:px-6 z-10 shadow-sm">
+        <div className="w-full max-w-[1440px] mx-auto flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-1.5 text-cyan-400/90">
+              <span className="hud-diamond scale-75" />
+              <span className="font-tactical text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">
+                DISCIPLINE:
+              </span>
+            </div>
+
+            <div className="inline-flex items-center p-0.5 bg-slate-900/90 border border-slate-700/80 rounded-lg shadow-inner gap-1">
+              <button
+                type="button"
+                onClick={() => handleGameChange("VALORANT")}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-md font-tactical text-[11px] font-black tracking-wider uppercase transition-all duration-200 cursor-pointer ${
+                  activeGame === "VALORANT"
+                    ? "bg-rose-500/20 text-rose-400 border border-rose-500/50 shadow-[0_0_12px_rgba(244,63,94,0.35)]"
+                    : "text-slate-400 hover:text-white hover:bg-slate-800/60 border border-transparent"
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full ${
+                  activeGame === "VALORANT" ? "bg-rose-500 shadow-[0_0_8px_#f43f5e]" : "bg-slate-600"
+                }`} />
+                VALORANT
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleGameChange("CROSSFIRE")}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-md font-tactical text-[11px] font-black tracking-wider uppercase transition-all duration-200 cursor-pointer ${
+                  activeGame === "CROSSFIRE"
+                    ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-[0_0_12px_rgba(6,182,212,0.35)]"
+                    : "text-slate-400 hover:text-white hover:bg-slate-800/60 border border-transparent"
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full ${
+                  activeGame === "CROSSFIRE" ? "bg-cyan-400 shadow-[0_0_8px_#06b6d4]" : "bg-slate-600"
+                }`} />
+                CROSSFIRE
+              </button>
+            </div>
+          </div>
+
+          <div className="hidden sm:flex items-center gap-2">
+            <span className="font-tactical text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
+              CURRENT DISCIPLINE:
+            </span>
+            <span className={`font-tactical text-[10px] font-black uppercase tracking-[0.16em] px-2.5 py-0.5 rounded border ${
+              activeGame === "VALORANT"
+                ? "text-rose-400 bg-rose-500/10 border-rose-500/30"
+                : "text-cyan-400 bg-cyan-500/10 border-cyan-500/30"
+            }`}>
+              {activeGame}
+            </span>
+          </div>
         </div>
       </div>
       <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col items-center w-full px-3 sm:px-5 lg:px-6 py-5">

@@ -217,19 +217,19 @@ const MainUIScreen = ({ onLogout }) => {
 
     switch (activeTab) {
       case 'Dashboard': return <ErrorBoundary><Dashboard globalGame={globalGame} globalTournament={globalTournament} /></ErrorBoundary>;
-      case 'Tournament': return <Tournament globalGame={globalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} />;
+      case 'Tournament': return <Tournament globalGame={globalGame} setGlobalGame={setGlobalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} />;
       case 'Tournament History': return <TournamentHistory setGlobalTournament={setGlobalTournament} setActiveTab={setActiveTab} />;
-      case 'Predictions': return <Tournament globalGame={globalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="predictions" />;
-      case 'Map Vetoes': return <Tournament globalGame={globalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="mapping" />;
-      case 'Data Entry': return <Tournament globalGame={globalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="data-entry" />;
-      case 'PRS Entry': return <Tournament globalGame={globalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="prs-entry" />;
-      case 'Player Management': return <Tournament globalGame={globalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="player-management" />;
-      case 'Leaderboards': return <Tournament globalGame={globalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="leaderboards" />;
-      case 'Analytics': return <Tournament globalGame={globalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="analytics" />;
-      case 'Player Rankings': return <Tournament globalGame={globalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="player-rankings" />;
-      case 'Player Stats': return <Tournament globalGame={globalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="player-stats" />;
-      case 'Raw Records': return <Tournament globalGame={globalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="raw-records" />;
-      case 'Bracket': return <Tournament globalGame={globalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="BRACKET MANAGEMENT" />;
+      case 'Predictions': return <Tournament globalGame={globalGame} setGlobalGame={setGlobalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="predictions" />;
+      case 'Map Vetoes': return <Tournament globalGame={globalGame} setGlobalGame={setGlobalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="mapping" />;
+      case 'Data Entry': return <Tournament globalGame={globalGame} setGlobalGame={setGlobalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="data-entry" />;
+      case 'PRS Entry': return <Tournament globalGame={globalGame} setGlobalGame={setGlobalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="prs-entry" />;
+      case 'Player Management': return <Tournament globalGame={globalGame} setGlobalGame={setGlobalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="player-management" />;
+      case 'Leaderboards': return <Tournament globalGame={globalGame} setGlobalGame={setGlobalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="leaderboards" />;
+      case 'Analytics': return <Tournament globalGame={globalGame} setGlobalGame={setGlobalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="analytics" />;
+      case 'Player Rankings': return <Tournament globalGame={globalGame} setGlobalGame={setGlobalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="player-rankings" />;
+      case 'Player Stats': return <Tournament globalGame={globalGame} setGlobalGame={setGlobalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="player-stats" />;
+      case 'Raw Records': return <Tournament globalGame={globalGame} setGlobalGame={setGlobalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="raw-records" />;
+      case 'Bracket': return <Tournament globalGame={globalGame} setGlobalGame={setGlobalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="BRACKET MANAGEMENT" />;
       case 'Admin': return <Admin globalGame={globalGame} globalTournament={globalTournament} />;
       case 'Audit Logs': return <AuditLogs globalGame={globalGame} globalTournament={globalTournament} />;
       case 'Settings': return <Settings globalGame={globalGame} globalTournament={globalTournament} themeBg={themeBg} setThemeBg={setThemeBg} themeAccent={themeAccent} setThemeAccent={setThemeAccent} />;
@@ -409,6 +409,52 @@ const MainUIScreen = ({ onLogout }) => {
             <h2 className="font-tactical text-sm sm:text-base md:text-lg font-extrabold text-theme-text-base light:text-slate-900 tracking-[0.16em] uppercase leading-none">
               {activeTab}
             </h2>
+          </div>
+        </div>
+
+        {/* Global Game Discipline Switcher */}
+        <div className="flex items-center gap-2">
+          <div className="inline-flex items-center p-0.5 bg-slate-950/80 border border-slate-700/80 rounded-xl shadow-inner gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                setGlobalGame('VALORANT');
+                const matching = tournaments.filter(t => (t.game || 'VALORANT').toUpperCase() === 'VALORANT');
+                if (matching.length > 0) setGlobalTournament(matching[0].name);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-tactical text-xs font-black tracking-wider transition-all duration-200 cursor-pointer ${
+                (globalGame || 'VALORANT').toUpperCase() === 'VALORANT'
+                  ? 'bg-rose-500/25 text-rose-300 border border-rose-500/60 shadow-[0_0_12px_rgba(244,63,94,0.4)]'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent'
+              }`}
+            >
+              <span className={`w-2 h-2 rounded-full ${
+                (globalGame || 'VALORANT').toUpperCase() === 'VALORANT'
+                  ? 'bg-rose-400 shadow-[0_0_8px_#f43f5e]'
+                  : 'bg-slate-600'
+              }`} />
+              VALORANT
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setGlobalGame('CROSSFIRE');
+                const matching = tournaments.filter(t => (t.game || 'VALORANT').toUpperCase() === 'CROSSFIRE');
+                if (matching.length > 0) setGlobalTournament(matching[0].name);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-tactical text-xs font-black tracking-wider transition-all duration-200 cursor-pointer ${
+                (globalGame || 'VALORANT').toUpperCase() === 'CROSSFIRE'
+                  ? 'bg-cyan-500/25 text-cyan-300 border border-cyan-500/60 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent'
+              }`}
+            >
+              <span className={`w-2 h-2 rounded-full ${
+                (globalGame || 'VALORANT').toUpperCase() === 'CROSSFIRE'
+                  ? 'bg-cyan-400 shadow-[0_0_8px_#06b6d4]'
+                  : 'bg-slate-600'
+              }`} />
+              CROSSFIRE
+            </button>
           </div>
         </div>
       </header>
