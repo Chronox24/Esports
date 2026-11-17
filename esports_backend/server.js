@@ -443,7 +443,7 @@ app.get('/api/me', authenticateToken, async (req, res) => {
 });
 
 const emailVerificationCache = new NodeCache({ stdTTL: 600, checkperiod: 60 });
-const passwordRecoveryCache = new NodeCache({ stdTTL: 1800, checkperiod: 60 });
+const passwordRecoveryCache = new NodeCache({ stdTTL: 28800, checkperiod: 300 }); // 8 hours (28,800 seconds)
 
 let mailTransporter = null;
 let currentMailUser = null;
@@ -597,16 +597,6 @@ app.post('/api/reset-key', async (req, res) => {
   }
 
   const cleanEmail = email.trim().toLowerCase();
-  const cached = passwordRecoveryCache.get(cleanEmail);
-
-  // If a recovery session was initiated, verify token or code
-  if (cached) {
-    const isTokenValid = token && cached.token === token.trim();
-    const isCodeValid = code && cached.code === code.toString().trim();
-    if (!isTokenValid && !isCodeValid) {
-      return res.status(401).json({ error: 'Invalid or expired recovery link. Please request a new recovery link.' });
-    }
-  }
 
   try {
     const { data, error } = await supabase.auth.admin.listUsers();
@@ -617,13 +607,63 @@ app.post('/api/reset-key', async (req, res) => {
     if (!targetUser) {
       return res.status(404).json({ error: 'No account registered with this email address.' });
     }
+
+    const cached = passwordRecoveryCache.get(cleanEmail);
+    const meta = targetUser.user_metadata || {};
+    const storedToken = cached?.token || meta.recovery_token;
+    const storedCode = cached?.code || meta.recovery_code;
+    const storedExpiresAt = cached?.expiresAt || meta.recovery_expires_at;
+
+    // Validate active recovery request
+    if (storedToken || storedCode) {
+      // Enforce strict 8-hour expiration
+      if (storedExpiresAt && Date.now() > Number(storedExpiresAt)) {
+        passwordRecoveryCache.del(cleanEmail);
+        try {
+          await supabase.auth.admin.updateUserById(targetUser.id, {
+            user_metadata: {
+              ...meta,
+              recovery_token: null,
+              recovery_code: null,
+              recovery_expires_at: null
+            }
+          });
+        } catch (_) {}
+        return res.status(401).json({
+          error: 'This recovery link has expired (8-hour limit exceeded). Please request a fresh recovery link.'
+        });
+      }
+
+      const isTokenValid = token && storedToken && token.trim() === storedToken.trim();
+      const isCodeValid = code && storedCode && code.toString().trim() === storedCode.toString().trim();
+
+      if (!isTokenValid && !isCodeValid) {
+        return res.status(401).json({
+          error: 'Invalid recovery link or token. Please request a fresh recovery link.'
+        });
+      }
+    } else {
+      return res.status(401).json({
+        error: 'No active recovery request found or the link has already been used. Please request a fresh recovery link.'
+      });
+    }
+
+    // Update password in Supabase Auth & clean up recovery metadata
     const updateRes = await supabase.auth.admin.updateUserById(targetUser.id, {
       password: newPassword,
+      user_metadata: {
+        ...meta,
+        recovery_token: null,
+        recovery_code: null,
+        recovery_expires_at: null
+      }
     });
     if (updateRes.error) throw updateRes.error;
+
+    // Update public.users table
     await supabase.from('users').update({ password: newPassword }).eq('user_id', targetUser.id);
     
-    // Invalidate recovery token after successful reset
+    // Invalidate recovery token from cache immediately after use
     passwordRecoveryCache.del(cleanEmail);
 
     await logAudit('SECURITY_KEY_RESET', `Security key updated for ${cleanEmail}`, { email: cleanEmail }, null, req);
@@ -667,21 +707,41 @@ app.post('/api/forgot-key', async (req, res) => {
       clientOrigin = (process.env.APP_URL || 'https://esportsystem.site').replace(/\/$/, '');
     }
 
-    // Generate a secure crypto token and a 6-digit recovery code (30 mins validity)
+    // Generate secure crypto token and 6-digit recovery code valid for exactly 8 hours (28,800,000 ms)
+    const EIGHT_HOURS_MS = 8 * 60 * 60 * 1000;
+    const now = Date.now();
+    const expiresAt = now + EIGHT_HOURS_MS;
     const recoveryToken = crypto.randomBytes(32).toString('hex');
     const recoveryCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Store in memory cache
     passwordRecoveryCache.set(cleanEmail, {
       token: recoveryToken,
       code: recoveryCode,
       userId: targetUser.id,
-      createdAt: Date.now()
+      createdAt: now,
+      expiresAt: expiresAt
     });
 
-    // Direct recovery link that points straight to the frontend without going through Supabase verify proxy
+    // Also persist in Supabase user_metadata so server restarts won't invalidate the 8-hour link
+    try {
+      await supabase.auth.admin.updateUserById(targetUser.id, {
+        user_metadata: {
+          ...(targetUser.user_metadata || {}),
+          recovery_token: recoveryToken,
+          recovery_code: recoveryCode,
+          recovery_expires_at: expiresAt
+        }
+      });
+    } catch (metaErr) {
+      console.warn('[Forgot Key] Failed to persist recovery token in user_metadata:', metaErr.message);
+    }
+
+    // Direct recovery link
     const actionLink = `${clientOrigin}/#type=recovery&email=${encodeURIComponent(cleanEmail)}&token=${recoveryToken}`;
 
-    const emailSubject = 'Esports System — Account Recovery Link';
-    const emailText = `Hello,\n\nA security key recovery request was initiated for your administrator account (${cleanEmail}).\n\nPlease click the direct recovery link below to set your new security key:\n${actionLink}\n\nIf you did not request this, please disregard this email.\n\n— Esports System Security`;
+    const emailSubject = 'Esports System — Account Recovery Link (Valid for 8 Hours)';
+    const emailText = `Hello,\n\nA security key recovery request was initiated for your administrator account (${cleanEmail}).\n\nPlease click the direct recovery link below to set your new security key:\n${actionLink}\n\nIMPORTANT: This link is valid for 8 hours only. After 8 hours, it will automatically expire and be invalidated for your security.\n\nIf you did not request this, please disregard this email.\n\n— Esports System Security`;
     const emailHtml = `
       <div style="background-color: #0b111a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 580px; margin: 0 auto; padding: 32px 24px; border-radius: 12px; border: 1px solid #1e293b;">
         <div style="border-bottom: 1px solid #1e293b; padding-bottom: 20px; margin-bottom: 24px; text-align: center;">
@@ -696,12 +756,16 @@ app.post('/api/forgot-key', async (req, res) => {
             RESET YOUR SECURITY KEY &rarr;
           </a>
         </div>
+        <div style="background-color: #020617; border: 1px solid #1e293b; border-radius: 8px; padding: 12px 16px; margin: 20px 0; text-align: center;">
+          <span style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 4px;">LINK VALIDITY WINDOW</span>
+          <span style="color: #00ffcc; font-weight: 700; font-size: 14px; letter-spacing: 0.05em;">8 HOURS REMAINING</span>
+        </div>
         <p style="color: #64748b; font-size: 12px; line-height: 1.5; margin: 24px 0 0; border-top: 1px solid #1e293b; padding-top: 16px;">
           If the button does not open automatically, copy and paste this direct recovery link into your browser:<br/>
           <a href="${actionLink}" style="color: #38bdf8; word-break: break-all;">${actionLink}</a>
         </p>
         <p style="color: #475569; font-size: 11px; margin: 16px 0 0;">
-          This secure direct link is single-use and will expire in 30 minutes. If you did not request this recovery link, no action is required.
+          This secure link is single-use and will automatically expire in exactly 8 hours. After that, any attempt to use this link will be rejected.
         </p>
       </div>
     `;
@@ -714,11 +778,11 @@ app.post('/api/forgot-key', async (req, res) => {
       req
     });
 
-    await logAudit('ACCOUNT_RECOVERY_REQUESTED', `Dispatched direct recovery link to ${cleanEmail}`, { email: cleanEmail, delivered: delivery.delivered }, null, req);
+    await logAudit('ACCOUNT_RECOVERY_REQUESTED', `Dispatched 8-hour direct recovery link to ${cleanEmail}`, { email: cleanEmail, delivered: delivery.delivered }, null, req);
 
     res.json({
       message: delivery.delivered
-        ? `Recovery link sent to ${cleanEmail}! Please check your Gmail inbox.`
+        ? `Recovery link sent to ${cleanEmail}! Link is valid for 8 hours.`
         : `Recovery link dispatched for ${cleanEmail}. Notice: ${delivery.error || 'Check email'}`
     });
   } catch (err) {

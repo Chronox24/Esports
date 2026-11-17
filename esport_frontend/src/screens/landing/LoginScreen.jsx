@@ -38,7 +38,7 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
       const errorCode = hashParams.get('error_code') || searchParams.get('error_code');
       if (errorDesc || errorCode) {
         setAuthMode('forgot');
-        setErrorMsg('The previous recovery link was invalid or has expired. Please enter your email below to receive a fresh direct recovery link.');
+        setErrorMsg('The recovery link has expired (8-hour limit exceeded) or is invalid. Please enter your email below to receive a fresh recovery link.');
         return;
       }
 
@@ -313,7 +313,7 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
             <div className="login-screen-header">
               <div className="brand-logo-login">ESPORT</div>
               <h2>RECOVER KEY</h2>
-              <p>Enter your registered email address to receive a secure recovery link in your Gmail.</p>
+              <p>Enter your registered email address to receive a secure recovery link in your Gmail (valid for 8 hours).</p>
             </div>
             <form className="login-form" onSubmit={handleSendRecoveryLink}>
               {errorMsg && (
@@ -470,7 +470,7 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
             </div>
             <h2 className="login-success-title">RECOVERY LINK SENT</h2>
             <p className="login-success-desc">
-              {successMsg || 'A recovery link has been dispatched to your Gmail. Please check your inbox or spam folder to reset your security key.'}
+              {successMsg || 'A recovery link (valid for 8 hours) has been dispatched to your Gmail. Please check your inbox or spam folder to reset your security key.'}
             </p>
             
             <button
