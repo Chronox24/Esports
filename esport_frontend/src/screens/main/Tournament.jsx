@@ -786,7 +786,11 @@ const MatchCard = ({ match, showCountdown, game, index = 0 }) => {
 const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTournament, onOpenCreateModal, onNavigateToHub, onEditTournamentSchedule }) => {
   const currentTournamentName = typeof globalTournament === 'string'
     ? globalTournament
-    : globalTournament?.name;
+    : (globalTournament && typeof globalTournament.name === 'string'
+        ? globalTournament.name
+        : (globalTournament?.name && typeof globalTournament.name.name === 'string'
+            ? globalTournament.name.name
+            : ''));
 
   const [liveTournaments, setLiveTournaments] = React.useState([]);
   const [finishedTournaments, setFinishedTournaments] = React.useState([]);
@@ -850,13 +854,13 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
       }
 
       // CRITICAL: Ensure the current tournament that was clicked is present in LIVE & UPCOMING if it matches current game
-      if (currentTournamentName && currentTournamentName.trim()) {
+      if (currentTournamentName && typeof currentTournamentName === 'string' && currentTournamentName.trim()) {
         const trimmedCurrent = currentTournamentName.trim();
-        const inAll = allTourns.find(t => t.name.toLowerCase() === trimmedCurrent.toLowerCase());
+        const inAll = allTourns.find(t => typeof t?.name === 'string' && t.name.toLowerCase() === trimmedCurrent.toLowerCase());
         const tournGame = (inAll?.game || (typeof globalTournament === 'object' && globalTournament?.game) || game).toUpperCase();
 
         if (tournGame === (game || 'VALORANT').toUpperCase()) {
-          const existingLiveIdx = live.findIndex(t => t.name.toLowerCase() === trimmedCurrent.toLowerCase());
+          const existingLiveIdx = live.findIndex(t => typeof t?.name === 'string' && t.name.toLowerCase() === trimmedCurrent.toLowerCase());
 
           if (existingLiveIdx > -1) {
             // If already in live, move to index 0 so it's the very first card visible
@@ -864,7 +868,7 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
             live.unshift({ ...curr, is_current: true });
           } else {
             // If not in live (e.g. categorized as finished or from another list), add it to live at index 0
-            const inFinished = finished.find(t => t.name.toLowerCase() === trimmedCurrent.toLowerCase());
+            const inFinished = finished.find(t => typeof t?.name === 'string' && t.name.toLowerCase() === trimmedCurrent.toLowerCase());
             const currentObj = inFinished || inAll || (typeof globalTournament === 'object' && globalTournament ? globalTournament : {
               id: 'curr-' + trimmedCurrent,
               name: trimmedCurrent,
@@ -890,7 +894,7 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
 
   // Automatically expand the current clicked tournament and load its match data
   React.useEffect(() => {
-    if (currentTournamentName && currentTournamentName.trim()) {
+    if (currentTournamentName && typeof currentTournamentName === 'string' && currentTournamentName.trim()) {
       const trimmed = currentTournamentName.trim();
       setExpandedLiveTournament(trimmed);
       fetchTournamentData(trimmed);
@@ -1140,7 +1144,7 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
             {/* Scrollable Row of Live & Upcoming Tournament Cards */}
             <div className="flex gap-5 sm:gap-6 overflow-x-auto pb-4 px-1 custom-scrollbar snap-x snap-mandatory">
               {liveTournaments.map(t => {
-                const isCurrent = t.is_current || (currentTournamentName && t.name.toLowerCase() === currentTournamentName.toLowerCase());
+                const isCurrent = t.is_current || (Boolean(currentTournamentName) && typeof currentTournamentName === 'string' && typeof t?.name === 'string' && t.name.toLowerCase() === currentTournamentName.toLowerCase());
                 const isExpanded = expandedLiveTournament === t.name;
 
                 return (
@@ -1331,7 +1335,7 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
             {/* Scrollable Row of Finished Tournament Cards */}
             <div className="flex gap-5 sm:gap-6 overflow-x-auto pb-4 px-1 custom-scrollbar snap-x snap-mandatory">
               {finishedTournaments.map(t => {
-                const isCurrent = t.is_current || (currentTournamentName && t.name.toLowerCase() === currentTournamentName.toLowerCase());
+                const isCurrent = t.is_current || (Boolean(currentTournamentName) && typeof currentTournamentName === 'string' && typeof t?.name === 'string' && t.name.toLowerCase() === currentTournamentName.toLowerCase());
                 const isExpanded = expandedFinishedTournament === t.name;
 
                 return (
@@ -4136,7 +4140,13 @@ const TournamentHubTab = ({
 const Tournament = ({ globalGame, setGlobalGame, globalTournament, setGlobalTournament, initialTab, initialHubSubTab }) => {
   const [selectedGame, setSelectedGame] = useState((globalGame || "VALORANT").toUpperCase());
   const activeGame = (selectedGame || globalGame || "VALORANT").toUpperCase();
-  const currentTournamentName = typeof globalTournament === 'object' && globalTournament ? globalTournament.name : (globalTournament || '');
+  const currentTournamentName = typeof globalTournament === 'string'
+    ? globalTournament
+    : (globalTournament && typeof globalTournament.name === 'string'
+        ? globalTournament.name
+        : (globalTournament?.name && typeof globalTournament.name.name === 'string'
+            ? globalTournament.name.name
+            : ''));
   const [activeTab, setActiveTab] = useState(initialTab || "LIVE & UPCOMING");
   const [hubSubTab, setHubSubTab] = useState(initialHubSubTab || "predictions");
   const [selectedTournamentForEdit, setSelectedTournamentForEdit] = useState(null);
@@ -4156,7 +4166,7 @@ const Tournament = ({ globalGame, setGlobalGame, globalTournament, setGlobalTour
     }
     const matching = availableTournaments.filter(t => (t.game || 'VALORANT').toUpperCase() === upper);
     if (matching.length > 0) {
-      if (setGlobalTournament) setGlobalTournament(matching[0]);
+      if (setGlobalTournament) setGlobalTournament(matching[0].name);
     } else {
       if (setGlobalTournament) setGlobalTournament('');
     }

@@ -213,7 +213,10 @@ const MainUIScreen = ({ onLogout }) => {
     }
   ];
   const renderContent = () => {
-    const currentTournObj = tournaments.find(t => t.name === globalTournament) || (globalTournament ? { name: globalTournament, game: globalGame } : null);
+    const rawTournName = typeof globalTournament === 'string' 
+      ? globalTournament 
+      : (globalTournament && typeof globalTournament.name === 'string' ? globalTournament.name : '');
+    const currentTournObj = tournaments.find(t => t.name === rawTournName) || (rawTournName ? { name: rawTournName, game: globalGame } : null);
 
     switch (activeTab) {
       case 'Dashboard': return <ErrorBoundary><Dashboard globalGame={globalGame} globalTournament={globalTournament} /></ErrorBoundary>;
