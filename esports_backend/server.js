@@ -514,35 +514,36 @@ app.post('/api/admin/send-email-verification', authenticateToken, isAdmin, async
       role: role || 'Super Admin'
     });
 
-    // 4. Send email directly (supporting HTTPS Email APIs like Resend/Brevo for Render/Vercel, or Gmail SMTP)
+    // 4. Send email directly (supporting HTTPS Email APIs like Resend/Brevo for Render/Vercel, with fallback to Gmail SMTP)
     let isRealDelivery = false;
     let mailSendError = null;
+    let delivered = false;
 
-    try {
-      const emailSubject = `Esports System — Verification Code: ${verificationCode}`;
-      const emailText = `Your administrator verification code is: ${verificationCode}\n\nThis single-use code expires in 10 minutes.\n\nIf you did not request administrator access, please disregard this email.`;
-      const emailHtml = `
-          <div style="background-color: #0b111a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 32px 24px; border-radius: 12px; border: 1px solid #1e293b;">
-            <div style="text-align: center; margin-bottom: 24px;">
-              <h2 style="color: #06b6d4; margin: 0 0 6px 0; font-size: 24px; font-weight: 800; letter-spacing: 0.5px;">ESPORTS SYSTEM</h2>
-              <p style="color: #94a3b8; margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Administrator Verification</p>
-            </div>
-            <div style="background: #131d2e; border: 1px solid #1e293b; border-radius: 10px; padding: 24px; text-align: center;">
-              <p style="margin: 0 0 12px 0; color: #cbd5e1; font-size: 14px;">Here is your single-use verification code to authorize your administrator account:</p>
-              <div style="display: inline-block; background-color: #090e17; border: 2px solid #3b82f6; border-radius: 8px; padding: 14px 28px; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #60a5fa; font-family: monospace; margin: 12px 0;">
-                ${verificationCode}
-              </div>
-              <p style="margin: 12px 0 0 0; color: #94a3b8; font-size: 12px;">This code will expire in <strong>10 minutes</strong>.</p>
-            </div>
-            <div style="margin-top: 24px; border-top: 1px solid #1e293b; padding-top: 16px; color: #64748b; font-size: 11px; text-align: center; line-height: 1.5;">
-              Security Notice: Never share this verification code with anyone. If you did not request administrator access, please disregard this email.<br/>
-              &copy; ${new Date().getFullYear()} Esports System. All rights reserved.
-            </div>
+    const emailSubject = `Esports System — Verification Code: ${verificationCode}`;
+    const emailText = `Your administrator verification code is: ${verificationCode}\n\nThis single-use code expires in 10 minutes.\n\nIf you did not request administrator access, please disregard this email.`;
+    const emailHtml = `
+        <div style="background-color: #0b111a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 32px 24px; border-radius: 12px; border: 1px solid #1e293b;">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <h2 style="color: #06b6d4; margin: 0 0 6px 0; font-size: 24px; font-weight: 800; letter-spacing: 0.5px;">ESPORTS SYSTEM</h2>
+            <p style="color: #94a3b8; margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Administrator Verification</p>
           </div>
-      `;
+          <div style="background: #131d2e; border: 1px solid #1e293b; border-radius: 10px; padding: 24px; text-align: center;">
+            <p style="margin: 0 0 12px 0; color: #cbd5e1; font-size: 14px;">Here is your single-use verification code to authorize your administrator account:</p>
+            <div style="display: inline-block; background-color: #090e17; border: 2px solid #3b82f6; border-radius: 8px; padding: 14px 28px; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #60a5fa; font-family: monospace; margin: 12px 0;">
+              ${verificationCode}
+            </div>
+            <p style="margin: 12px 0 0 0; color: #94a3b8; font-size: 12px;">This code will expire in <strong>10 minutes</strong>.</p>
+          </div>
+          <div style="margin-top: 24px; border-top: 1px solid #1e293b; padding-top: 16px; color: #64748b; font-size: 11px; text-align: center; line-height: 1.5;">
+            Security Notice: Never share this verification code with anyone. If you did not request administrator access, please disregard this email.<br/>
+            &copy; ${new Date().getFullYear()} Esports System. All rights reserved.
+          </div>
+        </div>
+    `;
 
-      if (process.env.RESEND_API_KEY) {
-        // Option A: Resend HTTPS API (Port 443 - NEVER blocked by cloud hosts like Render)
+    // Strategy 1: Resend HTTPS API (Port 443 - NEVER blocked by cloud hosts like Render)
+    if (process.env.RESEND_API_KEY) {
+      try {
         const resendFrom = process.env.RESEND_FROM || 'Esports System <onboarding@resend.dev>';
         const resendRes = await fetch('https://api.resend.com/emails', {
           method: 'POST',
@@ -560,14 +561,24 @@ app.post('/api/admin/send-email-verification', authenticateToken, isAdmin, async
         });
 
         const resendData = await resendRes.json().catch(() => ({}));
-        if (!resendRes.ok) {
-          throw new Error(resendData.message || `Resend API failed with status ${resendRes.status}`);
+        if (resendRes.ok) {
+          isRealDelivery = true;
+          delivered = true;
+          console.log(`[Email] Verification email delivered via Resend HTTP API to ${cleanEmail}. ID: ${resendData.id}`);
+          await logAudit('ADMIN_VERIFICATION_SENT', `Verification code sent via Resend API to ${cleanEmail}`, { email: cleanEmail }, null, req);
+        } else {
+          console.warn(`[Email] Resend API returned ${resendRes.status}: ${resendData.message || JSON.stringify(resendData)}`);
+          mailSendError = resendData.message || `Resend error (${resendRes.status})`;
         }
-        isRealDelivery = true;
-        console.log(`[Email] Verification email delivered via Resend HTTP API to ${cleanEmail}. ID: ${resendData.id}`);
-        await logAudit('ADMIN_VERIFICATION_SENT', `Verification code sent via Resend API to ${cleanEmail}`, { email: cleanEmail }, null, req);
-      } else if (process.env.BREVO_API_KEY) {
-        // Option B: Brevo HTTPS API (Port 443 - NEVER blocked)
+      } catch (resendErr) {
+        console.warn('[Email] Resend API error:', resendErr.message);
+        mailSendError = resendErr.message;
+      }
+    }
+
+    // Strategy 2: Brevo HTTPS API (Port 443 - fallback if configured)
+    if (!delivered && process.env.BREVO_API_KEY) {
+      try {
         const senderEmail = (process.env.GMAIL_USER || process.env.EMAIL_USER || 'esportsystem24@gmail.com').trim();
         const brevoRes = await fetch('https://api.brevo.com/v3/smtp/email', {
           method: 'POST',
@@ -585,40 +596,57 @@ app.post('/api/admin/send-email-verification', authenticateToken, isAdmin, async
         });
 
         const brevoData = await brevoRes.json().catch(() => ({}));
-        if (!brevoRes.ok) {
-          throw new Error(brevoData.message || `Brevo API failed with status ${brevoRes.status}`);
+        if (brevoRes.ok) {
+          isRealDelivery = true;
+          delivered = true;
+          console.log(`[Email] Verification email delivered via Brevo HTTP API to ${cleanEmail}. ID: ${brevoData.messageId}`);
+          await logAudit('ADMIN_VERIFICATION_SENT', `Verification code sent via Brevo API to ${cleanEmail}`, { email: cleanEmail }, null, req);
+        } else {
+          console.warn(`[Email] Brevo API returned ${brevoRes.status}: ${brevoData.message || JSON.stringify(brevoData)}`);
+          mailSendError = brevoData.message || `Brevo error (${brevoRes.status})`;
         }
-        isRealDelivery = true;
-        console.log(`[Email] Verification email delivered via Brevo HTTP API to ${cleanEmail}. ID: ${brevoData.messageId}`);
-        await logAudit('ADMIN_VERIFICATION_SENT', `Verification code sent via Brevo API to ${cleanEmail}`, { email: cleanEmail }, null, req);
-      } else {
-        // Option C: Direct Gmail SMTP via Nodemailer (Default for local development & unblocked hosts)
-        const gmailUser = (process.env.GMAIL_USER || process.env.EMAIL_USER || process.env.SMTP_USER || '').trim();
-        const senderFrom = `"Esports System" <${gmailUser}>`;
-        const transporter = getEmailTransporter();
-
-        const sendMailPromise = transporter.sendMail({
-          from: senderFrom,
-          to: cleanEmail,
-          subject: emailSubject,
-          text: emailText,
-          html: emailHtml
-        });
-
-        // 7.5-second timeout to prevent hanging when hosting providers block outbound SMTP ports (Render Free Tier)
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('SMTP connection timed out (outbound port blocked by hosting provider)')), 7500)
-        );
-
-        const mailInfo = await Promise.race([sendMailPromise, timeoutPromise]);
-        isRealDelivery = true;
-        console.log(`[Email] Verification email delivered directly via Gmail to ${cleanEmail}. Message ID: ${mailInfo.messageId}`);
-        await logAudit('ADMIN_VERIFICATION_SENT', `Verification code sent to ${cleanEmail}`, { email: cleanEmail }, null, req);
+      } catch (brevoErr) {
+        console.warn('[Email] Brevo API error:', brevoErr.message);
+        mailSendError = brevoErr.message;
       }
-    } catch (mailErr) {
-      mailSendError = mailErr.message;
-      console.warn(`[Email] Direct email delivery failed or was blocked: ${mailErr.message}. Serving code to authorized Super Admin.`);
-      await logAudit('ADMIN_VERIFICATION_FALLBACK', `Email delivery blocked (${mailErr.message}); serving code directly for ${cleanEmail}`, { email: cleanEmail }, null, req);
+    }
+
+    // Strategy 3: Direct Gmail SMTP via Nodemailer (Default for local development & unblocked hosts)
+    if (!delivered) {
+      try {
+        const gmailUser = (process.env.GMAIL_USER || process.env.EMAIL_USER || process.env.SMTP_USER || '').trim();
+        const rawPass = process.env.GMAIL_APP_PASSWORD || process.env.GMAIL_PASS || process.env.SMTP_PASS || process.env.EMAIL_PASS || '';
+        if (gmailUser && rawPass) {
+          const senderFrom = `"Esports System" <${gmailUser}>`;
+          const transporter = getEmailTransporter();
+
+          const sendMailPromise = transporter.sendMail({
+            from: senderFrom,
+            to: cleanEmail,
+            subject: emailSubject,
+            text: emailText,
+            html: emailHtml
+          });
+
+          // 7.5-second timeout to prevent hanging when hosting providers block outbound SMTP ports (Render Free Tier)
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('SMTP connection timed out (outbound port blocked by hosting provider)')), 7500)
+          );
+
+          const mailInfo = await Promise.race([sendMailPromise, timeoutPromise]);
+          isRealDelivery = true;
+          delivered = true;
+          console.log(`[Email] Verification email delivered directly via Gmail to ${cleanEmail}. Message ID: ${mailInfo.messageId}`);
+          await logAudit('ADMIN_VERIFICATION_SENT', `Verification code sent to ${cleanEmail}`, { email: cleanEmail }, null, req);
+        }
+      } catch (smtpErr) {
+        mailSendError = mailSendError ? `${mailSendError} | SMTP: ${smtpErr.message}` : smtpErr.message;
+        console.warn(`[Email] Direct SMTP delivery failed: ${smtpErr.message}`);
+      }
+    }
+
+    if (!delivered) {
+      await logAudit('ADMIN_VERIFICATION_FALLBACK', `Email delivery blocked (${mailSendError}); serving code directly for ${cleanEmail}`, { email: cleanEmail }, null, req);
     }
 
     res.json({
