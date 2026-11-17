@@ -478,7 +478,7 @@ function getEmailTransporter() {
   return mailTransporter;
 }
 
-async function sendEmailDelivery({ to, subject, text, html, req }) {
+async function sendEmailDelivery({ to, subject, text, html, replyTo, req }) {
   let delivered = false;
   let errorMsg = null;
   let messageId = null;
@@ -487,19 +487,23 @@ async function sendEmailDelivery({ to, subject, text, html, req }) {
   if (process.env.RESEND_API_KEY) {
     try {
       const resendFrom = process.env.RESEND_FROM || 'Esports System <onboarding@resend.dev>';
+      const resendPayload = {
+        from: resendFrom,
+        to: [to],
+        subject,
+        text,
+        html
+      };
+      if (replyTo) {
+        resendPayload.reply_to = replyTo;
+      }
       const resendRes = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${process.env.RESEND_API_KEY.trim()}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          from: resendFrom,
-          to: [to],
-          subject,
-          text,
-          html
-        })
+        body: JSON.stringify(resendPayload)
       });
 
       const resendData = await resendRes.json().catch(() => ({}));
@@ -522,19 +526,23 @@ async function sendEmailDelivery({ to, subject, text, html, req }) {
   if (!delivered && process.env.BREVO_API_KEY) {
     try {
       const senderEmail = (process.env.GMAIL_USER || process.env.EMAIL_USER || 'esportsystem24@gmail.com').trim();
+      const brevoPayload = {
+        sender: { name: 'Esports System', email: senderEmail },
+        to: [{ email: to }],
+        subject,
+        textContent: text,
+        htmlContent: html
+      };
+      if (replyTo) {
+        brevoPayload.replyTo = { email: replyTo };
+      }
       const brevoRes = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
         headers: {
           'api-key': process.env.BREVO_API_KEY.trim(),
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          sender: { name: 'Esports System', email: senderEmail },
-          to: [{ email: to }],
-          subject,
-          textContent: text,
-          htmlContent: html
-        })
+        body: JSON.stringify(brevoPayload)
       });
 
       const brevoData = await brevoRes.json().catch(() => ({}));
@@ -559,13 +567,17 @@ async function sendEmailDelivery({ to, subject, text, html, req }) {
       if (gmailUser && rawPass) {
         const senderFrom = `"Esports System" <${gmailUser}>`;
         const transporter = getEmailTransporter();
-        const sendMailPromise = transporter.sendMail({
+        const mailOptions = {
           from: senderFrom,
           to,
           subject,
           text,
           html
-        });
+        };
+        if (replyTo) {
+          mailOptions.replyTo = replyTo;
+        }
+        const sendMailPromise = transporter.sendMail(mailOptions);
         const timeoutPromise = new Promise((_, reject) =>
           setTimeout(() => reject(new Error('SMTP connection timed out (outbound port blocked by hosting provider)')), 7500)
         );
@@ -671,6 +683,93 @@ app.post('/api/reset-key', async (req, res) => {
   } catch (err) {
     console.error('Reset key error:', err);
     res.status(500).json({ error: err.message || 'Failed to reset security key.' });
+  }
+});
+
+
+
+app.post('/api/contact', async (req, res) => {
+  const { name, email, contact, message } = req.body;
+  if (!name || !name.trim()) {
+    return res.status(400).json({ error: 'Please enter your name.' });
+  }
+  if (!email || !email.trim()) {
+    return res.status(400).json({ error: 'Please enter your email address.' });
+  }
+  if (!message || !message.trim()) {
+    return res.status(400).json({ error: 'Please enter your message.' });
+  }
+
+  const cleanName = name.trim();
+  const cleanEmail = email.trim();
+  const cleanContact = (contact || '').trim();
+  const cleanMessage = message.trim();
+
+  // Target inbox is esportsystem24@gmail.com
+  const targetEmail = (process.env.ADMIN_CONTACT_EMAIL || process.env.GMAIL_USER || 'esportsystem24@gmail.com').trim();
+
+  const emailSubject = `Esports System — New Contact Message from ${cleanName}`;
+  const emailText = `New contact inquiry received:\n\nName: ${cleanName}\nEmail: ${cleanEmail}\nContact Number: ${cleanContact || 'Not provided'}\n\nMessage:\n${cleanMessage}\n\n— Esports System Portal`;
+  const emailHtml = `
+    <div style="background-color: #0b111a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 580px; margin: 0 auto; padding: 32px 24px; border-radius: 12px; border: 1px solid #1e293b;">
+      <div style="border-bottom: 1px solid #1e293b; padding-bottom: 20px; margin-bottom: 24px;">
+        <span style="background-color: rgba(0, 229, 255, 0.1); color: #00e5ff; font-size: 11px; font-weight: 800; letter-spacing: 0.15em; padding: 4px 10px; border-radius: 4px; text-transform: uppercase; border: 1px solid rgba(0, 229, 255, 0.3);">NEW CONTACT MESSAGE</span>
+        <h1 style="color: #ffffff; font-size: 20px; font-weight: 800; margin: 12px 0 4px;">Inquiry from ${cleanName}</h1>
+        <p style="color: #64748b; font-size: 12px; margin: 0;">Received through Esports System Landing Page</p>
+      </div>
+
+      <div style="background-color: #020617; border: 1px solid #1e293b; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+        <div style="margin-bottom: 10px;">
+          <strong style="color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; display: block;">Sender:</strong>
+          <span style="color: #f8fafc; font-size: 14px; font-weight: 600;">${cleanName}</span>
+        </div>
+        <div style="margin-bottom: 10px;">
+          <strong style="color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; display: block;">Email:</strong>
+          <a href="mailto:${cleanEmail}" style="color: #00e5ff; text-decoration: none; font-size: 14px;">${cleanEmail}</a>
+        </div>
+        ${cleanContact ? `
+        <div>
+          <strong style="color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; display: block;">Contact Number:</strong>
+          <span style="color: #cbd5e1; font-size: 14px;">${cleanContact}</span>
+        </div>` : ''}
+      </div>
+
+      <div style="background-color: #0f172a; border-left: 3px solid #00e5ff; border-radius: 4px; padding: 16px; margin-bottom: 24px;">
+        <strong style="color: #00e5ff; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 8px;">Message Content:</strong>
+        <p style="color: #e2e8f0; font-size: 14px; line-height: 1.6; margin: 0; white-space: pre-wrap;">${cleanMessage}</p>
+      </div>
+
+      <p style="color: #64748b; font-size: 11px; margin: 0; border-top: 1px solid #1e293b; padding-top: 16px;">
+        You can reply directly to this email to get in touch with <a href="mailto:${cleanEmail}" style="color: #00e5ff;">${cleanName}</a>.
+      </p>
+    </div>
+  `;
+
+  try {
+    const delivery = await sendEmailDelivery({
+      to: targetEmail,
+      subject: emailSubject,
+      text: emailText,
+      html: emailHtml,
+      replyTo: cleanEmail,
+      req
+    });
+
+    await logAudit('CONTACT_MESSAGE_RECEIVED', `Inquiry received from ${cleanName} (${cleanEmail})`, {
+      name: cleanName,
+      email: cleanEmail,
+      contact: cleanContact,
+      message: cleanMessage,
+      delivered: delivery.delivered
+    }, null, req);
+
+    res.json({
+      success: true,
+      message: `Message sent successfully! Thank you, ${cleanName}. Our team will review your message.`
+    });
+  } catch (err) {
+    console.error('Contact message error:', err);
+    res.status(500).json({ error: 'Failed to dispatch message. Please try again or email us directly at esportsystem24@gmail.com.' });
   }
 });
 

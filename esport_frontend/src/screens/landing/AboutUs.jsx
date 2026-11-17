@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, Cpu, Crosshair, Trophy } from 'lucide-react';
 import LoginScreen from './LoginScreen';
+import { apiFetch } from '../../utils/api';
 import './AboutUs.css';
 
 const navItems = [
@@ -21,6 +22,8 @@ const AboutUs = ({ onLoginSuccess, isLoggedIn }) => {
   const userLoggedIn = isLoggedIn || (typeof window !== 'undefined' && localStorage.getItem('isLoggedIn') === 'true');
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ name: '', email: '', contact: '', message: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState(null);
   const [activePage, setActivePage] = useState('AboutUs');
   const [showLogin, setShowLogin] = useState(false);
 
@@ -28,14 +31,40 @@ const AboutUs = ({ onLoginSuccess, isLoggedIn }) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
+    setSubmitStatus(null);
     if (!formData.name || !formData.email || !formData.message) {
-      alert("Please fill out the required fields (Name, Email, Message).");
+      setSubmitStatus({
+        type: 'error',
+        text: 'Please fill out all required fields (Name, Email, Message).'
+      });
       return;
     }
-    alert(`Request Sent Successfully!\n\nThank you, ${formData.name}. Our team will review your message.`);
-    setFormData({ name: '', email: '', contact: '', message: '' });
+    setIsSubmitting(true);
+    try {
+      const res = await apiFetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.error || 'Failed to dispatch message.');
+      }
+      setSubmitStatus({
+        type: 'success',
+        text: data?.message || `Thank you, ${formData.name}! Your message has been sent to esportsystem24@gmail.com.`
+      });
+      setFormData({ name: '', email: '', contact: '', message: '' });
+    } catch (err) {
+      setSubmitStatus({
+        type: 'error',
+        text: err.message || 'Unable to deliver message. Please contact us directly at esportsystem24@gmail.com.'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleNavigation = (item) => {
@@ -86,25 +115,91 @@ const AboutUs = ({ onLoginSuccess, isLoggedIn }) => {
                 <div className="contact-icon-box"><EmailIcon /></div>
                 <div className="contact-text-box">
                   <span className="contact-label">Email Us</span>
-                  <a href="mailto:garcia.s.bsinfotech@gmail.com" className="contact-link">garcia.s.bsinfotech@gmail.com</a>
+                  <a href="mailto:esportsystem24@gmail.com" className="contact-link">esportsystem24@gmail.com</a>
                 </div>
               </div>
             </div>
           </div>
           <div className="contact-form-glass">
             <h3 className="form-title">Send a Message</h3>
+            {submitStatus && (
+              <div
+                style={{
+                  padding: '0.9rem 1.25rem',
+                  marginBottom: '1.5rem',
+                  borderRadius: '4px',
+                  border: submitStatus.type === 'success' ? '1px solid rgba(0, 255, 204, 0.5)' : '1px solid rgba(255, 70, 85, 0.5)',
+                  backgroundColor: submitStatus.type === 'success' ? 'rgba(0, 255, 204, 0.08)' : 'rgba(255, 70, 85, 0.08)',
+                  color: submitStatus.type === 'success' ? '#00ffcc' : '#ff4655',
+                  fontSize: '0.9rem',
+                  lineHeight: '1.5',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px'
+                }}
+              >
+                {submitStatus.type === 'success' ? (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                ) : (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                )}
+                <span>{submitStatus.text}</span>
+              </div>
+            )}
             <form onSubmit={handleFormSubmit}>
               <div className="form-row-split-modern">
-                <input type="text" name="name" className="modern-input" placeholder="Your Name" value={formData.name} onChange={handleInputChange} required />
-                <input type="email" name="email" className="modern-input" placeholder="Your Email" value={formData.email} onChange={handleInputChange} required />
+                <input
+                  type="text"
+                  name="name"
+                  className="modern-input"
+                  placeholder="Your Name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  required
+                  disabled={isSubmitting}
+                />
+                <input
+                  type="email"
+                  name="email"
+                  className="modern-input"
+                  placeholder="Your Email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  required
+                  disabled={isSubmitting}
+                />
               </div>
               <div className="form-group">
-                <input type="text" name="contact" className="modern-input" placeholder="Contact Number (Optional)" value={formData.contact} onChange={handleInputChange} />
+                <input
+                  type="text"
+                  name="contact"
+                  className="modern-input"
+                  placeholder="Contact Number (Optional)"
+                  value={formData.contact}
+                  onChange={handleInputChange}
+                  disabled={isSubmitting}
+                />
               </div>
               <div className="form-group">
-                <textarea name="message" className="modern-textarea" placeholder="Your Message" rows="4" value={formData.message} onChange={handleInputChange} required></textarea>
+                <textarea
+                  name="message"
+                  className="modern-textarea"
+                  placeholder="Your Message"
+                  rows="4"
+                  value={formData.message}
+                  onChange={handleInputChange}
+                  required
+                  disabled={isSubmitting}
+                ></textarea>
               </div>
-              <button type="submit" className="neon-submit-btn">SEND MESSAGE</button>
+              <button
+                type="submit"
+                className="neon-submit-btn"
+                disabled={isSubmitting}
+                style={{ opacity: isSubmitting ? 0.7 : 1, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}
+              >
+                {isSubmitting ? 'SENDING MESSAGE...' : 'SEND MESSAGE'}
+              </button>
             </form>
           </div>
         </div>
