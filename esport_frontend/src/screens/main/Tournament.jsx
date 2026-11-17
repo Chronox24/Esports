@@ -4566,7 +4566,7 @@ const Tournament = ({ globalGame, setGlobalGame, globalTournament, setGlobalTour
           );
         }
         return (
-          <div className="w-full hud-card overflow-hidden shadow-2xl mt-2 hud-enter">
+          <div className="w-full hud-card overflow-hidden shadow-2xl mt-2 hud-enter min-h-[580px] flex flex-col">
             <Bracket globalGame={activeGame} globalTournament={globalTournament} isReadOnly={false} />
           </div>
         );

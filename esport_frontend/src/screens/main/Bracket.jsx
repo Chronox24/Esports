@@ -474,6 +474,15 @@ const MatchCard = ({ match, onChange, matchNumber, isReadOnly = false }) => {
 
 /* ── Main Bracket Component ─────────────────────────────── */
 const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
+  const getTournamentName = (t) => {
+    if (!t) return "Default";
+    if (typeof t === "string") return t;
+    if (typeof t.name === "string") return t.name;
+    if (typeof t.name === "object" && t.name?.name) return t.name.name;
+    return "Default";
+  };
+  const resolvedTournamentName = getTournamentName(globalTournament);
+
   const [activeFormat, setActiveFormat] = useState(() => {
     const saved = localStorage.getItem('activeFormat') || 'Single Elimination';
     if (saved.toLowerCase() === 'round robin') return 'Round Robin';
@@ -489,6 +498,41 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
   const [isRosterOpen, setIsRosterOpen] = useState(true);
 
   const [lockedFormatName, setLockedFormatName] = useState("");
+
+  const handleSelectInitialFormat = async (formatId) => {
+    setActiveFormat(formatId);
+    setLockedFormatName(formatId);
+    setIsFormatLocked(true);
+
+    const count = teamPool && teamPool.length >= 2 ? teamPool.length : 2;
+    let initialBracket = null;
+    if (formatId === "Single Elimination") {
+      initialBracket = generateSingleElimBracket(count, teamPool || []);
+      setSingleElimData(initialBracket);
+    } else if (formatId === "Double Elimination") {
+      initialBracket = generateDoubleElimBracket(count, teamPool || []);
+      setDoubleElimData(initialBracket);
+    } else if (formatId === "Round Robin") {
+      initialBracket = generateRoundRobin(teamPool || [], roundRobinEncounters);
+      setRoundRobinData(initialBracket);
+    }
+
+    try {
+      const activeGame = (globalGame || 'VALORANT').toUpperCase();
+      await apiFetch(`/api/bracket-state`, {
+        method: 'POST',
+        body: JSON.stringify({
+          tournament_name: resolvedTournamentName,
+          game_title: activeGame,
+          format: formatId,
+          team_pool: teamPool || [],
+          bracket_data: initialBracket
+        })
+      });
+    } catch (e) {
+      console.warn("Could not auto-save initial bracket format:", e);
+    }
+  };
 
   useEffect(() => {
     if (isFormatLocked && activeFormat !== "Results") {
@@ -557,7 +601,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
     const fetchState = async () => {
       try {
         const activeGame = (globalGame || 'VALORANT').toUpperCase();
-        const tName = globalTournament?.name || 'Default';
+        const tName = resolvedTournamentName;
         const tournamentKey = `${tName}-${activeGame}`;
 
         if (lastFetchedTournament.current === tournamentKey) {
@@ -566,7 +610,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
         lastFetchedTournament.current = tournamentKey;
 
         // 1. Fetch Teams
-        const resTeams = await apiFetch(`/api/teams?tournament=${tName}`);
+        const resTeams = await apiFetch(`/api/teams?tournament=${encodeURIComponent(tName)}`);
         let dbTeams = [];
         if (resTeams.ok) {
           const teamsData = await resTeams.json();
@@ -577,7 +621,6 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
         const resAll = await apiFetch(`/api/bracket-states-all`);
         if (resAll.ok) {
           const allStates = await resAll.json();
-          const tName = globalTournament?.name || 'Default';
           const tournamentStates = allStates
             .filter(s => s.tournament_name === tName && s.game_title === activeGame)
             .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
@@ -620,7 +663,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
       }
     };
     fetchState();
-  }, [globalTournament?.name, globalGame]);
+  }, [resolvedTournamentName, globalGame]);
 
 
   const [processedLiveMatches, setProcessedLiveMatches] = useStickyState([], "bracket_processed_live_matches");
@@ -632,8 +675,8 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
     const pollLiveMatches = async () => {
       try {
         const activeGame = (globalGame || 'VALORANT').toUpperCase();
-        const tournament = globalTournament?.name || "Default";
-        const res = await apiFetch(`/api/matches?status=finished&tournament=${tournament}`);
+        const tournament = resolvedTournamentName;
+        const res = await apiFetch(`/api/matches?status=finished&tournament=${encodeURIComponent(tournament)}`);
         if (!res.ok) return;
         const finishedMatches = await res.json();
 
@@ -781,7 +824,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
       const response = await apiFetch(`/api/bracket-state`, {
         method: 'POST',
         body: JSON.stringify({
-          tournament_name: globalTournament?.name || 'Default',
+          tournament_name: resolvedTournamentName,
           game_title: activeGame,
           format: activeFormat,
           team_pool: teamPool,
@@ -818,7 +861,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
         for (const tName of teamsToAdd) {
           const formData = new FormData();
           formData.append('team_name', tName);
-          formData.append('tournament_name', globalTournament?.name || 'Default');
+          formData.append('tournament_name', resolvedTournamentName);
           await apiFetch('/api/teams', {
             method: 'POST',
             body: formData
@@ -1058,7 +1101,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
       const res = await apiFetch(`/api/bracket-results`, {
         method: 'POST',
         body: JSON.stringify({
-          tournament_name: globalTournament?.name || 'Default',
+          tournament_name: resolvedTournamentName,
           game_title: (globalGame || 'VALORANT').toUpperCase(),
           format: "Results",
           results: resultsData
@@ -1477,14 +1520,27 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
     ? `${String(globalTournament.id).slice(0, 5)}...${String(globalTournament.id).slice(-5)}`
     : "56467...2300C";
 
-  const tournamentName = globalTournament && typeof globalTournament === 'string'
-    ? globalTournament
-    : globalTournament?.name || "Default";
+  const tournamentName = resolvedTournamentName;
 
+  if (!isFormatLocked && hasLoaded && isReadOnly) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center bg-[#06090e] hud-canvas-bg p-8 min-h-[400px] w-full text-center">
+        <div className="w-14 h-14 hud-chamfer-sm bg-cyan-500/10 border border-cyan-500/35 text-cyan-400 flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(0,229,255,0.2)]">
+          <Trophy size={28} />
+        </div>
+        <h3 className="font-tactical text-xl font-black uppercase text-white tracking-wider mb-2">
+          Bracket Pending
+        </h3>
+        <p className="text-xs text-slate-400 max-w-md font-medium">
+          The bracket for this tournament has not been initialized yet. Check back soon for matchups and schedule!
+        </p>
+      </div>
+    );
+  }
 
   if (!isFormatLocked && hasLoaded && !isReadOnly) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-[#06090e] hud-canvas-bg p-10 md:p-14 h-full z-50 relative overflow-hidden">
+      <div className="flex-1 flex flex-col items-center justify-center bg-[#06090e] hud-canvas-bg p-8 sm:p-12 md:p-16 min-h-[550px] w-full z-50 relative overflow-hidden">
         <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-cyan-500/80 via-cyan-400/20 to-transparent pointer-events-none" />
         <div className="max-w-4xl w-full flex flex-col items-center gap-10 relative z-10">
           <div className="text-center flex flex-col items-center">
@@ -1497,31 +1553,38 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
             <h2 className="font-tactical text-3xl md:text-4xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400 mb-3 drop-shadow-[0_0_16px_rgba(0,229,255,0.2)]">
               Setup Tournament
             </h2>
-            <p className="text-slate-400 text-sm font-medium">
-              This tournament does not have a bracket yet. Choose a format to get started.
+            <p className="text-slate-400 text-sm font-medium max-w-xl">
+              This tournament does not have a bracket yet. Choose a format to initialize and begin managing matchups.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
             {[
-              { id: 'Single Elimination', icon: <Trophy size={30} />, desc: 'Classic knockout format.' },
-              { id: 'Double Elimination', icon: <Shield size={30} />, desc: 'Includes a loser bracket for a second chance.' },
-              { id: 'Round Robin', icon: <Users size={30} />, desc: 'Every team plays against every other team.' }
+              { id: 'Single Elimination', icon: <Trophy size={32} />, desc: 'Classic knockout format. Winners advance, losers are eliminated.' },
+              { id: 'Double Elimination', icon: <Shield size={32} />, desc: 'Includes a loser bracket for a second chance to reach the grand finals.' },
+              { id: 'Round Robin', icon: <Users size={32} />, desc: 'Every team plays against every other team in structured round matchups.' }
             ].map(f => (
               <button
                 key={f.id}
-                onClick={() => { setActiveFormat(f.id); setIsFormatLocked(true); }}
-                className="group hud-card hud-card-interactive hud-sweep-overlay flex flex-col items-center justify-center p-8 transition-all duration-300 cursor-pointer"
+                type="button"
+                onClick={() => handleSelectInitialFormat(f.id)}
+                className="group hud-card hud-card-interactive relative flex flex-col items-center justify-between p-8 transition-all duration-300 cursor-pointer overflow-hidden border border-cyan-500/25 hover:border-cyan-400/80 hover:shadow-[0_0_30px_rgba(0,229,255,0.22)] bg-[#0c1420]/80 min-h-[270px] text-center"
               >
-                <div className="w-16 h-16 hud-chamfer-sm bg-cyan-500/10 border border-cyan-500/35 text-cyan-400 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(0,229,255,0.25)] transition-all">
+                <div className="hud-sweep-overlay" />
+                <div className="w-16 h-16 hud-chamfer-sm bg-cyan-500/10 border border-cyan-500/35 text-cyan-400 flex items-center justify-center mb-5 group-hover:scale-110 group-hover:bg-cyan-500/20 group-hover:shadow-[0_0_20px_rgba(0,229,255,0.35)] transition-all">
                   {f.icon}
                 </div>
-                <h3 className="font-tactical text-lg font-black uppercase text-white tracking-wider mb-2 group-hover:text-cyan-400 transition-colors text-center">
-                  {f.id}
-                </h3>
-                <p className="text-xs text-slate-400 text-center font-medium leading-relaxed">
-                  {f.desc}
-                </p>
+                <div className="flex-1 flex flex-col items-center justify-center">
+                  <h3 className="font-tactical text-lg font-black uppercase text-white tracking-wider mb-2 group-hover:text-cyan-400 transition-colors">
+                    {f.id}
+                  </h3>
+                  <p className="text-xs text-slate-400 font-medium leading-relaxed max-w-[220px]">
+                    {f.desc}
+                  </p>
+                </div>
+                <div className="mt-6 w-full py-2.5 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-tactical text-[11px] font-black uppercase tracking-[0.14em] hud-chamfer-sm group-hover:bg-cyan-400 group-hover:text-slate-950 transition-all">
+                  Initialize {f.id.split(' ')[0]}
+                </div>
               </button>
             ))}
           </div>
@@ -1596,7 +1659,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
             </button>
             <button
               onClick={() => {
-                const activeTeams = allTeamsData.filter(t => t.tournament_name === (globalTournament?.name || "Default")).map(t => t.team_name);
+                const activeTeams = allTeamsData.filter(t => t.tournament_name === resolvedTournamentName).map(t => t.team_name);
                 if (activeTeams.length === 0) {
                   alert("No teams found for the active tournament in the database.");
                   return;
@@ -1776,9 +1839,17 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
 
             {isFormatLocked && !isReadOnly && (
               <button
-                onClick={() => {
+                onClick={async () => {
                   if (window.confirm("Changing the format will reset your current bracket. Are you sure you want to proceed?")) {
                     setIsFormatLocked(false);
+                    try {
+                      const activeGame = (globalGame || 'VALORANT').toUpperCase();
+                      await apiFetch(`/api/bracket-state?tournament_name=${encodeURIComponent(resolvedTournamentName)}&game_title=${encodeURIComponent(activeGame)}`, {
+                        method: 'DELETE'
+                      });
+                    } catch (e) {
+                      console.warn("Could not clear previous bracket state:", e);
+                    }
                   }
                 }}
                 className="font-tactical text-xs font-bold uppercase tracking-wider text-red-400 hover:text-red-300 hover:bg-red-900/20 transition-all duration-300 px-5 py-3.5 hud-chamfer-sm border border-red-500/35 shrink-0 ml-2 cursor-pointer"
