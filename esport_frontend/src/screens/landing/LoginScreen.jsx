@@ -16,7 +16,6 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
   const [isSendingLink, setIsSendingLink] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
-  const [recoveryUrl, setRecoveryUrl] = useState('');
   const [recoveryToken, setRecoveryToken] = useState('');
 
   // If already logged in, automatically proceed without requiring re-authentication
@@ -189,9 +188,7 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
         throw new Error(data?.error || 'Failed to send recovery link.');
       }
       setSuccessMsg(data.message || 'Recovery link sent! Please check your email.');
-      if (data.recoveryUrl) {
-        setRecoveryUrl(data.recoveryUrl);
-      }
+      
       setAuthMode('success');
     } catch (err) {
       setErrorMsg(err.message);
@@ -475,19 +472,7 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
             <p className="login-success-desc">
               {successMsg || 'A recovery link has been dispatched to your Gmail. Please check your inbox or spam folder to reset your security key.'}
             </p>
-            {recoveryUrl && (
-              <div className="login-recovery-box">
-                <span className="login-recovery-label">Direct Action Link:</span>
-                <a
-                  href={recoveryUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="login-recovery-url"
-                >
-                  Open Recovery Link ↗
-                </a>
-              </div>
-            )}
+            
             <button
               type="button"
               className="login-submit-btn"

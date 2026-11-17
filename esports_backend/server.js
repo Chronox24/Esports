@@ -719,8 +719,7 @@ app.post('/api/forgot-key', async (req, res) => {
     res.json({
       message: delivery.delivered
         ? `Recovery link sent to ${cleanEmail}! Please check your Gmail inbox.`
-        : `Recovery link dispatched for ${cleanEmail}. Notice: ${delivery.error || 'Check email'}`,
-      recoveryUrl: actionLink
+        : `Recovery link dispatched for ${cleanEmail}. Notice: ${delivery.error || 'Check email'}`
     });
   } catch (err) {
     console.error('Forgot key error:', err);
