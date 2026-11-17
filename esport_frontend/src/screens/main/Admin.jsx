@@ -1323,34 +1323,71 @@ const Admin = ({ globalGame, globalTournament }) => {
                                <span className="hud-chamfer-sm bg-slate-800/80 text-slate-400 font-tactical text-[10px] font-extrabold uppercase tracking-[0.14em] border border-slate-700" style={{ padding: "5px 16px" }}>No</span>
                              )}
                           </td>
-                          <td style={{ padding: "16px 24px" }}>
-                            <div className="flex items-center gap-1.5 flex-wrap max-w-[260px]">
-                              {user.is_super_admin || user.permissions?.full ? (
-                                <span className="hud-chamfer-sm px-2 py-0.5 text-[9px] font-tactical font-black uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-[0_0_8px_rgba(168,85,247,0.2)]">
-                                  FULL ACCESS
-                                </span>
-                              ) : (
-                                <>
-                                  {user.permissions?.view && (
-                                    <span className="hud-chamfer-sm px-1.5 py-0.5 text-[9px] font-tactical font-extrabold uppercase tracking-wider bg-blue-500/15 text-blue-300 border border-blue-500/30">
-                                      VIEW
+                          <td style={{ padding: "14px 20px" }}>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {[
+                                {
+                                  key: 'view',
+                                  label: 'View',
+                                  activeStyle: 'bg-blue-500/15 border-blue-500/40 text-blue-300 shadow-[0_0_8px_rgba(59,130,246,0.18)]',
+                                  activeBadge: 'bg-blue-500 text-slate-950',
+                                },
+                                {
+                                  key: 'edit',
+                                  label: 'Edit',
+                                  activeStyle: 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.18)]',
+                                  activeBadge: 'bg-emerald-500 text-slate-950',
+                                },
+                                {
+                                  key: 'full',
+                                  label: 'Full',
+                                  activeStyle: 'bg-purple-500/20 border-purple-500/40 text-purple-300 shadow-[0_0_8px_rgba(168,85,247,0.22)]',
+                                  activeBadge: 'bg-purple-500 text-slate-950',
+                                },
+                                {
+                                  key: 'manage_folders',
+                                  label: 'Folders',
+                                  activeStyle: 'bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.18)]',
+                                  activeBadge: 'bg-amber-500 text-slate-950',
+                                },
+                              ].map((box) => {
+                                const isSuper = Boolean(user.is_super_admin || user.role === 'Super Admin');
+                                const hasFull = isSuper || Boolean(user.permissions?.full);
+                                const isGranted = box.key === 'full'
+                                  ? hasFull
+                                  : (isSuper || hasFull || Boolean(user.permissions?.[box.key]));
+
+                                return (
+                                  <div
+                                    key={box.key}
+                                    title={`${box.label}: ${isGranted ? 'Permission Granted' : 'No Permission'}`}
+                                    className={`hud-chamfer-sm inline-flex items-center gap-1.5 px-2 py-1 text-[10px] font-tactical font-black uppercase tracking-wider border transition-all ${
+                                      isGranted
+                                        ? box.activeStyle
+                                        : 'bg-slate-900/60 border-slate-800 text-slate-500/60 opacity-40'
+                                    }`}
+                                  >
+                                    <span
+                                      className={`w-3.5 h-3.5 rounded flex items-center justify-center text-[9px] font-black shrink-0 transition-colors ${
+                                        isGranted
+                                          ? box.activeBadge
+                                          : 'bg-slate-800 text-slate-600'
+                                      }`}
+                                    >
+                                      {isGranted ? (
+                                        <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3.5} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                      ) : (
+                                        <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                      )}
                                     </span>
-                                  )}
-                                  {user.permissions?.edit && (
-                                    <span className="hud-chamfer-sm px-1.5 py-0.5 text-[9px] font-tactical font-extrabold uppercase tracking-wider bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                                      EDIT
-                                    </span>
-                                  )}
-                                  {user.permissions?.manage_folders && (
-                                    <span className="hud-chamfer-sm px-1.5 py-0.5 text-[9px] font-tactical font-extrabold uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                                      FOLDERS
-                                    </span>
-                                  )}
-                                  {!user.permissions?.view && !user.permissions?.edit && !user.permissions?.manage_folders && (
-                                    <span className="text-[10px] text-slate-500 font-mono italic">None</span>
-                                  )}
-                                </>
-                              )}
+                                    <span>{box.label}</span>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </td>
                           <td className="text-center" style={{ padding: "18px 26px" }}>
