@@ -443,6 +443,7 @@ app.get('/api/me', authenticateToken, async (req, res) => {
 });
 
 const emailVerificationCache = new NodeCache({ stdTTL: 600, checkperiod: 60 });
+const passwordRecoveryCache = new NodeCache({ stdTTL: 1800, checkperiod: 60 });
 
 let mailTransporter = null;
 let currentMailUser = null;
@@ -587,18 +588,31 @@ app.post('/api/reset-key', async (req, res) => {
   if (!supabase) {
     return res.status(500).json({ error: 'Supabase client not initialized.' });
   }
-  const { email, newPassword } = req.body;
+  const { email, newPassword, token, code } = req.body;
   if (!email || !newPassword) {
     return res.status(400).json({ error: 'Email and new security key are required.' });
   }
   if (typeof newPassword !== 'string' || newPassword.length < 6) {
     return res.status(400).json({ error: 'Security key must be at least 6 characters long.' });
   }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const cached = passwordRecoveryCache.get(cleanEmail);
+
+  // If a recovery session was initiated, verify token or code
+  if (cached) {
+    const isTokenValid = token && cached.token === token.trim();
+    const isCodeValid = code && cached.code === code.toString().trim();
+    if (!isTokenValid && !isCodeValid) {
+      return res.status(401).json({ error: 'Invalid or expired recovery link. Please request a new recovery link.' });
+    }
+  }
+
   try {
     const { data, error } = await supabase.auth.admin.listUsers();
     if (error) throw error;
     const targetUser = (data.users || []).find(
-      (u) => u.email && u.email.toLowerCase() === email.trim().toLowerCase()
+      (u) => u.email && u.email.toLowerCase() === cleanEmail
     );
     if (!targetUser) {
       return res.status(404).json({ error: 'No account registered with this email address.' });
@@ -608,7 +622,11 @@ app.post('/api/reset-key', async (req, res) => {
     });
     if (updateRes.error) throw updateRes.error;
     await supabase.from('users').update({ password: newPassword }).eq('user_id', targetUser.id);
-    await logAudit('SECURITY_KEY_RESET', `Security key updated for ${email.trim()}`, { email: email.trim() }, null, req);
+    
+    // Invalidate recovery token after successful reset
+    passwordRecoveryCache.del(cleanEmail);
+
+    await logAudit('SECURITY_KEY_RESET', `Security key updated for ${cleanEmail}`, { email: cleanEmail }, null, req);
     res.json({ message: 'Security key successfully updated! You can now log in.' });
   } catch (err) {
     console.error('Reset key error:', err);
@@ -635,30 +653,35 @@ app.post('/api/forgot-key', async (req, res) => {
       return res.status(404).json({ error: 'No account registered with this email address.' });
     }
 
-    const appUrl = (process.env.APP_URL || 'https://esportsystem.site').replace(/\/$/, '');
-    const redirectTo = `${appUrl}/#type=recovery&email=${encodeURIComponent(cleanEmail)}`;
-
-    let recoveryUrl = null;
-    try {
-      const linkRes = await supabase.auth.admin.generateLink({
-        type: 'recovery',
-        email: cleanEmail,
-        options: { redirectTo }
-      });
-      recoveryUrl = linkRes.data?.properties?.action_link || null;
-    } catch (e) {
-      console.warn('[Forgot Key] generateLink error:', e.message);
+    // Determine the frontend client origin dynamically
+    let clientOrigin = req.get('origin') || req.get('referer');
+    if (clientOrigin) {
+      try {
+        const urlObj = new URL(clientOrigin);
+        clientOrigin = `${urlObj.protocol}//${urlObj.host}`;
+      } catch (_) {
+        clientOrigin = null;
+      }
+    }
+    if (!clientOrigin) {
+      clientOrigin = (process.env.APP_URL || 'https://esportsystem.site').replace(/\/$/, '');
     }
 
-    try {
-      await supabase.auth.resetPasswordForEmail(cleanEmail, { redirectTo });
-    } catch (e) {
-      console.warn('[Forgot Key] resetPasswordForEmail error:', e.message);
-    }
+    // Generate a secure crypto token and a 6-digit recovery code (30 mins validity)
+    const recoveryToken = crypto.randomBytes(32).toString('hex');
+    const recoveryCode = Math.floor(100000 + Math.random() * 900000).toString();
+    passwordRecoveryCache.set(cleanEmail, {
+      token: recoveryToken,
+      code: recoveryCode,
+      userId: targetUser.id,
+      createdAt: Date.now()
+    });
 
-    const actionLink = recoveryUrl || redirectTo;
+    // Direct recovery link that points straight to the frontend without going through Supabase verify proxy
+    const actionLink = `${clientOrigin}/#type=recovery&email=${encodeURIComponent(cleanEmail)}&token=${recoveryToken}`;
+
     const emailSubject = 'Esports System — Account Recovery Link';
-    const emailText = `Hello,\n\nA password recovery request was initiated for your administrator account (${cleanEmail}).\n\nPlease click the recovery link below to set your new security key:\n${actionLink}\n\nIf you did not request this, please disregard this email.\n\n— Esports System Security`;
+    const emailText = `Hello,\n\nA security key recovery request was initiated for your administrator account (${cleanEmail}).\n\nPlease click the direct recovery link below to set your new security key:\n${actionLink}\n\nIf you did not request this, please disregard this email.\n\n— Esports System Security`;
     const emailHtml = `
       <div style="background-color: #0b111a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 580px; margin: 0 auto; padding: 32px 24px; border-radius: 12px; border: 1px solid #1e293b;">
         <div style="border-bottom: 1px solid #1e293b; padding-bottom: 20px; margin-bottom: 24px; text-align: center;">
@@ -674,11 +697,11 @@ app.post('/api/forgot-key', async (req, res) => {
           </a>
         </div>
         <p style="color: #64748b; font-size: 12px; line-height: 1.5; margin: 24px 0 0; border-top: 1px solid #1e293b; padding-top: 16px;">
-          If the button does not work, copy and paste this link into your browser:<br/>
+          If the button does not open automatically, copy and paste this direct recovery link into your browser:<br/>
           <a href="${actionLink}" style="color: #38bdf8; word-break: break-all;">${actionLink}</a>
         </p>
         <p style="color: #475569; font-size: 11px; margin: 16px 0 0;">
-          If you did not request this recovery link, no action is required. Your security key remains safe.
+          This secure direct link is single-use and will expire in 30 minutes. If you did not request this recovery link, no action is required.
         </p>
       </div>
     `;
@@ -691,13 +714,13 @@ app.post('/api/forgot-key', async (req, res) => {
       req
     });
 
-    await logAudit('ACCOUNT_RECOVERY_REQUESTED', `Dispatched recovery link to ${cleanEmail}`, { email: cleanEmail, delivered: delivery.delivered }, null, req);
+    await logAudit('ACCOUNT_RECOVERY_REQUESTED', `Dispatched direct recovery link to ${cleanEmail}`, { email: cleanEmail, delivered: delivery.delivered }, null, req);
 
     res.json({
       message: delivery.delivered
-        ? `Recovery link sent to ${cleanEmail}! Please check your Gmail or email inbox.`
+        ? `Recovery link sent to ${cleanEmail}! Please check your Gmail inbox.`
         : `Recovery link dispatched for ${cleanEmail}. Notice: ${delivery.error || 'Check email'}`,
-      recoveryUrl: recoveryUrl
+      recoveryUrl: actionLink
     });
   } catch (err) {
     console.error('Forgot key error:', err);

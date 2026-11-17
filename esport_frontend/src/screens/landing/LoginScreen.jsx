@@ -17,6 +17,7 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [recoveryUrl, setRecoveryUrl] = useState('');
+  const [recoveryToken, setRecoveryToken] = useState('');
 
   // If already logged in, automatically proceed without requiring re-authentication
   useEffect(() => {
@@ -25,17 +26,29 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
     }
   }, [onLoginSuccess]);
 
-  // Automatically detect recovery link redirect from email
+  // Automatically detect recovery link redirect from email or direct recovery token
   useEffect(() => {
     try {
       const hash = window.location.hash || '';
       const search = window.location.search || '';
-      if (hash.includes('type=recovery') || search.includes('type=recovery')) {
+      const hashParams = new URLSearchParams(hash.replace(/^#/, '?'));
+      const searchParams = new URLSearchParams(search);
+
+      // Handle any legacy redirect error
+      const errorDesc = hashParams.get('error_description') || searchParams.get('error_description');
+      const errorCode = hashParams.get('error_code') || searchParams.get('error_code');
+      if (errorDesc || errorCode) {
+        setAuthMode('forgot');
+        setErrorMsg('The previous recovery link was invalid or has expired. Please enter your email below to receive a fresh direct recovery link.');
+        return;
+      }
+
+      if (hash.includes('type=recovery') || search.includes('type=recovery') || hashParams.get('token') || searchParams.get('token')) {
         setAuthMode('reset-password');
-        const hashParams = new URLSearchParams(hash.replace(/^#/, '?'));
-        const searchParams = new URLSearchParams(search);
         const emailFromUrl = hashParams.get('email') || searchParams.get('email');
-        if (emailFromUrl) setEmail(emailFromUrl);
+        const tokenFromUrl = hashParams.get('token') || searchParams.get('token');
+        if (emailFromUrl) setEmail(decodeURIComponent(emailFromUrl));
+        if (tokenFromUrl) setRecoveryToken(tokenFromUrl);
       }
     } catch (_) {}
   }, []);
@@ -140,7 +153,7 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
       const response = await apiFetch('/api/reset-key', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), newPassword }),
+        body: JSON.stringify({ email: email.trim(), newPassword, token: recoveryToken || undefined }),
       });
       const data = await response.json();
       if (!response.ok) {
@@ -199,7 +212,13 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
   const switchToLogin = () => {
     setErrorMsg('');
     setSuccessMsg('');
+    setRecoveryToken('');
     setAuthMode('login');
+    try {
+      if (window.location.hash.includes('type=recovery') || window.location.hash.includes('error=')) {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    } catch (_) {}
   };
 
   return (
