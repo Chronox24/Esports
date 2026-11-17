@@ -435,7 +435,7 @@ const PlayerManagement = ({ globalGame, globalTournament }) => {
     }
   };
 
-  // Group players by team_id
+  // Group players by team_id (with IGL always sorted as #1)
   const playersByTeam = useMemo(() => {
     const map = {};
     teams.forEach(t => {
@@ -446,6 +446,18 @@ const PlayerManagement = ({ globalGame, globalTournament }) => {
       if (!map[tid]) map[tid] = [];
       map[tid].push(p);
     });
+
+    // Sort players within each team so their IGL is always no. 1
+    Object.keys(map).forEach(tid => {
+      map[tid].sort((a, b) => {
+        const aIsIGL = (a.role_in_game || '').toLowerCase().includes('igl');
+        const bIsIGL = (b.role_in_game || '').toLowerCase().includes('igl');
+        if (aIsIGL && !bIsIGL) return -1;
+        if (!aIsIGL && bIsIGL) return 1;
+        return (a.player_name || '').localeCompare(b.player_name || '');
+      });
+    });
+
     return map;
   }, [teams, players]);
 
@@ -817,10 +829,18 @@ const PlayerManagement = ({ globalGame, globalTournament }) => {
                               return (
                                 <div
                                   key={player.player_id}
-                                  className="group/player flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-slate-900/50 light:bg-slate-50 border border-slate-800/60 light:border-slate-200 hover:border-slate-700/80 light:hover:border-slate-300 transition-colors"
+                                  className={`group/player flex items-center justify-between px-3.5 py-2.5 rounded-xl border transition-all ${
+                                    isIGL
+                                      ? "bg-amber-500/10 light:bg-amber-50/70 border-amber-500/40 hover:border-amber-400/70 shadow-[0_0_12px_rgba(245,158,11,0.08)]"
+                                      : "bg-slate-900/50 light:bg-slate-50 border-slate-800/60 light:border-slate-200 hover:border-slate-700/80 light:hover:border-slate-300"
+                                  }`}
                                 >
                                   <div className="flex items-center gap-2.5 min-w-0">
-                                    <div className="w-6 h-6 rounded-lg bg-slate-800 light:bg-slate-200 flex items-center justify-center text-theme-text-muted light:text-slate-600 text-[10px] font-black shrink-0">
+                                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0 ${
+                                      isIGL
+                                        ? "bg-amber-500/20 text-amber-400 border border-amber-500/40 shadow-[0_0_8px_rgba(245,158,11,0.2)]"
+                                        : "bg-slate-800 light:bg-slate-200 text-theme-text-muted light:text-slate-600"
+                                    }`}>
                                       {isIGL ? (
                                         <Crown className="w-3.5 h-3.5 text-amber-400" />
                                       ) : (
@@ -828,8 +848,15 @@ const PlayerManagement = ({ globalGame, globalTournament }) => {
                                       )}
                                     </div>
                                     <div className="min-w-0">
-                                      <div className="text-xs font-black text-theme-text-base light:text-slate-800 tracking-wide truncate">
-                                        {player.player_name}
+                                      <div className="flex items-center gap-1.5">
+                                        <div className="text-xs font-black text-theme-text-base light:text-slate-800 tracking-wide truncate">
+                                          {player.player_name}
+                                        </div>
+                                        {isIGL && (
+                                          <span className="text-[9px] font-black text-amber-400 font-tactical uppercase tracking-wider bg-amber-500/15 px-1 py-0.2 rounded border border-amber-500/30">
+                                            #1
+                                          </span>
+                                        )}
                                       </div>
                                       {player.role_in_game ? (
                                         <span className={`inline-block text-[9px] font-black uppercase tracking-wider px-1.5 py-0.2 rounded border ${roleBadgeClass} mt-0.5`}>

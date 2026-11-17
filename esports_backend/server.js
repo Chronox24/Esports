@@ -1817,7 +1817,16 @@ app.get('/api/players', cacheMiddleware, async (req, res) => {
     }
     const { data, error } = await query;
     if (error) throw error;
-    res.json(data || []);
+    const sorted = (data || []).sort((a, b) => {
+      if (a.team_id && b.team_id && a.team_id === b.team_id) {
+        const aIsIGL = (a.role_in_game || '').toLowerCase().includes('igl');
+        const bIsIGL = (b.role_in_game || '').toLowerCase().includes('igl');
+        if (aIsIGL && !bIsIGL) return -1;
+        if (!aIsIGL && bIsIGL) return 1;
+      }
+      return (a.player_name || '').localeCompare(b.player_name || '');
+    });
+    res.json(sorted);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

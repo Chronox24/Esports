@@ -577,7 +577,15 @@ const DataEntry = ({ globalGame, globalTournament }) => {
     setTimeoutB("AVAILABLE");
     const team = dbTeams.find((t) => t.team_name === teamName);
     if (team) {
-      const teamPlayers = dbPlayers.filter((p) => p.team_id === team.team_id);
+      const teamPlayers = dbPlayers
+        .filter((p) => p.team_id === team.team_id)
+        .sort((a, b) => {
+          const aIsIGL = (a.role_in_game || '').toLowerCase().includes('igl');
+          const bIsIGL = (b.role_in_game || '').toLowerCase().includes('igl');
+          if (aIsIGL && !bIsIGL) return -1;
+          if (!aIsIGL && bIsIGL) return 1;
+          return (a.player_name || '').localeCompare(b.player_name || '');
+        });
       const updatedPlayers = Array(5)
         .fill(null)
         .map((_, i) => {
