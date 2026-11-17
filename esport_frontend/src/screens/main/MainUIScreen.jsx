@@ -444,6 +444,7 @@ const MainUIScreen = ({ onLogout }) => {
         </div>
 
         {/* Global Game Discipline Switcher */}
+        {activeTab === 'Dashboard' && (
         <div className="flex items-center gap-2">
           <div className="inline-flex items-center p-0.5 bg-slate-950/80 border border-slate-700/80 rounded-xl shadow-inner gap-1">
             <button
@@ -488,6 +489,7 @@ const MainUIScreen = ({ onLogout }) => {
             </button>
           </div>
         </div>
+        )}
       </header>
       {/* Dynamic Rendering of Components */}
       <div className="flex-1 overflow-auto relative z-10 bg-bg-100 light:bg-slate-50 hud-canvas-bg flex flex-col pb-20 md:pb-0">
