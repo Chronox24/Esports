@@ -56,9 +56,19 @@ const MainUIScreen = ({ onLogout }) => {
   const [globalGame, setGlobalGame] = useState('VALORANT');
   const [globalTournament, setGlobalTournament] = useState('');
   const [tournaments, setTournaments] = useState([]);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => (typeof window !== 'undefined' ? window.innerWidth >= 1024 : true));
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [folderToDelete, setFolderToDelete] = useState(null);
+  // Responsive sidebar state handling on screen resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024 && isSidebarOpen && window.innerWidth >= 768) {
+        // keep desktop behavior
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isSidebarOpen]);
   const [isDeletingFolder, setIsDeletingFolder] = useState(false);
 
   // Prevent browser back button from bouncing back to landing page
@@ -354,7 +364,7 @@ const MainUIScreen = ({ onLogout }) => {
                     return (
                       <li key={link.name}>
                         <button
-                          onClick={() => setActiveTab(link.name)}
+                          onClick={() => { setActiveTab(link.name); if (typeof window !== 'undefined' && window.innerWidth < 768) setIsSidebarOpen(false); }}
                           style={{ padding: '11px 14px' }}
                           className={`nav-btn relative w-full flex items-center gap-3.5 hud-chamfer-sm transition-all duration-250 ease-out cursor-pointer group overflow-hidden ${isActive
                             ? 'bg-gradient-to-r from-cyan-500/20 via-cyan-500/10 to-transparent text-cyan-300 font-bold border border-cyan-400/40 shadow-[0_0_20px_rgba(0,229,255,0.12)] translate-x-1'
@@ -443,7 +453,7 @@ const MainUIScreen = ({ onLogout }) => {
                 const matching = tournaments.filter(t => (t.game || 'VALORANT').toUpperCase() === 'VALORANT');
                 if (matching.length > 0) setGlobalTournament(matching[0].name);
               }}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-tactical text-xs font-black tracking-wider transition-all duration-200 cursor-pointer ${
+              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-lg font-tactical text-[10px] sm:text-xs font-black tracking-wider transition-all duration-200 cursor-pointer ${
                 (globalGame || 'VALORANT').toUpperCase() === 'VALORANT'
                   ? 'bg-rose-500/25 text-rose-300 border border-rose-500/60 shadow-[0_0_12px_rgba(244,63,94,0.4)]'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent'
@@ -480,9 +490,60 @@ const MainUIScreen = ({ onLogout }) => {
         </div>
       </header>
       {/* Dynamic Rendering of Components */}
-      <div className="flex-1 overflow-auto relative z-10 bg-bg-100 light:bg-slate-50 hud-canvas-bg flex flex-col">
+      <div className="flex-1 overflow-auto relative z-10 bg-bg-100 light:bg-slate-50 hud-canvas-bg flex flex-col pb-20 md:pb-0">
         {renderContent()}
       </div>
+      {/* Tactical Mobile Bottom Navigation Bar */}
+      <nav
+        className="md:hidden fixed bottom-0 inset-x-0 z-30 h-16 bg-bg-200/95 light:bg-white/95 backdrop-blur-xl border-t border-cyan-500/20 light:border-slate-200 flex items-center justify-around px-2 shadow-[0_-4px_25px_rgba(0,0,0,0.6)] select-none"
+      >
+        <button
+          type="button"
+          onClick={() => setActiveTab('Dashboard')}
+          className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors cursor-pointer ${
+            activeTab === 'Dashboard' ? 'text-cyan-400 font-bold' : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <LayoutDashboard size={19} strokeWidth={activeTab === 'Dashboard' ? 2.5 : 1.8} className={activeTab === 'Dashboard' ? 'drop-shadow-[0_0_8px_rgba(0,229,255,0.7)]' : ''} />
+          <span className="font-tactical text-[10px] tracking-wider uppercase mt-1">Dashboard</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('Tournament')}
+          className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors cursor-pointer ${
+            activeTab === 'Tournament' ? 'text-cyan-400 font-bold' : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Trophy size={19} strokeWidth={activeTab === 'Tournament' ? 2.5 : 1.8} className={activeTab === 'Tournament' ? 'drop-shadow-[0_0_8px_rgba(0,229,255,0.7)]' : ''} />
+          <span className="font-tactical text-[10px] tracking-wider uppercase mt-1">Tourney</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('Tournament History')}
+          className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors cursor-pointer ${
+            activeTab === 'Tournament History' ? 'text-cyan-400 font-bold' : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Archive size={19} strokeWidth={activeTab === 'Tournament History' ? 2.5 : 1.8} className={activeTab === 'Tournament History' ? 'drop-shadow-[0_0_8px_rgba(0,229,255,0.7)]' : ''} />
+          <span className="font-tactical text-[10px] tracking-wider uppercase mt-1">History</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setIsSidebarOpen(true)}
+          className="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-cyan-400 transition-colors cursor-pointer"
+        >
+          <div className="relative">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 absolute -top-0.5 -right-0.5 shadow-[0_0_6px_#00e5ff]" />
+          </div>
+          <span className="font-tactical text-[10px] tracking-wider uppercase mt-1">Menu</span>
+        </button>
+      </nav>
     </main>
 
   </div>

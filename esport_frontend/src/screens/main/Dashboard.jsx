@@ -94,8 +94,7 @@ const KpiCard = ({ card, accent, index = 0, onClick }) => {
   return (    
     <div
       onClick={() => onClick(card)}
-      className={`cursor-pointer hud-card hud-card-interactive hud-enter hud-delay-${index + 1} rounded-xl flex flex-col group relative overflow-hidden`}
-      style={{ padding: '26px 28px', gap: '20px' }}
+      className={`cursor-pointer hud-card hud-card-interactive hud-enter hud-delay-${index + 1} rounded-xl flex flex-col group relative overflow-hidden p-4 sm:p-6 md:p-7 gap-3 sm:gap-5`}
     >      
       <div className="hud-sweep-overlay" />
       <div className="absolute -right-8 -top-8 w-28 h-28 rounded-full blur-3xl opacity-10 group-hover:opacity-35 transition-opacity duration-500" style={{ backgroundColor: accent }} />      
@@ -116,7 +115,7 @@ const KpiCard = ({ card, accent, index = 0, onClick }) => {
         {card.stats.map((s, i) => (          
           <div key={i} className="flex flex-col gap-1">            
             <span className="font-tactical text-[10px] text-theme-text-muted uppercase tracking-[0.16em] font-bold">{s.label}</span>            
-            <span className="font-tactical text-3xl font-extrabold text-theme-text-base tracking-tight" style={{ textShadow: i === 0 ? `0 0 18px ${accent}33` : 'none' }}>
+            <span className="font-tactical text-2xl sm:text-3xl font-extrabold text-theme-text-base tracking-tight" style={{ textShadow: i === 0 ? `0 0 18px ${accent}33` : 'none' }}>
               {s.value}
             </span>          
           </div>        
@@ -494,17 +493,17 @@ const Dashboard = ({ globalGame, globalTournament }) => {
         .dash-scroll::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 9999px; }
       `}</style>
 
-      <div className="relative z-10 w-full max-w-[1440px] flex flex-col mx-auto" style={{ padding: '28px 32px 40px 32px', gap: '28px' }}>
+      <div className="relative z-10 w-full max-w-[1440px] flex flex-col mx-auto px-3 sm:px-6 md:px-8 py-4 sm:py-7 gap-4 sm:gap-7">
 
         {/* KPI Cards Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: '24px' }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
           {kpiData.map((card, i) => (
             <KpiCard key={i} index={i} card={card} accent={data.accent} onClick={setActiveModal} />
           ))}
         </div>
 
         {isBroadcasting && liveMatch && (
-          <div className="grid grid-cols-1 xl:grid-cols-5" style={{ gap: '24px' }}>
+          <div className="grid grid-cols-1 xl:grid-cols-5 gap-4 sm:gap-6">
             {/* Broadcast Stream Card */}
             <div className="xl:col-span-3 hud-card hud-enter hud-delay-2 rounded-xl overflow-hidden relative flex flex-col" style={{ minHeight: '380px' }}>
               <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)', backgroundSize: '36px 36px' }} />
@@ -513,7 +512,7 @@ const Dashboard = ({ globalGame, globalTournament }) => {
               </div>
 
               {/* Stream Control Header — Responsive & Non-Clipping */}
-              <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/70 bg-slate-900/40" style={{ padding: '14px 20px' }}>
+              <div className="relative z-10 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 border-b border-slate-800/70 bg-slate-900/40 px-3 py-2.5 sm:px-5 sm:py-3.5">
                 <div className="flex flex-wrap items-center gap-2.5">
                   {/* Status Badge */}
                   <div
@@ -574,7 +573,7 @@ const Dashboard = ({ globalGame, globalTournament }) => {
               </div>
 
               {/* Video Viewport */}
-              <div className="relative z-10 flex-1 w-full flex flex-col justify-center" style={{ padding: '18px 20px' }}>
+              <div className="relative z-10 flex-1 w-full flex flex-col justify-center p-2.5 sm:p-5">
                 <div className="w-full aspect-video rounded-lg overflow-hidden border border-cyan-500/20 shadow-[0_0_40px_rgba(0,0,0,0.65)] relative bg-slate-950 flex items-center justify-center group">
                   {parsedStreamId ? (
                     <iframe 
@@ -618,7 +617,7 @@ const Dashboard = ({ globalGame, globalTournament }) => {
 
             {/* Ongoing Matches Panel */}
             <div className="xl:col-span-2 hud-card hud-enter hud-delay-3 rounded-xl flex flex-col overflow-hidden">
-              <div className="border-b border-slate-800/70 bg-slate-900/40 flex items-center justify-between shrink-0" style={{ padding: '16px 20px' }}>
+              <div className="border-b border-slate-800/70 bg-slate-900/40 flex items-center justify-between shrink-0 px-3.5 py-3 sm:px-5 sm:py-4">
                 <div className="flex items-center gap-2.5">
                   <span className="hud-diamond-crimson" />
                   <div>
@@ -631,7 +630,7 @@ const Dashboard = ({ globalGame, globalTournament }) => {
                   <span className="font-tactical text-[10px] font-extrabold tracking-widest text-red-400">LIVE</span>
                 </div>
               </div>
-              <div className="flex-1 flex flex-col overflow-y-auto" style={{ padding: '16px 20px', gap: '12px', scrollbarWidth: 'thin', scrollbarColor: '#1e293b transparent' }}>
+              <div className="flex-1 flex flex-col overflow-y-auto p-3 sm:p-4 gap-2.5 sm:gap-3" style={{ scrollbarWidth: 'thin', scrollbarColor: '#1e293b transparent' }}>
                 {dbMatches.length > 0 ? dbMatches.map(m => (
                   <MatchRow key={m.match_id} accent={data.accent} match={{
                     t1: m.team_a?.team_name || 'TBD',
@@ -660,7 +659,7 @@ const Dashboard = ({ globalGame, globalTournament }) => {
 
         {/* Player Performance Overview Table */}
         <div className="hud-card hud-enter hud-delay-4 rounded-xl overflow-hidden">
-          <div className="border-b border-slate-800/70 bg-slate-900/40 flex flex-wrap items-center justify-between gap-3" style={{ padding: '16px 24px' }}>
+          <div className="border-b border-slate-800/70 bg-slate-900/40 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 px-3 py-3 sm:px-6 sm:py-4">
             <div className="flex items-center gap-2.5">
               <span className="hud-diamond" />
               <div>
