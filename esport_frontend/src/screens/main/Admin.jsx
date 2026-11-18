@@ -311,7 +311,7 @@ const LiveMatchManager = ({ globalTournament, globalGame, teams }) => {
     </div>
   );
 };
-const Admin = ({ globalGame, globalTournament }) => {
+const Admin = ({ globalGame, globalTournament, onLogout }) => {
   const [activeTab, setActiveTab] = React.useState("League Quick Stats");
 
   // Upper-Right System Toast Notification
@@ -992,7 +992,7 @@ const Admin = ({ globalGame, globalTournament }) => {
                   <span className="font-tactical text-cyan-400 font-extrabold text-lg md:text-xl tracking-[0.14em] uppercase">{activeTournamentObj.name}</span>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 <span className="font-tactical text-[11px] text-theme-text-muted font-bold uppercase tracking-[0.18em]">Game Title:</span>
                 <div className="relative">
                   <select 
@@ -1010,12 +1010,26 @@ const Admin = ({ globalGame, globalTournament }) => {
                     </svg>
                   </div>
                 </div>
+
+                {onLogout && (
+                  <button
+                    type="button"
+                    onClick={onLogout}
+                    className="sm:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-tactical text-xs font-bold text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 transition-all cursor-pointer shadow-[0_0_10px_rgba(239,68,68,0.2)] ml-auto"
+                    title="Logout Admin Session"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    <span>LOGOUT</span>
+                  </button>
+                )}
               </div>
             </div>
           )}
           
           {/* Tactical Sub-Navigation Tabs */}
-          <div className="flex justify-center">
+          <div className="flex justify-center items-center gap-3 flex-wrap">
             <div 
               className="flex flex-wrap items-center bg-slate-950/80 border border-cyan-500/20 hud-chamfer shadow-xl backdrop-blur-md"
               style={{ padding: "5px", gap: "6px" }}
@@ -1069,6 +1083,19 @@ const Admin = ({ globalGame, globalTournament }) => {
                 );
               })}
             </div>
+            {onLogout && !activeTournamentObj && (
+              <button
+                type="button"
+                onClick={onLogout}
+                className="sm:hidden flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-tactical text-xs font-bold text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 transition-all cursor-pointer shadow-[0_0_10px_rgba(239,68,68,0.2)]"
+                title="Logout Admin Session"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                <span>LOGOUT</span>
+              </button>
+            )}
           </div>
 
           {activeTab === 'League Quick Stats' && (

@@ -261,7 +261,7 @@ const MainUIScreen = ({ onLogout }) => {
       case 'Player Stats': return <Tournament globalGame={globalGame} setGlobalGame={setGlobalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="player-stats" />;
       case 'Raw Records': return <Tournament globalGame={globalGame} setGlobalGame={setGlobalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="raw-records" />;
       case 'Bracket': return <Tournament globalGame={globalGame} setGlobalGame={setGlobalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="BRACKET MANAGEMENT" />;
-      case 'Admin': return <Admin globalGame={globalGame} globalTournament={globalTournament} />;
+      case 'Admin': return <Admin globalGame={globalGame} globalTournament={globalTournament} onLogout={() => setShowLogoutModal(true)} />;
       case 'Audit Logs': return <AuditLogs globalGame={globalGame} globalTournament={globalTournament} />;
       case 'Settings': return <Settings globalGame={globalGame} globalTournament={globalTournament} themeBg={themeBg} setThemeBg={setThemeBg} themeAccent={themeAccent} setThemeAccent={setThemeAccent} />;
       default: return (<div className="h-full flex flex-col items-center justify-center p-10 bg-bg-100">            <div className="border border-slate-800 bg-slate-900/40 rounded-[2rem] p-12 text-center animate-fade-in shadow-2xl backdrop-blur-sm max-w-lg w-full">              <h2 className="text-2xl font-black text-theme-text-base mb-3 uppercase tracking-[0.2em]">{activeTab}</h2>              <p className="text-sm font-medium text-theme-text-muted tracking-wider">This module is currently under active development.</p>            </div>          </div>);
@@ -270,7 +270,7 @@ const MainUIScreen = ({ onLogout }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center modal-overlay-enter" style={{ backgroundColor: 'rgba(2, 6, 13, 0.78)', backdropFilter: 'blur(10px)' }} onClick={() => setShowLogoutModal(false)}>
       <div
         className="modal-content-enter hud-card bg-bg-300 rounded-xl shrink-0 shadow-[0_25px_60px_rgba(0,0,0,0.65)] flex flex-col items-center"
-        style={{ width: '380px', height: '290px', padding: '28px', boxSizing: 'border-box', justifyContent: 'center' }}
+        style={{ maxWidth: '92vw', width: '380px', minHeight: '280px', padding: '28px 20px', boxSizing: 'border-box', justifyContent: 'center' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="hud-chamfer-sm bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 shrink-0 shadow-[0_0_20px_rgba(239,68,68,0.2)]" style={{ width: '56px', height: '56px', marginBottom: '16px' }}>
@@ -303,10 +303,24 @@ const MainUIScreen = ({ onLogout }) => {
       </div>
     </div>
   )}
+    {/* Mobile Drawer Backdrop */}
+    {isSidebarOpen && (
+      <div
+        className="md:hidden fixed inset-0 z-40 bg-black/75 backdrop-blur-sm transition-opacity duration-300"
+        onClick={() => setIsSidebarOpen(false)}
+        aria-hidden="true"
+      />
+    )}
+
     <aside
-      className={`bg-bg-200/95 light:bg-white border-cyan-500/15 light:border-slate-200 z-20 shrink-0 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] select-none relative
-          ${isSidebarOpen ? 'w-[268px] border-r opacity-100' : 'w-0 border-r-0 opacity-0 overflow-hidden'}
-        `}
+      className={`bg-bg-200/95 light:bg-white border-cyan-500/15 light:border-slate-200 select-none
+        fixed md:relative inset-y-0 left-0 z-50 md:z-20 h-full shrink-0
+        transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
+        ${isSidebarOpen
+          ? 'w-[280px] md:w-[268px] translate-x-0 border-r opacity-100 shadow-[0_0_40px_rgba(0,0,0,0.85)] md:shadow-none'
+          : '-translate-x-full md:translate-x-0 md:w-0 md:border-r-0 md:opacity-0 md:overflow-hidden'
+        }
+      `}
     >
       {/* Top right corner subtle tactical accent line */}
       <div className="absolute top-0 right-0 w-[2px] h-16 bg-gradient-to-b from-cyan-400/60 to-transparent pointer-events-none" />
@@ -315,11 +329,13 @@ const MainUIScreen = ({ onLogout }) => {
 
         {/* Brand Header */}
         <div
-          onClick={() => setActiveTab('Dashboard')}
-          className="shrink-0 flex items-center justify-between border-b border-slate-800/70 light:border-slate-200 group cursor-pointer relative overflow-hidden"
+          className="shrink-0 flex items-center justify-between border-b border-slate-800/70 light:border-slate-200 relative overflow-hidden"
           style={{ padding: '20px 22px' }}
         >
-          <div className="flex items-center gap-3.5 transition-transform duration-300 ease-out group-hover:translate-x-1">
+          <div
+            onClick={() => { setActiveTab('Dashboard'); if (typeof window !== 'undefined' && window.innerWidth < 768) setIsSidebarOpen(false); }}
+            className="flex items-center gap-3.5 transition-transform duration-300 ease-out group cursor-pointer hover:translate-x-1"
+          >
             <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-cyan-950/60 border border-cyan-400/30 shadow-[0_0_18px_rgba(0,229,255,0.22)] relative overflow-hidden shrink-0 transition-all duration-300 group-hover:border-cyan-400 group-hover:shadow-[0_0_26px_rgba(0,229,255,0.45)]">
               <img src="/assets/weblogo.png" alt="Logo" className="w-full h-full object-cover relative z-10 transition-transform duration-500 group-hover:scale-110" onError={(e) => { e.target.style.display = 'none' }} />
             </div>
@@ -335,6 +351,16 @@ const MainUIScreen = ({ onLogout }) => {
               </div>
             </div>
           </div>
+
+          {/* Close button for mobile drawer */}
+          <button
+            type="button"
+            onClick={() => setIsSidebarOpen(false)}
+            className="md:hidden p-1.5 rounded-lg text-theme-text-muted hover:text-cyan-400 hover:bg-slate-800/70 transition-colors cursor-pointer"
+            aria-label="Close menu"
+          >
+            <PanelLeftClose size={19} />
+          </button>
         </div>
 
         {/* Scrollable Navigation and Controls */}
@@ -398,17 +424,23 @@ const MainUIScreen = ({ onLogout }) => {
           </div>
 
           {/* Bottom Action Controls */}
-          <div style={{ marginTop: 'auto', paddingTop: '16px' }} className="flex flex-col gap-3 border-t border-slate-800/70 shrink-0">
+          <div style={{ marginTop: 'auto', paddingTop: '16px' }} className="flex flex-col gap-3 border-t border-slate-800/70 shrink-0 pb-8 md:pb-0">
             {/* Tactical Logout Button */}
             <button
-              onClick={() => setShowLogoutModal(true)}
+              onClick={() => {
+                if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                  setIsSidebarOpen(false);
+                }
+                setShowLogoutModal(true);
+              }}
               style={{ padding: '11px 14px' }}
-              className="group w-full flex items-center justify-between hud-chamfer-sm bg-red-500/5 hover:bg-red-500/15 border border-red-500/20 hover:border-red-500/45 text-theme-text-muted hover:text-red-400 transition-all duration-250 cursor-pointer"
+              className="group w-full flex items-center justify-between hud-chamfer-sm bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 hover:border-red-500/50 text-red-300 hover:text-red-200 transition-all duration-250 cursor-pointer shadow-[0_0_12px_rgba(239,68,68,0.15)]"
             >
               <div className="flex items-center gap-3">
-                <LogOut size={17} strokeWidth={2} className="text-red-400/80 group-hover:text-red-400 transition-colors" />
+                <LogOut size={17} strokeWidth={2} className="text-red-400 group-hover:scale-110 transition-transform" />
                 <span className="font-tactical text-[12px] font-bold tracking-[0.16em] uppercase">Logout</span>
               </div>
+              <span className="font-tactical text-[10px] text-red-400/80 uppercase tracking-widest font-bold">Exit</span>
             </button>
           </div>
         </div>
@@ -443,53 +475,66 @@ const MainUIScreen = ({ onLogout }) => {
           </div>
         </div>
 
-        {/* Global Game Discipline Switcher */}
-        {activeTab === 'Dashboard' && (
-        <div className="flex items-center gap-2">
-          <div className="inline-flex items-center p-0.5 bg-slate-950/80 border border-slate-700/80 rounded-xl shadow-inner gap-1">
-            <button
-              type="button"
-              onClick={() => {
-                setGlobalGame('VALORANT');
-                const matching = tournaments.filter(t => (t.game || 'VALORANT').toUpperCase() === 'VALORANT');
-                if (matching.length > 0) setGlobalTournament(matching[0].name);
-              }}
-              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-lg font-tactical text-[10px] sm:text-xs font-black tracking-wider transition-all duration-200 cursor-pointer ${
-                (globalGame || 'VALORANT').toUpperCase() === 'VALORANT'
-                  ? 'bg-rose-500/25 text-rose-300 border border-rose-500/60 shadow-[0_0_12px_rgba(244,63,94,0.4)]'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent'
-              }`}
-            >
-              <span className={`w-2 h-2 rounded-full ${
-                (globalGame || 'VALORANT').toUpperCase() === 'VALORANT'
-                  ? 'bg-rose-400 shadow-[0_0_8px_#f43f5e]'
-                  : 'bg-slate-600'
-              }`} />
-              VALORANT
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setGlobalGame('CROSSFIRE');
-                const matching = tournaments.filter(t => (t.game || 'VALORANT').toUpperCase() === 'CROSSFIRE');
-                if (matching.length > 0) setGlobalTournament(matching[0].name);
-              }}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-tactical text-xs font-black tracking-wider transition-all duration-200 cursor-pointer ${
-                (globalGame || 'VALORANT').toUpperCase() === 'CROSSFIRE'
-                  ? 'bg-cyan-500/25 text-cyan-300 border border-cyan-500/60 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent'
-              }`}
-            >
-              <span className={`w-2 h-2 rounded-full ${
-                (globalGame || 'VALORANT').toUpperCase() === 'CROSSFIRE'
-                  ? 'bg-cyan-400 shadow-[0_0_8px_#06b6d4]'
-                  : 'bg-slate-600'
-              }`} />
-              CROSSFIRE
-            </button>
-          </div>
+        {/* Header Right Actions */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Global Game Discipline Switcher (Dashboard only) */}
+          {activeTab === 'Dashboard' && (
+            <div className="inline-flex items-center p-0.5 bg-slate-950/80 border border-slate-700/80 rounded-xl shadow-inner gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setGlobalGame('VALORANT');
+                  const matching = tournaments.filter(t => (t.game || 'VALORANT').toUpperCase() === 'VALORANT');
+                  if (matching.length > 0) setGlobalTournament(matching[0].name);
+                }}
+                className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-lg font-tactical text-[10px] sm:text-xs font-black tracking-wider transition-all duration-200 cursor-pointer ${
+                  (globalGame || 'VALORANT').toUpperCase() === 'VALORANT'
+                    ? 'bg-rose-500/25 text-rose-300 border border-rose-500/60 shadow-[0_0_12px_rgba(244,63,94,0.4)]'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent'
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full ${
+                  (globalGame || 'VALORANT').toUpperCase() === 'VALORANT'
+                    ? 'bg-rose-400 shadow-[0_0_8px_#f43f5e]'
+                    : 'bg-slate-600'
+                }`} />
+                VALORANT
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setGlobalGame('CROSSFIRE');
+                  const matching = tournaments.filter(t => (t.game || 'VALORANT').toUpperCase() === 'CROSSFIRE');
+                  if (matching.length > 0) setGlobalTournament(matching[0].name);
+                }}
+                className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-lg font-tactical text-[10px] sm:text-xs font-black tracking-wider transition-all duration-200 cursor-pointer ${
+                  (globalGame || 'VALORANT').toUpperCase() === 'CROSSFIRE'
+                    ? 'bg-cyan-500/25 text-cyan-300 border border-cyan-500/60 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent'
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full ${
+                  (globalGame || 'VALORANT').toUpperCase() === 'CROSSFIRE'
+                    ? 'bg-cyan-400 shadow-[0_0_8px_#06b6d4]'
+                    : 'bg-slate-600'
+                }`} />
+                CROSSFIRE
+              </button>
+            </div>
+          )}
+
+          {/* Quick Tactical Logout Button for Mobile */}
+          <button
+            type="button"
+            onClick={() => setShowLogoutModal(true)}
+            className="md:hidden flex items-center gap-1 px-2.5 py-1.5 rounded-lg font-tactical text-[11px] font-extrabold text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 hover:border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.2)] transition-all cursor-pointer active:scale-95 shrink-0"
+            title="Logout Admin Session"
+            aria-label="Logout"
+          >
+            <LogOut size={13} strokeWidth={2.2} className="text-red-400" />
+            <span className="uppercase tracking-wider">Logout</span>
+          </button>
         </div>
-        )}
       </header>
       {/* Dynamic Rendering of Components */}
       <div className="flex-1 overflow-auto relative z-10 bg-bg-100 light:bg-slate-50 hud-canvas-bg flex flex-col pb-20 md:pb-0">
@@ -506,8 +551,8 @@ const MainUIScreen = ({ onLogout }) => {
             activeTab === 'Dashboard' ? 'text-cyan-400 font-bold' : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          <LayoutDashboard size={19} strokeWidth={activeTab === 'Dashboard' ? 2.5 : 1.8} className={activeTab === 'Dashboard' ? 'drop-shadow-[0_0_8px_rgba(0,229,255,0.7)]' : ''} />
-          <span className="font-tactical text-[10px] tracking-wider uppercase mt-1">Dashboard</span>
+          <LayoutDashboard size={18} strokeWidth={activeTab === 'Dashboard' ? 2.5 : 1.8} className={activeTab === 'Dashboard' ? 'drop-shadow-[0_0_8px_rgba(0,229,255,0.7)]' : ''} />
+          <span className="font-tactical text-[9px] tracking-wider uppercase mt-1">Dashboard</span>
         </button>
 
         <button
@@ -517,8 +562,8 @@ const MainUIScreen = ({ onLogout }) => {
             activeTab === 'Tournament' ? 'text-cyan-400 font-bold' : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          <Trophy size={19} strokeWidth={activeTab === 'Tournament' ? 2.5 : 1.8} className={activeTab === 'Tournament' ? 'drop-shadow-[0_0_8px_rgba(0,229,255,0.7)]' : ''} />
-          <span className="font-tactical text-[10px] tracking-wider uppercase mt-1">Tourney</span>
+          <Trophy size={18} strokeWidth={activeTab === 'Tournament' ? 2.5 : 1.8} className={activeTab === 'Tournament' ? 'drop-shadow-[0_0_8px_rgba(0,229,255,0.7)]' : ''} />
+          <span className="font-tactical text-[9px] tracking-wider uppercase mt-1">Tourney</span>
         </button>
 
         <button
@@ -528,8 +573,8 @@ const MainUIScreen = ({ onLogout }) => {
             activeTab === 'Tournament History' ? 'text-cyan-400 font-bold' : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          <Archive size={19} strokeWidth={activeTab === 'Tournament History' ? 2.5 : 1.8} className={activeTab === 'Tournament History' ? 'drop-shadow-[0_0_8px_rgba(0,229,255,0.7)]' : ''} />
-          <span className="font-tactical text-[10px] tracking-wider uppercase mt-1">History</span>
+          <Archive size={18} strokeWidth={activeTab === 'Tournament History' ? 2.5 : 1.8} className={activeTab === 'Tournament History' ? 'drop-shadow-[0_0_8px_rgba(0,229,255,0.7)]' : ''} />
+          <span className="font-tactical text-[9px] tracking-wider uppercase mt-1">History</span>
         </button>
 
         <button
@@ -538,12 +583,22 @@ const MainUIScreen = ({ onLogout }) => {
           className="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-cyan-400 transition-colors cursor-pointer"
         >
           <div className="relative">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 absolute -top-0.5 -right-0.5 shadow-[0_0_6px_#00e5ff]" />
           </div>
-          <span className="font-tactical text-[10px] tracking-wider uppercase mt-1">Menu</span>
+          <span className="font-tactical text-[9px] tracking-wider uppercase mt-1">Menu</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setShowLogoutModal(true)}
+          className="flex flex-col items-center justify-center flex-1 py-1 text-red-400/80 hover:text-red-400 transition-colors cursor-pointer group"
+          title="Logout Admin Session"
+        >
+          <LogOut size={18} strokeWidth={2} className="group-hover:scale-110 transition-transform drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+          <span className="font-tactical text-[9px] tracking-wider uppercase mt-1 text-red-400 font-bold">Logout</span>
         </button>
       </nav>
     </main>
