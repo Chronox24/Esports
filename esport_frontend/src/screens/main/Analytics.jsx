@@ -1265,14 +1265,14 @@ const Analytics = ({ globalGame, globalTournament }) => {
     }
 
     const fallbackVal = [
-      { name: "Elite Player", color: "#00d0eb", stats: [88, 92, 78, 86, 82, 85], tier: "Elite Benchmark" },
-      { name: "Pro Player", color: "#ff3366", stats: [78, 80, 68, 74, 72, 70], tier: "Pro Benchmark" },
-      { name: "Average Player", color: "#a78bfa", stats: [62, 60, 52, 58, 55, 48], tier: "Average Benchmark" },
+      { name: "#1 Top Player", ign: "Top 1 Player", color: "#00d0eb", stats: [88, 92, 78, 86, 82, 85], tier: "#1 Top Player", rank: 1, isTopPlayer: true },
+      { name: "#2 Top Player", ign: "Top 2 Player", color: "#ff3366", stats: [78, 80, 68, 74, 72, 70], tier: "#2 Top Player", rank: 2, isTopPlayer: true },
+      { name: "#3 Top Player", ign: "Top 3 Player", color: "#a78bfa", stats: [62, 60, 52, 58, 55, 48], tier: "#3 Top Player", rank: 3, isTopPlayer: true },
     ];
     const fallbackCf = [
-      { name: "CF Elite", color: "#f59e0b", stats: [86, 90, 75, 88, 80, 84], tier: "Elite Benchmark" },
-      { name: "CF Pro", color: "#4c7fd6", stats: [76, 78, 66, 76, 70, 68], tier: "Pro Benchmark" },
-      { name: "Average Player", color: "#10b981", stats: [60, 58, 50, 56, 52, 45], tier: "Average Benchmark" },
+      { name: "#1 Top Player", ign: "Top 1 Player", color: "#f59e0b", stats: [86, 90, 75, 88, 80, 84], tier: "#1 Top Player", rank: 1, isTopPlayer: true },
+      { name: "#2 Top Player", ign: "Top 2 Player", color: "#4c7fd6", stats: [76, 78, 66, 76, 70, 68], tier: "#2 Top Player", rank: 2, isTopPlayer: true },
+      { name: "#3 Top Player", ign: "Top 3 Player", color: "#10b981", stats: [60, 58, 50, 56, 52, 45], tier: "#3 Top Player", rank: 3, isTopPlayer: true },
     ];
 
     if (gameRecords.length === 0) {
@@ -1299,65 +1299,44 @@ const Analytics = ({ globalGame, globalTournament }) => {
 
     playerList.sort((a, b) => b.overall - a.overall);
 
-    const calcBenchmark = (players) => {
-      if (!players || players.length === 0) return [50, 50, 50, 50, 50, 50];
-      const sum = [0, 0, 0, 0, 0, 0];
-      players.forEach((p) => {
-        p.stats.forEach((s, i) => {
-          sum[i] += s;
-        });
+    const rankColors = isVal
+      ? ["#00d0eb", "#ff3366", "#a78bfa"]
+      : ["#f59e0b", "#4c7fd6", "#10b981"];
+
+    const rankTiers = ["#1 Top Player", "#2 Top Player", "#3 Top Player"];
+
+    // Map the actual top 3 individual players sorted by overall rating
+    const top3Players = playerList.slice(0, 3).map((p, idx) => ({
+      name: `#${idx + 1} ${p.ign}`,
+      ign: p.ign,
+      color: rankColors[idx % rankColors.length],
+      stats: p.stats,
+      meta: p.meta,
+      overall: p.overall,
+      tier: rankTiers[idx] || `#${idx + 1} Top Player`,
+      rank: idx + 1,
+      isTopPlayer: true,
+      sampleCount: p.meta?.matches || 1,
+      totalRecords: gameRecords.length,
+    }));
+
+    // If fewer than 3 players with records exist in DB, backfill remaining slots from fallback
+    const fallbacks = isVal ? fallbackVal : fallbackCf;
+    while (top3Players.length < 3 && top3Players.length < fallbacks.length) {
+      const idx = top3Players.length;
+      top3Players.push({
+        ...fallbacks[idx],
+        rank: idx + 1,
       });
-      return sum.map((x) => Math.round(x / players.length));
-    };
-
-    const eliteCount = Math.max(1, Math.ceil(playerList.length * 0.15));
-    const elitePlayers = playerList.slice(0, eliteCount);
-    const proPlayers = playerList.slice(eliteCount, Math.max(eliteCount + 1, Math.ceil(playerList.length * 0.5)));
-    const avgPlayers = playerList;
-
-    const eliteStats = calcBenchmark(elitePlayers);
-    const proStats = calcBenchmark(proPlayers.length > 0 ? proPlayers : elitePlayers);
-    const avgStats = calcBenchmark(avgPlayers);
-
-    const eliteColor = isVal ? "#00d0eb" : "#f59e0b";
-    const proColor = isVal ? "#ff3366" : "#4c7fd6";
-    const avgColor = isVal ? "#a78bfa" : "#10b981";
-
-    const eliteTier = {
-      name: isVal ? "Elite Player" : "CF Elite",
-      color: eliteColor,
-      stats: eliteStats,
-      tier: "Elite Benchmark",
-      sampleCount: elitePlayers.length,
-      totalRecords: gameRecords.length,
-      topPlayers: elitePlayers.slice(0, 5).map(p => p.ign).join(", "),
-    };
-
-    const proTier = {
-      name: isVal ? "Pro Player" : "CF Pro",
-      color: proColor,
-      stats: proStats,
-      tier: "Pro Benchmark",
-      sampleCount: proPlayers.length,
-      totalRecords: gameRecords.length,
-    };
-
-    const avgTier = {
-      name: "Average Player",
-      color: avgColor,
-      stats: avgStats,
-      tier: "Average Benchmark",
-      sampleCount: avgPlayers.length,
-      totalRecords: gameRecords.length,
-    };
+    }
 
     let result = [];
     if (dataType === "PRO PLAYERS") {
-      result = [eliteTier, proTier];
+      result = top3Players.slice(0, 2);
     } else if (dataType === "CASUAL") {
-      result = [avgTier];
+      result = top3Players.slice(2, 3);
     } else {
-      result = [eliteTier, proTier, avgTier];
+      result = [...top3Players];
     }
 
     // Dynamic Player Search matching against database records:
@@ -1367,14 +1346,18 @@ const Analytics = ({ globalGame, globalTournament }) => {
       if (matchedPlayers.length > 0) {
         const playerColors = ["#38bdf8", "#fbbf24", "#34d399"];
         matchedPlayers.forEach((mp, idx) => {
-          result.push({
-            name: mp.ign,
-            color: playerColors[idx % playerColors.length],
-            stats: mp.stats,
-            meta: mp.meta,
-            isIndividualPlayer: true,
-            tier: "Individual Player Profile",
-          });
+          if (!result.some(r => r.ign && r.ign.toLowerCase() === mp.ign.toLowerCase())) {
+            result.push({
+              name: mp.ign,
+              ign: mp.ign,
+              color: playerColors[idx % playerColors.length],
+              stats: mp.stats,
+              meta: mp.meta,
+              overall: mp.overall,
+              isIndividualPlayer: true,
+              tier: "Searched Player Profile",
+            });
+          }
         });
       }
     }
@@ -1594,9 +1577,9 @@ const Analytics = ({ globalGame, globalTournament }) => {
           {/* Radar — Player Skill Matrix */}
           <div className="a-fade">
             <Card
-              title="Global Player Skill Matrix"
+              title="Top Players Skill Matrix"
               accent={accent}
-              badge={`Radar • ${matchRecords.length} DB Records`}
+              badge={`Top 3 Players • ${matchRecords.length} DB Records`}
               icon={
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <polygon points="12,2 22,8.5 22,15.5 12,22 2,15.5 2,8.5" />
