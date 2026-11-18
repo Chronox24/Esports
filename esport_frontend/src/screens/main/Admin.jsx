@@ -155,16 +155,16 @@ const CloseIcon = () => (
 const Modal = ({ isOpen, onClose, title, children, maxWidth = "max-w-2xl" }) => {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ padding: "20px" }}>
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
-      <div className={`relative bg-bg-300 light:bg-white w-full ${maxWidth} rounded-2xl border border-theme-input light:border-slate-200 shadow-2xl flex flex-col overflow-hidden max-h-[90vh]`}>
-        <div className="border-b border-theme-input light:border-slate-200 flex justify-between items-center bg-bg-300 light:bg-slate-50" style={{ padding: "24px 32px" }}>
-          <h2 className="text-xl font-black tracking-wider text-theme-text-base light:text-slate-900 uppercase" style={{ margin: 0, letterSpacing: "0.05em" }}>{title}</h2>
-          <button onClick={onClose} className="text-theme-text-muted hover:text-theme-text-base transition-colors" style={{ background: "transparent", border: "none", cursor: "pointer", padding: "6px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+      <div className="fixed inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose}></div>
+      <div className={`relative bg-bg-300 light:bg-white w-full ${maxWidth} rounded-2xl border border-theme-input light:border-slate-200 shadow-2xl flex flex-col overflow-hidden max-h-[90vh] my-auto`}>
+        <div className="border-b border-theme-input light:border-slate-200 flex justify-between items-center bg-bg-300 light:bg-slate-50 p-4 sm:px-8 sm:py-6 shrink-0">
+          <h2 className="text-lg sm:text-xl font-black tracking-wider text-theme-text-base light:text-slate-900 uppercase truncate" style={{ margin: 0, letterSpacing: "0.05em" }}>{title}</h2>
+          <button onClick={onClose} className="text-theme-text-muted hover:text-theme-text-base transition-colors p-1.5 flex items-center justify-center shrink-0">
             <CloseIcon />
           </button>
         </div>
-        <div className="overflow-y-auto custom-scrollbar" style={{ padding: "28px 32px" }}>
+        <div className="overflow-y-auto overflow-x-hidden custom-scrollbar p-4 sm:p-7 flex-1">
           {children}
         </div>
       </div>
@@ -980,11 +980,11 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #334155; }
       `}</style>
       {}
-      <div className="flex-1 pb-16 flex flex-col items-center" style={{ padding: "28px 32px" }}>
-        <div className="w-full max-w-[1440px] flex flex-col gap-6">
+      <div className="flex-1 pb-16 flex flex-col items-center w-full max-w-full overflow-x-hidden px-3 sm:px-6 md:px-8 py-4 sm:py-7">
+        <div className="w-full max-w-[1440px] flex flex-col gap-6 overflow-x-hidden min-w-0 max-w-full">
           {/* Active Folder Tactical Banner */}
           {activeTournamentObj && (
-            <div className="hud-card hud-enter rounded-xl w-full flex flex-wrap items-center justify-between gap-4 bg-slate-900/65" style={{ padding: "16px 26px" }}>
+            <div className="hud-card hud-enter rounded-xl w-full max-w-full flex flex-wrap items-center justify-between gap-3 bg-slate-900/65 p-3.5 sm:p-5">
               <div className="flex items-center gap-3.5">
                 <span className="hud-diamond" />
                 <div className="flex items-center gap-3 flex-wrap">
@@ -1031,8 +1031,7 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
           {/* Tactical Sub-Navigation Tabs */}
           <div className="flex justify-center items-center gap-3 flex-wrap">
             <div 
-              className="flex flex-wrap items-center bg-slate-950/80 border border-cyan-500/20 hud-chamfer shadow-xl backdrop-blur-md"
-              style={{ padding: "5px", gap: "6px" }}
+              className="flex flex-wrap items-center justify-center bg-slate-950/80 border border-cyan-500/20 hud-chamfer shadow-xl backdrop-blur-md max-w-full p-1 gap-1 sm:gap-1.5"
             >
               {[
                 {
@@ -1068,12 +1067,11 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`hud-chamfer-sm flex items-center font-tactical text-xs font-extrabold tracking-[0.14em] uppercase transition-all duration-200 cursor-pointer ${
+                    className={`hud-chamfer-sm flex items-center justify-center font-tactical text-[10px] sm:text-xs font-extrabold tracking-wider sm:tracking-[0.14em] uppercase transition-all duration-200 cursor-pointer px-3 sm:px-5 py-2 sm:py-2.5 gap-1.5 sm:gap-2 text-center max-w-full ${
                       isActive
                         ? 'bg-cyan-400 text-slate-950 shadow-[0_0_18px_rgba(0,229,255,0.45)]'
                         : 'text-theme-text-muted hover:text-white hover:bg-slate-900 border border-transparent'
                     }`}
-                    style={{ padding: "10px 22px", gap: "9px" }}
                   >
                     <span className={isActive ? "text-slate-950" : "text-cyan-400/70"}>
                       {tab.icon}
@@ -1099,12 +1097,12 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
           </div>
 
           {activeTab === 'League Quick Stats' && (
-            <div className="hud-card hud-enter hud-delay-1 rounded-xl shadow-xl overflow-hidden flex flex-col">
-              <div className="border-b border-slate-800/80 bg-slate-900/50 flex flex-wrap items-center justify-between" style={{ padding: "18px 26px", gap: "16px" }}>
-                 <div className="flex items-center gap-3">
-                   <span className="hud-diamond" />
-                   <h2 className="font-tactical text-base font-extrabold text-theme-text-base tracking-[0.16em] uppercase">
-                     League Quick Stats <span className="text-cyan-400/80 text-xs">// PH LOCAL CONTEXT</span>
+            <div className="hud-card hud-enter hud-delay-1 rounded-xl shadow-xl overflow-hidden flex flex-col w-full max-w-full">
+              <div className="border-b border-slate-800/80 bg-slate-900/50 flex flex-wrap items-center justify-between p-3.5 sm:p-5 gap-3 sm:gap-4">
+                 <div className="flex items-center gap-2.5 flex-wrap">
+                   <span className="hud-diamond shrink-0" />
+                   <h2 className="font-tactical text-sm sm:text-base font-extrabold text-theme-text-base tracking-[0.16em] uppercase">
+                     League Quick Stats <span className="text-cyan-400/80 text-[10px] sm:text-xs">// PH LOCAL CONTEXT</span>
                    </h2>
                    <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 hud-chamfer-sm bg-cyan-500/10 border border-cyan-500/30 font-tactical text-cyan-300 text-[10px] font-bold tracking-widest uppercase">
                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
@@ -1121,8 +1119,7 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                    <button
                      onClick={fetchData}
                      disabled={loadingStats}
-                     style={{ padding: '8px 16px' }}
-                     className="hud-btn-secondary flex items-center gap-2 font-tactical text-xs font-extrabold tracking-[0.14em] uppercase disabled:opacity-50 cursor-pointer"
+                     className="hud-btn-secondary flex items-center gap-2 font-tactical text-xs font-extrabold tracking-[0.14em] uppercase disabled:opacity-50 cursor-pointer px-3.5 py-2"
                      title="Refresh stats from database"
                    >
                      <RefreshIcon className={`w-3.5 h-3.5 ${loadingStats ? 'animate-spin' : ''}`} />
@@ -1131,7 +1128,7 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                  </div>
               </div>
 
-               <div className="grid grid-cols-1 md:grid-cols-2 flex-1" style={{ padding: "26px", gap: "20px" }}>
+               <div className="grid grid-cols-1 md:grid-cols-2 flex-1 p-3.5 sm:p-6 gap-4 sm:gap-5">
                  {/* Card 1: Total Registered Players */}
                  <div 
                    onClick={() => { setStatsModal('players'); setStatsSearch(''); }}
@@ -1268,7 +1265,7 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
           )}
           {activeTab === 'Admin Accounts & User Directory' && (
             <div className="hud-card hud-enter rounded-xl shadow-xl overflow-hidden flex flex-col">
-              <div className="border-b border-slate-800/80 bg-slate-900/50 flex flex-wrap justify-between items-center" style={{ padding: "20px 26px", gap: "20px" }}>
+              <div className="border-b border-slate-800/80 bg-slate-900/50 flex flex-wrap justify-between items-center p-3.5 sm:p-5 gap-3.5 sm:gap-5">
                  <div className="flex items-center gap-3 flex-shrink-0">
                    <span className="hud-diamond" />
                    <div className="flex flex-col">
@@ -1277,7 +1274,7 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                    </div>
                  </div>
                  <div className="flex items-center flex-wrap" style={{ gap: "12px" }}>
-                    <div className="relative flex-shrink-0" style={{ width: "260px" }}>
+                    <div className="relative flex-1 min-w-[180px] sm:w-[260px] sm:flex-initial">
                       <div className="absolute inset-y-0 left-0 flex items-center pointer-events-none" style={{ paddingLeft: "12px" }}>
                         <SearchIcon />
                       </div>
@@ -1290,7 +1287,7 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                         style={{ padding: "9px 14px 9px 38px" }}
                       />
                     </div>
-                    <div className="flex-shrink-0" style={{ width: "210px" }}>
+                    <div className="flex-1 min-w-[160px] sm:w-[210px] sm:flex-initial">
                       <SelectDropdown
                         options={['All Roles', 'Super Admin', 'Standard Admin']}
                         value={accountRoleFilter}
@@ -1299,7 +1296,7 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                     </div>
                  </div>
               </div>
-              <div className="flex-1 overflow-auto custom-scrollbar">
+              <div className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar w-full max-w-full">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-slate-950/70 font-tactical text-[11px] uppercase tracking-[0.18em] text-cyan-400/80 sticky top-0 shadow-sm z-10 border-b border-slate-800">
                     <tr>
@@ -1454,36 +1451,35 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
             </div>
           )}
           {activeTab === 'Rulebook Viewer' && (
-            <div className="hud-card hud-enter rounded-xl shadow-xl flex flex-col gap-6" style={{ padding: "26px" }}>
+            <div className="hud-card hud-enter rounded-xl shadow-xl flex flex-col gap-5 w-full max-w-full overflow-hidden p-3.5 sm:p-6">
               {/* Header Bar */}
-              <div className="border-b border-slate-800/80 pb-5 flex flex-wrap justify-between items-center gap-4">
-                <div>
-                  <div className="flex items-center gap-3">
-                    <span className="hud-diamond" />
-                    <h2 className="font-tactical text-lg font-extrabold text-theme-text-base tracking-[0.16em] uppercase">Rulebook Viewer</h2>
-                    <span className="hud-chamfer-sm inline-flex items-center gap-1.5 px-3 py-1 font-tactical text-[10px] font-extrabold uppercase tracking-[0.14em] bg-emerald-500/15 border border-emerald-500/35 text-emerald-300">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                      Connected to Database (public.rulebooks)
+              <div className="border-b border-slate-800/80 pb-5 flex flex-wrap justify-between items-center gap-4 max-w-full">
+                <div className="min-w-0 max-w-full">
+                  <div className="flex items-center gap-2.5 flex-wrap max-w-full">
+                    <span className="hud-diamond shrink-0" />
+                    <h2 className="font-tactical text-base sm:text-lg font-extrabold text-theme-text-base tracking-[0.16em] uppercase">Rulebook Viewer</h2>
+                    <span className="hud-chamfer-sm inline-flex items-center gap-1.5 px-2.5 py-1 font-tactical text-[9px] sm:text-[10px] font-extrabold uppercase tracking-[0.14em] bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 max-w-full">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                      <span className="truncate">Connected to Database (public.rulebooks)</span>
                     </span>
                   </div>
-                  <p className="text-xs text-theme-text-muted mt-1.5">
+                  <p className="text-xs text-theme-text-muted mt-1.5 break-words">
                     Official League Rulebook stored in Supabase Cloud Storage &amp; PostgreSQL. Synced across all player &amp; tournament screens.
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3 flex-wrap max-w-full">
                   <button
                     type="button"
                     onClick={fetchRulebook}
                     disabled={rulebookLoading}
-                    className="hud-btn-secondary flex items-center gap-2 font-tactical text-xs font-extrabold tracking-[0.14em] uppercase cursor-pointer"
-                    style={{ padding: "9px 18px" }}
+                    className="hud-btn-secondary flex items-center gap-2 font-tactical text-[11px] sm:text-xs font-extrabold tracking-[0.14em] uppercase cursor-pointer px-3 sm:px-4 py-2"
                     title="Refresh database records"
                   >
                     <RefreshIcon className={`w-3.5 h-3.5 ${rulebookLoading ? 'animate-spin text-cyan-400' : ''}`} />
                     <span>Refresh DB</span>
                   </button>
-                  <label className="hud-btn-primary font-tactical text-xs font-extrabold uppercase tracking-[0.14em] cursor-pointer flex items-center gap-2" style={{ padding: "9px 20px" }}>
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                  <label className="hud-btn-primary font-tactical text-[11px] sm:text-xs font-extrabold uppercase tracking-[0.14em] cursor-pointer flex items-center gap-2 px-3 sm:px-4 py-2">
+                    <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                     <span>{isUploadingRulebook ? 'Uploading to DB...' : 'Upload New Rulebook'}</span>
                     <input type="file" className="hidden" accept="application/pdf,image/*" onChange={handleRulebookUpload} disabled={isUploadingRulebook} />
                   </label>
@@ -1491,10 +1487,10 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
               </div>
 
               {/* Tournament Scoping Bar */}
-              <div className="flex flex-wrap items-center justify-between gap-4 bg-bg-200 border border-cyan-500/20 px-5 py-3.5 rounded-xl shadow-inner">
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-black uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                    <svg className="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-bg-200 border border-cyan-500/20 p-3 sm:px-5 sm:py-3.5 rounded-xl shadow-inner max-w-full overflow-hidden">
+                <div className="flex items-center gap-2 sm:gap-3 flex-wrap max-w-full w-full sm:w-auto min-w-0">
+                  <span className="text-xs font-black uppercase tracking-wider text-slate-300 flex items-center gap-1.5 shrink-0">
+                    <svg className="w-4 h-4 text-cyan-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
                     Managing Rulebook For:
                   </span>
                   <select
@@ -1504,7 +1500,7 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                       setRulebookTournament(val);
                       fetchRulebook(val);
                     }}
-                    className="bg-bg-200 border border-cyan-500/40 text-cyan-400 font-black text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-cyan-400 cursor-pointer shadow-sm"
+                    className="bg-bg-200 border border-cyan-500/40 text-cyan-400 font-black text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-cyan-400 cursor-pointer shadow-sm max-w-full w-full sm:w-auto min-w-0 truncate"
                   >
                     {tournaments.map((t) => (
                       <option key={t.id || t.name} value={t.name} className="bg-[#0b1017] text-white">
@@ -1518,28 +1514,28 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                     )}
                   </select>
                 </div>
-                <div className="flex items-center gap-2 text-[11px] text-slate-400">
-                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-                  <span>Rulebooks strictly stay in <strong>{rulebookTournament || 'this tournament'}</strong></span>
+                <div className="flex items-center gap-2 text-[11px] text-slate-400 max-w-full break-words">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shrink-0" />
+                  <span className="truncate">Rulebooks strictly stay in <strong>{rulebookTournament || 'this tournament'}</strong></span>
                 </div>
               </div>
 
               {/* Active Rulebook Card */}
               {rulebookUrl ? (
                 <div className="flex flex-col gap-4">
-                  <div className="bg-bg-200 rounded-xl border border-cyan-500/30 p-6 flex flex-wrap items-center justify-between gap-6 shadow-[0_0_30px_rgba(6,182,212,0.08)] relative overflow-hidden">
+                  <div className="bg-bg-200 rounded-xl border border-cyan-500/30 p-4 sm:p-6 flex flex-wrap items-center justify-between gap-4 sm:gap-6 shadow-[0_0_30px_rgba(6,182,212,0.08)] relative overflow-hidden max-w-full">
                     <div className="absolute top-0 left-0 w-1.5 h-full bg-cyan-400" />
-                    <div className="flex items-center gap-5">
-                      <div className="hud-chamfer-sm flex-shrink-0 w-14 h-14 flex items-center justify-center bg-cyan-500/15 border border-cyan-500/40 text-cyan-400 shadow-inner">
-                        <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    <div className="flex items-center gap-3 sm:gap-5 min-w-0 max-w-full">
+                      <div className="hud-chamfer-sm flex-shrink-0 w-11 h-11 sm:w-14 sm:h-14 flex items-center justify-center bg-cyan-500/15 border border-cyan-500/40 text-cyan-400 shadow-inner">
+                        <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                       </div>
-                      <div className="flex flex-col gap-1.5">
-                        <div className="flex items-center gap-2.5 flex-wrap">
-                          <span className="font-tactical text-base font-extrabold uppercase tracking-wider text-theme-text-base">Official League Rulebook</span>
-                          <span className="hud-chamfer-sm px-2.5 py-0.5 font-tactical text-[10px] font-extrabold uppercase tracking-wider bg-cyan-500/15 text-cyan-300 border border-cyan-500/35">
+                      <div className="flex flex-col gap-1.5 min-w-0 max-w-full">
+                        <div className="flex items-center gap-2 flex-wrap max-w-full">
+                          <span className="font-tactical text-sm sm:text-base font-extrabold uppercase tracking-wider text-theme-text-base">Official League Rulebook</span>
+                          <span className="hud-chamfer-sm px-2 py-0.5 font-tactical text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider bg-cyan-500/15 text-cyan-300 border border-cyan-500/35 truncate max-w-full">
                             Tournament: {rulebookRecord?.tournament_name || rulebookTournament}
                           </span>
-                          <span className="hud-chamfer-sm px-2.5 py-0.5 font-tactical text-[10px] font-bold uppercase tracking-wider bg-slate-900 text-slate-300 border border-slate-700">
+                          <span className="hud-chamfer-sm px-2 py-0.5 font-tactical text-[9px] sm:text-[10px] font-bold uppercase tracking-wider bg-slate-900 text-slate-300 border border-slate-700 shrink-0">
                             DB Record #{rulebookRecord?.id || 'Active'}
                           </span>
                         </div>

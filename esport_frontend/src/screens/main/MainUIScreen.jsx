@@ -447,7 +447,7 @@ const MainUIScreen = ({ onLogout }) => {
       </div>
     </aside>
     {/* MAIN CONTENT AREA */}
-    <main className="flex-1 bg-bg-100 light:bg-slate-50 flex flex-col overflow-hidden relative">
+    <main className="flex-1 bg-bg-100 light:bg-slate-50 flex flex-col overflow-hidden relative min-w-0 max-w-full">
       {/* Tactical HUD Header */}
       <header
         style={{ padding: '0 24px' }}
@@ -537,7 +537,7 @@ const MainUIScreen = ({ onLogout }) => {
         </div>
       </header>
       {/* Dynamic Rendering of Components */}
-      <div className="flex-1 overflow-auto relative z-10 bg-bg-100 light:bg-slate-50 hud-canvas-bg flex flex-col pb-20 md:pb-0">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden relative z-10 bg-bg-100 light:bg-slate-50 hud-canvas-bg flex flex-col pb-20 md:pb-0 w-full max-w-full">
         {renderContent()}
       </div>
       {/* Tactical Mobile Bottom Navigation Bar */}
