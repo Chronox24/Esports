@@ -18,6 +18,14 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
   const [successMsg, setSuccessMsg] = useState('');
   const [recoveryToken, setRecoveryToken] = useState('');
 
+  // Check if session previously expired due to inactivity
+  useEffect(() => {
+    if (sessionStorage.getItem('session_expired_notice') === 'true') {
+      setErrorMsg('Your previous session expired after 8 hours of inactivity. Please enter your credentials to log in.');
+      sessionStorage.removeItem('session_expired_notice');
+    }
+  }, []);
+
   // If already logged in, automatically proceed without requiring re-authentication
   useEffect(() => {
     if (localStorage.getItem('isLoggedIn') === 'true') {
