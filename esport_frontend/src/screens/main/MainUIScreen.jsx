@@ -523,11 +523,11 @@ const MainUIScreen = ({ onLogout }) => {
             </div>
           )}
 
-          {/* Quick Tactical Logout Button for Mobile */}
+          {/* Quick Tactical Logout Button for Mobile & PC */}
           <button
             type="button"
             onClick={() => setShowLogoutModal(true)}
-            className="md:hidden flex items-center gap-1 px-2.5 py-1.5 rounded-lg font-tactical text-[11px] font-extrabold text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 hover:border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.2)] transition-all cursor-pointer active:scale-95 shrink-0"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg font-tactical text-[11px] sm:text-xs font-extrabold text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 hover:border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.2)] transition-all cursor-pointer active:scale-95 shrink-0"
             title="Logout Admin Session"
             aria-label="Logout"
           >

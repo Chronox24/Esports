@@ -87,8 +87,22 @@ const defaultHighlights = [
   }
 ];
 
-const Home = ({ onLoginSuccess, isLoggedIn }) => {
+const Home = ({ onLoginSuccess, isLoggedIn, onLogout }) => {
   const userLoggedIn = isLoggedIn || (typeof window !== 'undefined' && localStorage.getItem('isLoggedIn') === 'true');
+  const handleSignout = () => {
+    if (onLogout) {
+      onLogout();
+    } else {
+      localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem('token');
+      localStorage.removeItem('supabase.auth.token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('username');
+      localStorage.removeItem('user_ign');
+      window.location.href = '/';
+    }
+  };
+
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -372,16 +386,26 @@ const Home = ({ onLoginSuccess, isLoggedIn }) => {
         </nav>
 
         {/* Desktop Actions */}
-        <div className="navbar-actions">
+        <div className="navbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           {userLoggedIn ? (
-            <button 
-              type="button" 
-              className="login-btn glow-on-hover"
-              style={{ background: 'var(--accent-neon, #00e5ff)', color: '#040814', border: '1.5px solid var(--accent-neon, #00e5ff)', boxShadow: '0 0 16px rgba(0, 229, 255, 0.4)' }}
-              onClick={() => navigate('/dashboard')}
-            >
-              DASHBOARD →
-            </button>
+            <>
+              <button 
+                type="button" 
+                className="login-btn glow-on-hover"
+                style={{ background: 'var(--accent-neon, #00e5ff)', color: '#040814', border: '1.5px solid var(--accent-neon, #00e5ff)', boxShadow: '0 0 16px rgba(0, 229, 255, 0.4)' }}
+                onClick={() => navigate('/dashboard')}
+              >
+                DASHBOARD →
+              </button>
+              <button 
+                type="button" 
+                className="signout-nav-btn"
+                onClick={handleSignout}
+                title="Sign out of admin session"
+              >
+                SIGNOUT
+              </button>
+            </>
           ) : (
             <button 
               type="button" 
@@ -396,14 +420,24 @@ const Home = ({ onLoginSuccess, isLoggedIn }) => {
         {/* Mobile Header Controls */}
         <div className="mobile-header-controls">
           {userLoggedIn ? (
-            <button 
-              type="button" 
-              className="mobile-quick-login-btn"
-              style={{ background: 'var(--accent-neon, #00e5ff)', color: '#040814', border: '1px solid var(--accent-neon, #00e5ff)' }}
-              onClick={() => navigate('/dashboard')}
-            >
-              DASHBOARD
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button 
+                type="button" 
+                className="mobile-quick-login-btn"
+                style={{ background: 'var(--accent-neon, #00e5ff)', color: '#040814', border: '1px solid var(--accent-neon, #00e5ff)' }}
+                onClick={() => navigate('/dashboard')}
+              >
+                DASHBOARD
+              </button>
+              <button 
+                type="button" 
+                className="mobile-quick-signout-btn"
+                onClick={handleSignout}
+                title="Sign out"
+              >
+                SIGNOUT
+              </button>
+            </div>
           ) : (
             <button 
               type="button" 
@@ -474,6 +508,18 @@ const Home = ({ onLoginSuccess, isLoggedIn }) => {
             >
               {userLoggedIn ? 'GO TO DASHBOARD' : 'LOGIN TO PORTAL'}
             </button>
+            {userLoggedIn && (
+              <button
+                type="button"
+                className="mobile-signout-drawer-btn"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleSignout();
+                }}
+              >
+                SIGN OUT
+              </button>
+            )}
             <div className="mobile-drawer-badge">
               <span className="pulse-indicator" /> Official League Platform
             </div>

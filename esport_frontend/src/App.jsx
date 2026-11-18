@@ -46,6 +46,7 @@ const App = () => {
           <Home
             isLoggedIn={isLoggedIn}
             onLoginSuccess={handleLoginSuccess}
+            onLogout={handleLogout}
           />
         }
       />
@@ -55,6 +56,7 @@ const App = () => {
           <AboutUs
             isLoggedIn={isLoggedIn}
             onLoginSuccess={handleLoginSuccess}
+            onLogout={handleLogout}
           />
         }
       />
@@ -64,6 +66,7 @@ const App = () => {
           <Projects
             isLoggedIn={isLoggedIn}
             onLoginSuccess={handleLoginSuccess}
+            onLogout={handleLogout}
           />
         }
       />
@@ -73,6 +76,7 @@ const App = () => {
           <Services
             isLoggedIn={isLoggedIn}
             onLoginSuccess={handleLoginSuccess}
+            onLogout={handleLogout}
           />
         }
       />

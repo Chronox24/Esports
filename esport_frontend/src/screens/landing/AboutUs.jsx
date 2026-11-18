@@ -18,8 +18,22 @@ const EmailIcon = () => (
   </svg>
 );
 
-const AboutUs = ({ onLoginSuccess, isLoggedIn }) => {
+const AboutUs = ({ onLoginSuccess, isLoggedIn, onLogout }) => {
   const userLoggedIn = isLoggedIn || (typeof window !== 'undefined' && localStorage.getItem('isLoggedIn') === 'true');
+  const handleSignout = () => {
+    if (onLogout) {
+      onLogout();
+    } else {
+      localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem('token');
+      localStorage.removeItem('supabase.auth.token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('username');
+      localStorage.removeItem('user_ign');
+      window.location.href = '/';
+    }
+  };
+
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ name: '', email: '', contact: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -120,14 +134,24 @@ const AboutUs = ({ onLoginSuccess, isLoggedIn }) => {
           ))}
         </nav>
         {userLoggedIn ? (
-          <button 
-            type="button" 
-            className="login-btn glow-on-hover"
-            style={{ background: 'var(--accent-neon, #00e5ff)', color: '#040814', border: '1.5px solid var(--accent-neon, #00e5ff)', boxShadow: '0 0 16px rgba(0, 229, 255, 0.4)' }}
-            onClick={() => navigate('/dashboard')}
-          >
-            DASHBOARD →
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button 
+              type="button" 
+              className="login-btn glow-on-hover"
+              style={{ background: 'var(--accent-neon, #00e5ff)', color: '#040814', border: '1.5px solid var(--accent-neon, #00e5ff)', boxShadow: '0 0 16px rgba(0, 229, 255, 0.4)' }}
+              onClick={() => navigate('/dashboard')}
+            >
+              DASHBOARD →
+            </button>
+            <button 
+              type="button" 
+              className="signout-nav-btn"
+              onClick={handleSignout}
+              title="Sign out of admin session"
+            >
+              SIGNOUT
+            </button>
+          </div>
         ) : (
           <button type="button" className="login-btn" onClick={() => setShowLogin(true)}>
             LOGIN
