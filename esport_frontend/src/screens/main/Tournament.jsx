@@ -850,104 +850,99 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
   const [showFinishedBracket, setShowFinishedBracket] = React.useState(false);
   const [isTogglingStatus, setIsTogglingStatus] = React.useState(false);
 
-  React.useEffect(() => {
-    let isCancelled = false;
+  const loadTournaments = React.useCallback(async () => {
     setIsLoading(true);
 
-    const runLoad = async () => {
-      try {
-        const [tRes, brRes, dashRes] = await Promise.all([
-          apiFetch('/api/tournaments').then(r => r.json()).catch(() => []),
-          apiFetch('/api/bracket-results').then(r => r.json()).catch(() => []),
-          apiFetch('/api/tournaments-dashboard').then(r => r.json()).catch(() => []),
-          new Promise(resolve => setTimeout(resolve, 550))
-        ]);
+    try {
+      const [tRes, brRes, dashRes] = await Promise.all([
+        apiFetch('/api/tournaments').then(r => r.json()).catch(() => []),
+        apiFetch('/api/bracket-results').then(r => r.json()).catch(() => []),
+        apiFetch('/api/tournaments-dashboard').then(r => r.json()).catch(() => []),
+        new Promise(resolve => setTimeout(resolve, 550))
+      ]);
 
-        if (isCancelled) return;
+      const completedSet = new Set([
+        ...(Array.isArray(brRes) ? brRes.map(b => b.tournament_name) : []),
+        ...(Array.isArray(dashRes) ? dashRes.filter(d => d.status === 'COMPLETE').map(d => d.name) : [])
+      ]);
 
-        const completedSet = new Set([
-          ...(Array.isArray(brRes) ? brRes.map(b => b.tournament_name) : []),
-          ...(Array.isArray(dashRes) ? dashRes.filter(d => d.status === 'COMPLETE').map(d => d.name) : [])
-        ]);
+      const allTourns = Array.isArray(tRes) ? tRes : [];
+      const currentSelectedGame = (game || 'VALORANT').toUpperCase();
 
-        const allTourns = Array.isArray(tRes) ? tRes : [];
-        const currentSelectedGame = (game || 'VALORANT').toUpperCase();
+      const gameTourns = allTourns.filter(
+        t => (t.game || 'VALORANT').toUpperCase() === currentSelectedGame
+      );
 
-        const gameTourns = allTourns.filter(
-          t => (t.game || 'VALORANT').toUpperCase() === currentSelectedGame
-        );
+      const live = [];
+      const finished = [];
 
-        const live = [];
-        const finished = [];
+      gameTourns.forEach(t => {
+        const isFinished = t.is_finished || completedSet.has(t.name) || t.status === 'COMPLETE';
+        if (isFinished) {
+          finished.push({ ...t, is_finished: true });
+        } else {
+          live.push({ ...t, is_finished: false });
+        }
+      });
 
-        gameTourns.forEach(t => {
-          const isFinished = t.is_finished || completedSet.has(t.name) || t.status === 'COMPLETE';
-          if (isFinished) {
-            finished.push({ ...t, is_finished: true });
-          } else {
-            live.push({ ...t, is_finished: false });
+      // Include any completed tournaments from dashboard/results for this game that might not be in tournaments table
+      if (Array.isArray(dashRes)) {
+        dashRes.forEach(d => {
+          if (d.status === 'COMPLETE' && (d.game_title || 'VALORANT').toUpperCase() === currentSelectedGame) {
+            if (!finished.some(f => f.name === d.name)) {
+              finished.push({
+                id: d.id,
+                name: d.name,
+                game: d.game_title || currentSelectedGame,
+                is_finished: true
+              });
+            }
           }
         });
+      }
 
-        // Include any completed tournaments from dashboard/results for this game that might not be in tournaments table
-        if (Array.isArray(dashRes)) {
-          dashRes.forEach(d => {
-            if (d.status === 'COMPLETE' && (d.game_title || 'VALORANT').toUpperCase() === currentSelectedGame) {
-              if (!finished.some(f => f.name === d.name)) {
-                finished.push({
-                  id: d.id,
-                  name: d.name,
-                  game: d.game_title || currentSelectedGame,
-                  is_finished: true
-                });
-              }
-            }
-          });
-        }
+      // Check current active tournament
+      if (currentTournamentName && typeof currentTournamentName === 'string' && currentTournamentName.trim()) {
+        const trimmedCurrent = currentTournamentName.trim();
+        const inAll = allTourns.find(t => typeof t?.name === 'string' && t.name.toLowerCase() === trimmedCurrent.toLowerCase());
+        const tournGame = (inAll?.game || (typeof globalTournament === 'object' && globalTournament?.game) || currentSelectedGame).toUpperCase();
 
-        // CRITICAL: Ensure the current tournament that was clicked is present in LIVE & UPCOMING if it matches current game
-        if (currentTournamentName && typeof currentTournamentName === 'string' && currentTournamentName.trim()) {
-          const trimmedCurrent = currentTournamentName.trim();
-          const inAll = allTourns.find(t => typeof t?.name === 'string' && t.name.toLowerCase() === trimmedCurrent.toLowerCase());
-          const tournGame = (inAll?.game || (typeof globalTournament === 'object' && globalTournament?.game) || currentSelectedGame).toUpperCase();
+        if (tournGame === currentSelectedGame) {
+          const existingLiveIdx = live.findIndex(t => typeof t?.name === 'string' && t.name.toLowerCase() === trimmedCurrent.toLowerCase());
+          const existingFinishedIdx = finished.findIndex(t => typeof t?.name === 'string' && t.name.toLowerCase() === trimmedCurrent.toLowerCase());
 
-          if (tournGame === currentSelectedGame) {
-            const existingLiveIdx = live.findIndex(t => typeof t?.name === 'string' && t.name.toLowerCase() === trimmedCurrent.toLowerCase());
-
-            if (existingLiveIdx > -1) {
-              // If already in live, move to index 0 so it's the very first card visible
-              const [curr] = live.splice(existingLiveIdx, 1);
-              live.unshift({ ...curr, is_current: true });
-            } else {
-              // If not in live (e.g. categorized as finished or from another list), add it to live at index 0
-              const inFinished = finished.find(t => typeof t?.name === 'string' && t.name.toLowerCase() === trimmedCurrent.toLowerCase());
-              const currentObj = inFinished || inAll || (typeof globalTournament === 'object' && globalTournament ? globalTournament : {
-                id: 'curr-' + trimmedCurrent,
-                name: trimmedCurrent,
-                game: currentSelectedGame
-              });
-              live.unshift({ ...currentObj, is_current: true });
-            }
+          if (existingLiveIdx > -1) {
+            // If in live, move to index 0 so it's the very first card visible
+            const [curr] = live.splice(existingLiveIdx, 1);
+            live.unshift({ ...curr, is_current: true });
+          } else if (existingFinishedIdx > -1) {
+            // If it is in finished tournaments, mark is_current in finished, do NOT move back to live
+            finished[existingFinishedIdx].is_current = true;
+          } else {
+            // Not in either list yet
+            live.unshift({
+              id: inAll?.id || ('curr-' + trimmedCurrent),
+              name: trimmedCurrent,
+              game: currentSelectedGame,
+              is_current: true,
+              is_finished: false
+            });
           }
         }
-
-        if (!isCancelled) {
-          setLiveTournaments(live);
-          setFinishedTournaments(finished);
-        }
-      } catch (e) {
-        if (!isCancelled) console.error('Failed to load tournaments:', e);
-      } finally {
-        if (!isCancelled) setIsLoading(false);
       }
-    };
 
-    runLoad();
-
-    return () => {
-      isCancelled = true;
-    };
+      setLiveTournaments(live);
+      setFinishedTournaments(finished);
+    } catch (e) {
+      console.error('Failed to load tournaments:', e);
+    } finally {
+      setIsLoading(false);
+    }
   }, [game, currentTournamentName, globalTournament]);
+
+  React.useEffect(() => {
+    loadTournaments();
+  }, [loadTournaments]);
 
   // Synchronize expanded live tournament with current tournament and current game's tournaments
   React.useEffect(() => {
@@ -1113,8 +1108,8 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
       setExpandedFinishedTournament(null);
       await loadTournaments();
     } catch (e) {
-      console.error(e);
-      alert("Error updating tournament completion status.");
+      console.error("Tournament toggle completion error:", e);
+      alert(e?.message || "Error updating tournament completion status.");
     } finally {
       setIsTogglingStatus(false);
     }

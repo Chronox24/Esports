@@ -1250,6 +1250,12 @@ app.post('/api/tournaments/toggle-complete', authenticateToken, isAdmin, canEdit
           logo_url: null
         }]);
       }
+
+      await supabase
+        .from('tournaments')
+        .update({ is_finished: true, status: 'COMPLETE' })
+        .eq('name', tournament_name);
+
       await logAudit('TOURNAMENT', `Marked tournament "${tournament_name}" as finished`, { tournament_name }, game_title || null, req);
       return res.json({ message: `Tournament "${tournament_name}" marked as finished.`, status: 'COMPLETE', is_finished: true });
     } else {
@@ -1257,6 +1263,12 @@ app.post('/api/tournaments/toggle-complete', authenticateToken, isAdmin, canEdit
         .from('bracket_results')
         .delete()
         .eq('tournament_name', tournament_name);
+
+      await supabase
+        .from('tournaments')
+        .update({ is_finished: false, status: 'ACTIVE' })
+        .eq('name', tournament_name);
+
       await logAudit('TOURNAMENT', `Reopened tournament "${tournament_name}" as active`, { tournament_name }, game_title || null, req);
       return res.json({ message: `Tournament "${tournament_name}" reopened as active.`, status: 'ACTIVE', is_finished: false });
     }
