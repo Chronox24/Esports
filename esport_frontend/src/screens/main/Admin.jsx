@@ -479,8 +479,6 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
   const [emailVerificationStatus, setEmailVerificationStatus] = useState('idle'); // 'idle' | 'sending' | 'sent' | 'verifying' | 'verified'
   const [verificationCode, setVerificationCode] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
-  const [devPreviewCode, setDevPreviewCode] = useState('');
-  const [devPreviewUrl, setDevPreviewUrl] = useState('');
   const [modalFeedback, setModalFeedback] = useState(null); // { type: 'error' | 'success' | 'info', message: '' }
 
   React.useEffect(() => {
@@ -501,8 +499,6 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
     setNewRole('Super Admin');
     setEmailVerificationStatus('idle');
     setVerificationCode('');
-    setDevPreviewCode('');
-    setDevPreviewUrl('');
     setModalFeedback(null);
     setResendCooldown(0);
     setIsCreating(false);
@@ -552,12 +548,10 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
       if (res.ok) {
         const data = await res.json();
         setEmailVerificationStatus('sent');
-        setDevPreviewCode(data.verificationCode || '');
-        setDevPreviewUrl(data.previewUrl || '');
         setResendCooldown(60);
         setModalFeedback({ 
-          type: data.isRealDelivery ? 'success' : 'info', 
-          message: data.message || `Verification code sent to ${cleanEmail}. Enter the 6-digit code below.` 
+          type: 'success', 
+          message: data.message || `Verification code sent to ${cleanEmail}. Please check your email inbox and enter the 6-digit code below.` 
         });
       } else {
         const errData = await res.json().catch(() => ({}));
@@ -591,22 +585,12 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
         setModalFeedback({ type: 'success', message: 'Email address verified successfully! You may now create the Admin account.' });
       } else {
         const errData = await res.json().catch(() => ({}));
-        if (res.status === 404 && devPreviewCode && cleanCode === devPreviewCode) {
-          setEmailVerificationStatus('verified');
-          setModalFeedback({ type: 'success', message: 'Email address verified successfully! You may now create the Admin account.' });
-        } else {
-          setEmailVerificationStatus('sent');
-          setModalFeedback({ type: 'error', message: errData.error || 'Invalid or expired verification code.' });
-        }
+        setEmailVerificationStatus('sent');
+        setModalFeedback({ type: 'error', message: errData.error || 'Invalid or expired verification code.' });
       }
     } catch (e) {
-      if (devPreviewCode && cleanCode === devPreviewCode) {
-        setEmailVerificationStatus('verified');
-        setModalFeedback({ type: 'success', message: 'Email address verified successfully! You may now create the Admin account.' });
-      } else {
-        setEmailVerificationStatus('sent');
-        setModalFeedback({ type: 'error', message: 'Verification failed. Please check the code and try again.' });
-      }
+      setEmailVerificationStatus('sent');
+      setModalFeedback({ type: 'error', message: 'Verification failed. Please check the code and try again.' });
     }
   };
 
@@ -2042,8 +2026,6 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                       onClick={() => {
                         setEmailVerificationStatus('idle');
                         setVerificationCode('');
-                        setDevPreviewCode('');
-                        setDevPreviewUrl('');
                         setModalFeedback({ type: 'info', message: 'Enter a new email address to verify.' });
                       }}
                       className="hud-btn-secondary px-5 py-3 text-xs font-tactical font-extrabold uppercase tracking-wider whitespace-nowrap"
@@ -2083,18 +2065,10 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                       Please enter the 6-digit confirmation code dispatched to <strong className="text-white font-mono">{newEmail}</strong>.
                     </p>
 
-                    {devPreviewCode && (
-                      <div className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-lg px-4 py-2 text-sm text-slate-400">
-                        <span>Environment Code: <strong className="text-slate-100 font-mono tracking-wider">{devPreviewCode}</strong></span>
-                        <button
-                          type="button"
-                          onClick={() => setVerificationCode(devPreviewCode)}
-                          className="text-blue-400 hover:text-blue-300 text-sm font-semibold underline"
-                        >
-                          Auto-fill
-                        </button>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2.5 text-xs text-slate-300 bg-slate-900/80 border border-slate-800 rounded-lg px-4 py-2.5">
+                      <span className="text-cyan-400 font-bold text-sm">✉</span>
+                      <span>The single-use verification code was sent to your email. Check your inbox or spam folder.</span>
+                    </div>
 
                     <div className="flex gap-3">
                       <input 

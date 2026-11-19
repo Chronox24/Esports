@@ -1018,17 +1018,17 @@ app.post('/api/admin/send-email-verification', authenticateToken, isAdmin, async
     if (isRealDelivery) {
       await logAudit('ADMIN_VERIFICATION_SENT', `Verification code sent to ${cleanEmail}`, { email: cleanEmail }, null, req);
     } else {
-      await logAudit('ADMIN_VERIFICATION_FALLBACK', `Email delivery blocked (${mailSendError}); serving code directly for ${cleanEmail}`, { email: cleanEmail }, null, req);
+      await logAudit('ADMIN_VERIFICATION_FAILED', `Email delivery failed for ${cleanEmail}: ${mailSendError}`, { email: cleanEmail }, null, req);
+      return res.status(500).json({
+        error: `Could not deliver verification email to ${cleanEmail}. ${mailSendError || 'Please check your mail configuration.'}`
+      });
     }
 
     res.json({
       success: true,
-      message: isRealDelivery
-        ? `Verification code sent directly to ${cleanEmail}. Please check your inbox (or spam folder).`
-        : `Email delivery could not reach inbox (${mailSendError}). Your verification code has been auto-populated below.`,
+      message: `Verification code sent directly to ${cleanEmail}. Please check your inbox (or spam folder).`,
       email: cleanEmail,
-      verificationCode: verificationCode,
-      isRealDelivery,
+      isRealDelivery: true,
       expiresInSeconds: 600
     });
   } catch (err) {
