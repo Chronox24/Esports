@@ -984,8 +984,6 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
                         </svg>
                         <span>SWAP</span>
                       </button>
-                      <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
-                      </span>
                     </div>
 
                     {/* Team 2 Hero Card (Absolute Right) */}
