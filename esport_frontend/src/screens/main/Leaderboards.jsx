@@ -985,7 +985,6 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
                         <span>SWAP</span>
                       </button>
                       <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
-                        Best of 3 Series
                       </span>
                     </div>
 
