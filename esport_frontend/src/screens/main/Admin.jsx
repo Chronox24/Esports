@@ -1037,7 +1037,7 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
     return reporter.includes(q) || reported.includes(q) || reason.includes(q) || statement.includes(q) || status.includes(q);
   });
   return (
-    <div className="flex-1 bg-bg-100 text-theme-text-base overflow-y-auto flex flex-col h-full relative font-sans custom-scrollbar">
+    <div className="flex-1 bg-bg-100 text-theme-text-base flex flex-col min-h-full relative font-sans custom-scrollbar">
       {/* Upper-Right System Toast Notification */}
       {toast && (
         <div 
@@ -1598,96 +1598,108 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
             </div>
           )}
           {activeTab === 'Rulebook Viewer' && (
-            <div className="hud-card hud-enter rounded-xl shadow-xl flex flex-col gap-5 w-full max-w-full overflow-hidden p-3.5 sm:p-6">
-              {/* Header Bar */}
-              <div className="border-b border-slate-800/80 pb-5 flex flex-wrap justify-between items-center gap-4 max-w-full">
-                <div className="min-w-0 max-w-full">
-                  <div className="flex items-center gap-2.5 flex-wrap max-w-full">
-                    <span className="hud-diamond shrink-0" />
-                    <h2 className="font-tactical text-base sm:text-lg font-extrabold text-theme-text-base tracking-[0.16em] uppercase">Rulebook Viewer</h2>
-                    <span className="hud-chamfer-sm inline-flex items-center gap-1.5 px-2.5 py-1 font-tactical text-[9px] sm:text-[10px] font-extrabold uppercase tracking-[0.14em] bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 max-w-full">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                      <span className="truncate">Connected to Database (public.rulebooks)</span>
-                    </span>
+            <div className="flex flex-col gap-6 w-full max-w-full animate-fade-in">
+              {/* Header & Scoping HUD Card */}
+              <div className="hud-card hud-enter rounded-xl shadow-xl flex flex-col gap-4 p-4 sm:p-6 w-full max-w-full">
+                {/* Header Bar */}
+                <div className="border-b border-slate-800/80 pb-4 flex flex-wrap justify-between items-center gap-4 max-w-full">
+                  <div className="min-w-0 max-w-full">
+                    <div className="flex items-center gap-2.5 flex-wrap max-w-full">
+                      <span className="hud-diamond shrink-0" />
+                      <h2 className="font-tactical text-base sm:text-lg font-extrabold text-theme-text-base tracking-[0.16em] uppercase">
+                        Rulebook Viewer
+                      </h2>
+                      <span className="hud-chamfer-sm inline-flex items-center gap-1.5 px-2.5 py-1 font-tactical text-[9px] sm:text-[10px] font-extrabold uppercase tracking-[0.14em] bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 max-w-full">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                        <span className="truncate">Connected to Database (public.rulebooks)</span>
+                      </span>
+                    </div>
+                    <p className="text-xs text-theme-text-muted mt-1.5 break-words">
+                      Official League Rulebook stored in Supabase Cloud Storage &amp; PostgreSQL. Synced across all player &amp; tournament screens.
+                    </p>
                   </div>
-                  <p className="text-xs text-theme-text-muted mt-1.5 break-words">
-                    Official League Rulebook stored in Supabase Cloud Storage &amp; PostgreSQL. Synced across all player &amp; tournament screens.
-                  </p>
+                  <div className="flex items-center gap-2 sm:gap-3 flex-wrap max-w-full shrink-0">
+                    <button
+                      type="button"
+                      onClick={fetchRulebook}
+                      disabled={rulebookLoading}
+                      className="hud-btn-secondary flex items-center gap-2 font-tactical text-[11px] sm:text-xs font-extrabold tracking-[0.14em] uppercase cursor-pointer px-3.5 sm:px-4 py-2"
+                      title="Refresh database records"
+                    >
+                      <RefreshIcon className={`w-3.5 h-3.5 ${rulebookLoading ? 'animate-spin text-cyan-400' : ''}`} />
+                      <span>Refresh DB</span>
+                    </button>
+                    <label className="hud-btn-primary font-tactical text-[11px] sm:text-xs font-extrabold uppercase tracking-[0.14em] cursor-pointer flex items-center gap-2 px-3.5 sm:px-4 py-2">
+                      <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                      </svg>
+                      <span>{isUploadingRulebook ? 'Uploading to DB...' : 'Upload New Rulebook'}</span>
+                      <input type="file" className="hidden" accept="application/pdf,image/*" onChange={handleRulebookUpload} disabled={isUploadingRulebook} />
+                    </label>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 sm:gap-3 flex-wrap max-w-full">
-                  <button
-                    type="button"
-                    onClick={fetchRulebook}
-                    disabled={rulebookLoading}
-                    className="hud-btn-secondary flex items-center gap-2 font-tactical text-[11px] sm:text-xs font-extrabold tracking-[0.14em] uppercase cursor-pointer px-3 sm:px-4 py-2"
-                    title="Refresh database records"
-                  >
-                    <RefreshIcon className={`w-3.5 h-3.5 ${rulebookLoading ? 'animate-spin text-cyan-400' : ''}`} />
-                    <span>Refresh DB</span>
-                  </button>
-                  <label className="hud-btn-primary font-tactical text-[11px] sm:text-xs font-extrabold uppercase tracking-[0.14em] cursor-pointer flex items-center gap-2 px-3 sm:px-4 py-2">
-                    <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                    <span>{isUploadingRulebook ? 'Uploading to DB...' : 'Upload New Rulebook'}</span>
-                    <input type="file" className="hidden" accept="application/pdf,image/*" onChange={handleRulebookUpload} disabled={isUploadingRulebook} />
-                  </label>
+
+                {/* Tournament Scoping Bar */}
+                <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900/80 border border-cyan-500/25 p-3.5 sm:px-5 sm:py-3.5 rounded-xl shadow-inner max-w-full">
+                  <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap max-w-full w-full sm:w-auto min-w-0">
+                    <span className="text-xs font-black uppercase tracking-wider text-slate-300 flex items-center gap-1.5 shrink-0">
+                      <svg className="w-4 h-4 text-cyan-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                      </svg>
+                      Managing Rulebook For:
+                    </span>
+                    <select
+                      value={rulebookTournament}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setRulebookTournament(val);
+                        fetchRulebook(val);
+                      }}
+                      className="bg-slate-950 border border-cyan-500/40 text-cyan-400 font-tactical font-bold text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-cyan-400 cursor-pointer shadow-sm max-w-full w-full sm:w-auto min-w-0"
+                    >
+                      {tournaments.map((t) => (
+                        <option key={t.id || t.name} value={t.name} className="bg-[#0b1017] text-white">
+                          {t.name} ({t.game || 'Tournament'})
+                        </option>
+                      ))}
+                      {tournaments.length === 0 && (
+                        <option value={globalTournament || 'Default'} className="bg-[#0b1017] text-white">
+                          {globalTournament || 'Default'}
+                        </option>
+                      )}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2 text-[11px] text-slate-400 max-w-full break-words">
+                    <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shrink-0" />
+                    <span>Rulebooks strictly stay in <strong className="text-cyan-300 font-mono">{rulebookTournament || 'this tournament'}</strong></span>
+                  </div>
                 </div>
               </div>
 
-              {/* Tournament Scoping Bar */}
-              <div className="flex flex-wrap items-center justify-between gap-3 bg-bg-200 border border-cyan-500/20 p-3 sm:px-5 sm:py-3.5 rounded-xl shadow-inner max-w-full overflow-hidden">
-                <div className="flex items-center gap-2 sm:gap-3 flex-wrap max-w-full w-full sm:w-auto min-w-0">
-                  <span className="text-xs font-black uppercase tracking-wider text-slate-300 flex items-center gap-1.5 shrink-0">
-                    <svg className="w-4 h-4 text-cyan-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
-                    Managing Rulebook For:
-                  </span>
-                  <select
-                    value={rulebookTournament}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setRulebookTournament(val);
-                      fetchRulebook(val);
-                    }}
-                    className="bg-bg-200 border border-cyan-500/40 text-cyan-400 font-black text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-cyan-400 cursor-pointer shadow-sm max-w-full w-full sm:w-auto min-w-0 truncate"
-                  >
-                    {tournaments.map((t) => (
-                      <option key={t.id || t.name} value={t.name} className="bg-[#0b1017] text-white">
-                        {t.name} ({t.game || 'Tournament'})
-                      </option>
-                    ))}
-                    {tournaments.length === 0 && (
-                      <option value={globalTournament || 'Default'} className="bg-[#0b1017] text-white">
-                        {globalTournament || 'Default'}
-                      </option>
-                    )}
-                  </select>
-                </div>
-                <div className="flex items-center gap-2 text-[11px] text-slate-400 max-w-full break-words">
-                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shrink-0" />
-                  <span className="truncate">Rulebooks strictly stay in <strong>{rulebookTournament || 'this tournament'}</strong></span>
-                </div>
-              </div>
-
-              {/* Active Rulebook Card */}
+              {/* Active Rulebook Details Card */}
               {rulebookUrl ? (
-                <div className="flex flex-col gap-4">
-                  <div className="bg-bg-200 rounded-xl border border-cyan-500/30 p-4 sm:p-6 flex flex-wrap items-center justify-between gap-4 sm:gap-6 shadow-[0_0_30px_rgba(6,182,212,0.08)] relative overflow-hidden max-w-full">
-                    <div className="absolute top-0 left-0 w-1.5 h-full bg-cyan-400" />
+                <>
+                  <div className="hud-card hud-enter rounded-xl shadow-xl p-4 sm:p-6 flex flex-wrap items-center justify-between gap-4 sm:gap-6 border-l-4 border-l-cyan-400 relative overflow-hidden max-w-full">
                     <div className="flex items-center gap-3 sm:gap-5 min-w-0 max-w-full">
-                      <div className="hud-chamfer-sm flex-shrink-0 w-11 h-11 sm:w-14 sm:h-14 flex items-center justify-center bg-cyan-500/15 border border-cyan-500/40 text-cyan-400 shadow-inner">
-                        <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                      <div className="hud-chamfer-sm flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center bg-cyan-500/15 border border-cyan-500/40 text-cyan-400 shadow-inner">
+                        <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
                       </div>
                       <div className="flex flex-col gap-1.5 min-w-0 max-w-full">
                         <div className="flex items-center gap-2 flex-wrap max-w-full">
-                          <span className="font-tactical text-sm sm:text-base font-extrabold uppercase tracking-wider text-theme-text-base">Official League Rulebook</span>
-                          <span className="hud-chamfer-sm px-2 py-0.5 font-tactical text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider bg-cyan-500/15 text-cyan-300 border border-cyan-500/35 truncate max-w-full">
+                          <span className="font-tactical text-sm sm:text-base font-extrabold uppercase tracking-wider text-theme-text-base">
+                            Official League Rulebook
+                          </span>
+                          <span className="hud-chamfer-sm px-2.5 py-0.5 font-tactical text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider bg-cyan-500/15 text-cyan-300 border border-cyan-500/35 truncate max-w-full">
                             Tournament: {rulebookRecord?.tournament_name || rulebookTournament}
                           </span>
-                          <span className="hud-chamfer-sm px-2 py-0.5 font-tactical text-[9px] sm:text-[10px] font-bold uppercase tracking-wider bg-slate-900 text-slate-300 border border-slate-700 shrink-0">
+                          <span className="hud-chamfer-sm px-2.5 py-0.5 font-tactical text-[9px] sm:text-[10px] font-bold uppercase tracking-wider bg-slate-900 text-slate-300 border border-slate-700 shrink-0">
                             DB Record #{rulebookRecord?.id || 'Active'}
                           </span>
                         </div>
                         <div className="flex items-center gap-3 text-xs text-theme-text-faint font-mono flex-wrap">
-                          <span className="truncate max-w-md">{rulebookUrl.split('/').pop()}</span>
+                          <span className="truncate max-w-md text-slate-300">{rulebookUrl.split('/').pop()}</span>
                           <span>•</span>
                           <span>{rulebookRecord?.created_at ? new Date(rulebookRecord.created_at).toLocaleString() : 'Active'}</span>
                           <span>•</span>
@@ -1695,14 +1707,12 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2.5 flex-wrap">
+                    <div className="flex items-center gap-2.5 flex-wrap shrink-0">
                       <button
                         type="button"
                         onClick={() => setShowRulebookPreview(!showRulebookPreview)}
                         className={`font-tactical text-xs font-extrabold uppercase tracking-wider transition-all px-4 py-2.5 cursor-pointer ${
-                          showRulebookPreview
-                            ? 'hud-btn-primary'
-                            : 'hud-btn-secondary'
+                          showRulebookPreview ? 'hud-btn-primary' : 'hud-btn-secondary'
                         }`}
                       >
                         {showRulebookPreview ? 'Hide Inline Preview' : 'Show Inline Preview'}
@@ -1711,17 +1721,19 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                         href={rulebookUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="hud-btn-secondary font-tactical text-xs font-extrabold uppercase tracking-wider whitespace-nowrap flex items-center gap-2 px-4 py-2.5"
+                        className="hud-btn-secondary font-tactical text-xs font-extrabold uppercase tracking-wider whitespace-nowrap flex items-center gap-2 px-4 py-2.5 cursor-pointer"
                       >
                         <span>Open PDF in Browser</span>
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
                       </a>
                       <a
                         href={rulebookUrl}
                         download
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="hud-btn-secondary font-tactical text-xs font-extrabold uppercase tracking-wider whitespace-nowrap px-4 py-2.5"
+                        className="hud-btn-secondary font-tactical text-xs font-extrabold uppercase tracking-wider whitespace-nowrap px-4 py-2.5 cursor-pointer"
                       >
                         Download
                       </a>
@@ -1730,43 +1742,71 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
 
                   {/* Inline PDF Preview Frame */}
                   {showRulebookPreview && (
-                    <div className="bg-[#060a12] rounded-xl border border-slate-800/80 p-2 shadow-2xl animate-in fade-in duration-200">
-                      <div className="px-4 py-2 flex items-center justify-between border-b border-slate-800/60 mb-2">
-                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-cyan-400" />
+                    <div className="hud-card hud-enter rounded-xl shadow-2xl p-3 sm:p-4 flex flex-col gap-3 w-full max-w-full">
+                      <div className="px-3 py-2 flex items-center justify-between border-b border-slate-800/80 flex-wrap gap-2">
+                        <span className="text-[11px] font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2 font-tactical">
+                          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
                           Live Document Preview ({rulebookRecord?.tournament_name || rulebookTournament})
                         </span>
-                        <span className="text-[10px] text-slate-500 font-mono">Use PDF controls to scroll, zoom, or print</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-[10px] text-slate-500 font-mono hidden sm:inline">Use PDF controls to scroll, zoom, or print</span>
+                          <a
+                            href={rulebookUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] text-cyan-400 hover:text-cyan-300 font-tactical uppercase tracking-wider flex items-center gap-1 font-bold"
+                          >
+                            <span>Full Window</span>
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                          </a>
+                        </div>
                       </div>
                       <iframe
                         src={rulebookUrl}
                         title="Official League Rulebook Preview"
-                        className="w-full h-[640px] rounded-lg border border-slate-800/60 bg-slate-950"
+                        className="w-full h-[74vh] min-h-[520px] max-h-[880px] rounded-lg border border-slate-800/80 bg-slate-950 shadow-inner"
                       />
                     </div>
                   )}
-                </div>
+                </>
               ) : (
-                <div className="flex flex-col items-center justify-center text-theme-text-faint font-mono text-sm border-2 border-dashed border-theme-input rounded-xl p-12 gap-3 bg-bg-200">
-                  <svg className="w-12 h-12 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                  <span className="text-base font-bold text-slate-200">No rulebook uploaded for "{rulebookTournament || 'this tournament'}"</span>
-                  <span className="text-xs text-slate-400 max-w-md text-center">Rulebooks are isolated per tournament. Upload a PDF using the button above to publish a rulebook strictly for {rulebookTournament || 'this tournament'}.</span>
+                <div className="hud-card rounded-xl p-12 flex flex-col items-center justify-center text-center gap-4 bg-slate-950/60 border border-slate-800">
+                  <div className="hud-chamfer-sm w-16 h-16 bg-slate-900 border border-cyan-500/30 flex items-center justify-center text-cyan-400/70 shadow-[0_0_20px_rgba(6,182,212,0.15)]">
+                    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="font-tactical text-base sm:text-lg font-extrabold uppercase text-white tracking-[0.16em]">
+                      No Rulebook Uploaded for "{rulebookTournament || 'This Tournament'}"
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto leading-relaxed">
+                      Rulebooks are isolated per tournament. Click the <strong>Upload New Rulebook</strong> button above to publish a PDF strictly for {rulebookTournament || 'this tournament'}.
+                    </p>
+                  </div>
                 </div>
               )}
 
               {/* Database Records Archive Table */}
               {allRulebooks.length > 0 && (
-                <div className="mt-4 flex flex-col gap-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-tactical text-xs font-extrabold uppercase tracking-[0.18em] text-theme-text-base">
-                      Database Records History ({allRulebooks.length})
-                    </h3>
-                    <span className="text-[10px] font-mono text-theme-text-faint">Table: public.rulebooks</span>
+                <div className="hud-card rounded-xl shadow-xl p-4 sm:p-6 flex flex-col gap-4 w-full max-w-full">
+                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <span className="hud-diamond" />
+                      <h3 className="font-tactical text-xs sm:text-sm font-extrabold uppercase tracking-[0.18em] text-theme-text-base">
+                        Database Records History ({allRulebooks.length})
+                      </h3>
+                    </div>
+                    <span className="text-[10px] font-mono text-cyan-400/80 font-bold uppercase tracking-wider">
+                      Table // public.rulebooks
+                    </span>
                   </div>
-                  <div className="hud-card overflow-x-auto custom-scrollbar">
+                  <div className="overflow-x-auto custom-scrollbar border border-slate-800/80 rounded-lg">
                     <table className="w-full text-left text-xs">
                       <thead>
-                        <tr className="border-b border-cyan-500/20 bg-slate-950/80 text-cyan-400/90 uppercase font-tactical font-extrabold text-[10px] tracking-[0.16em]">
+                        <tr className="border-b border-slate-800 bg-slate-950 text-cyan-400/90 uppercase font-tactical font-extrabold text-[10px] tracking-[0.16em]">
                           <th className="py-3.5 px-4">Record ID</th>
                           <th className="py-3.5 px-4">Assigned Tournament</th>
                           <th className="py-3.5 px-4">File Name / Path</th>
@@ -1812,7 +1852,7 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                                         setRulebookTournament(rb.tournament_name);
                                       }
                                     }}
-                                    className="hud-btn-secondary px-3 py-1.5 font-tactical text-[10px] font-extrabold uppercase tracking-[0.14em]"
+                                    className="hud-btn-secondary px-3 py-1.5 font-tactical text-[10px] font-extrabold uppercase tracking-[0.14em] cursor-pointer"
                                   >
                                     Preview
                                   </button>
@@ -1820,7 +1860,7 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                                     href={cdnUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="hud-btn-secondary px-3 py-1.5 font-tactical text-[10px] font-extrabold uppercase tracking-[0.14em] inline-flex items-center"
+                                    className="hud-btn-secondary px-3 py-1.5 font-tactical text-[10px] font-extrabold uppercase tracking-[0.14em] inline-flex items-center cursor-pointer"
                                   >
                                     Open
                                   </a>
