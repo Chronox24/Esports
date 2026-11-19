@@ -39,7 +39,7 @@ const db = {
     accentAlt: '#3b82f6',    
     timerSeconds: 225301,    
     kpis: [      
-      { title: 'Tournaments', icon: 'globe', stats: [{ label: 'Active', value: 0 }, { label: 'Total', value: 0 }] },      
+      { title: 'Tournament', icon: 'globe', stats: [{ label: 'Active', value: 0 }, { label: 'Total', value: 0 }] },      
       { title: 'Valorant Players', icon: 'users', stats: [{ label: 'Registered', value: 0 }, { label: 'Active', value: 0 }] },      
       { title: 'Total Teams', icon: 'crosshair', stats: [{ label: 'Verified', value: 0 }, { label: 'Amateur', value: 0 }] },      
     ],    
@@ -66,7 +66,7 @@ const db = {
     accentAlt: '#ef4444',    
     timerSeconds: 86400,    
     kpis: [      
-      { title: 'CFS Tournaments', icon: 'globe', stats: [{ label: 'Active', value: 0 }, { label: 'Total', value: 0 }] },      
+      { title: 'Tournament', icon: 'globe', stats: [{ label: 'Active', value: 0 }, { label: 'Total', value: 0 }] },      
       { title: 'Crossfire Players', icon: 'users', stats: [{ label: 'Registered', value: 0 }, { label: 'Active', value: 0 }] },      
       { title: 'Clan Rosters', icon: 'crosshair', stats: [{ label: 'Verified', value: 0 }, { label: 'Amateur', value: 0 }] },      
     ],    
@@ -401,7 +401,7 @@ const getInitialKpiTemplate = (game) => {
   const isVal = (game || 'valorant').toLowerCase() === 'valorant';
   return [
     {
-      title: isVal ? 'VCT Tournaments' : 'CFS Tournaments',
+      title: 'Tournament',
       icon: 'globe',
       stats: [{ label: 'Active', value: 0 }, { label: 'Total', value: 0 }],
     },
@@ -509,19 +509,15 @@ const Dashboard = ({ globalGame, globalTournament }) => {
           ? tournaments.filter(t => (t.game || '').toUpperCase() === gameUpper) 
           : [];
         
-        // Count active tournaments
-        const activeTournamentsCount = gameTournaments.filter(
-          t => (t.status || '').toUpperCase() === 'ACTIVE' || t.is_finished === false || t.is_finished === 0
-        ).length;
+        // Count active tournaments across the selected discipline
+        const isTournActive = (t) => {
+          const isFinished = t.is_finished === true || t.is_finished === 'true' || t.is_finished === 1;
+          const status = (t.status || '').toUpperCase();
+          if (isFinished || status === 'COMPLETE' || status === 'ARCHIVED' || status === 'FINISHED') return false;
+          return status === 'ACTIVE' || !isFinished;
+        };
 
-        // Scoped target tournaments if globalTournament is selected
-        const targetTourn = globalTournament
-          ? gameTournaments.filter(t => t.name.trim().toLowerCase() === globalTournament.trim().toLowerCase())
-          : gameTournaments;
-        const totalTournamentsCount = globalTournament ? targetTourn.length : gameTournaments.length;
-        const activeTournScoped = globalTournament
-          ? (targetTourn.some(t => (t.status || '').toUpperCase() === 'ACTIVE' || !t.is_finished) ? 1 : 0)
-          : activeTournamentsCount;
+        const activeTournamentsCount = gameTournaments.filter(isTournActive).length;
 
         // Filter teams belonging to this game
         let gameTeams = [];
@@ -543,11 +539,11 @@ const Dashboard = ({ globalGame, globalTournament }) => {
 
         setKpiData([
           { 
-            title: `${gameUpper === 'VALORANT' ? 'VCT' : 'CFS'} Tournaments`, 
+            title: 'Tournament', 
             icon: 'globe', 
             stats: [
-              { label: 'Active', value: activeTournScoped }, 
-              { label: 'Total', value: totalTournamentsCount }
+              { label: 'Active', value: activeTournamentsCount }, 
+              { label: 'Total', value: gameTournaments.length }
             ] 
           },
           { 
