@@ -39,7 +39,7 @@ const db = {
     accentAlt: '#3b82f6',    
     timerSeconds: 225301,    
     kpis: [      
-      { title: 'VCT Tournaments', icon: 'globe', stats: [{ label: 'Active', value: 0 }, { label: 'Total', value: 0 }] },      
+      { title: 'Tournaments', icon: 'globe', stats: [{ label: 'Active', value: 0 }, { label: 'Total', value: 0 }] },      
       { title: 'Valorant Players', icon: 'users', stats: [{ label: 'Registered', value: 0 }, { label: 'Active', value: 0 }] },      
       { title: 'Total Teams', icon: 'crosshair', stats: [{ label: 'Verified', value: 0 }, { label: 'Amateur', value: 0 }] },      
     ],    
