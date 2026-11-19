@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { apiFetch } from '../../utils/api';
 const UsersIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -66,6 +66,96 @@ const ShieldCheckIcon = ({ className = "w-4 h-4" }) => (
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
   </svg>
 );
+const AnimatedAdminNumber = ({ value, isLoading, accent = '#22d3ee' }) => {
+  const [displayValue, setDisplayValue] = useState(0);
+  const [scrambleDigits, setScrambleDigits] = useState('00');
+
+  // Loading animation: rapid cycling of random digits with cyberpunk telemetry effect
+  useEffect(() => {
+    if (!isLoading) return;
+    const interval = setInterval(() => {
+      const rand = Math.floor(10 + Math.random() * 89);
+      setScrambleDigits(String(rand));
+    }, 60);
+    return () => clearInterval(interval);
+  }, [isLoading]);
+
+  // When database query completes / stats change: smoothly count up to real-time number
+  useEffect(() => {
+    if (isLoading) return;
+
+    const target = typeof value === 'number'
+      ? value
+      : parseInt(String(value ?? 0).replace(/,/g, ''), 10);
+
+    if (isNaN(target)) {
+      setDisplayValue(value ?? 0);
+      return;
+    }
+
+    if (target === 0) {
+      setDisplayValue(0);
+      return;
+    }
+
+    const duration = 650;
+    const startTime = performance.now();
+    let frameId;
+
+    const update = (currentTime) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease out cubic
+      const ease = 1 - Math.pow(1 - progress, 3);
+      const current = Math.round(target * ease);
+      setDisplayValue(current);
+
+      if (progress < 1) {
+        frameId = requestAnimationFrame(update);
+      } else {
+        setDisplayValue(target);
+      }
+    };
+
+    frameId = requestAnimationFrame(update);
+    return () => cancelAnimationFrame(frameId);
+  }, [value, isLoading]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-1.5 h-9">
+        <span
+          className="font-tactical font-mono text-4xl font-extrabold tracking-wider animate-pulse inline-block leading-none text-cyan-400"
+          style={{
+            textShadow: `0 0 16px ${accent}80`,
+          }}
+        >
+          {scrambleDigits}
+        </span>
+        <span
+          className="w-1.5 h-6 rounded-xs animate-ping"
+          style={{ backgroundColor: accent }}
+        />
+      </div>
+    );
+  }
+
+  const formatted = typeof displayValue === 'number'
+    ? displayValue.toLocaleString()
+    : displayValue;
+
+  return (
+    <span
+      className="font-tactical text-4xl font-extrabold text-cyan-400 leading-none transition-all duration-300"
+      style={{
+        textShadow: `0 0 16px ${accent}40`,
+      }}
+    >
+      {formatted}
+    </span>
+  );
+};
+
 const Card = ({ title, children, className = "" }) => (
   <div
     className={`bg-bg-300 light:bg-white rounded-xl border border-theme-input light:border-slate-200 shadow-xl light:shadow-sm flex flex-col overflow-hidden relative group ${className}`}
@@ -581,7 +671,7 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
   const [reports, setReports] = useState([]);
   const [dashboardTournaments, setDashboardTournaments] = useState([]);
   const [adminsList, setAdminsList] = useState([]);
-  const [loadingStats, setLoadingStats] = useState(false);
+  const [loadingStats, setLoadingStats] = useState(true);
   const [lastStatsSync, setLastStatsSync] = useState(null);
   const [statsModal, setStatsModal] = useState(null);
   const [statsSearch, setStatsSearch] = useState('');
@@ -1143,9 +1233,7 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                          <UsersIcon />
                        </div>
                        <div className="flex flex-col">
-                         <span className="font-tactical text-4xl font-extrabold text-cyan-400 leading-none">
-                           {totalPlayersCount.toLocaleString()}
-                         </span>
+                         <AnimatedAdminNumber value={totalPlayersCount} isLoading={loadingStats} />
                          <span className="font-tactical text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-[0.18em]">Players</span>
                        </div>
                     </div>
@@ -1169,9 +1257,7 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                          <TrophyIcon />
                        </div>
                        <div className="flex flex-col">
-                         <span className="font-tactical text-4xl font-extrabold text-cyan-400 leading-none">
-                           {totalTeamsCount.toLocaleString()}
-                         </span>
+                         <AnimatedAdminNumber value={totalTeamsCount} isLoading={loadingStats} />
                          <span className="font-tactical text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-[0.18em]">Teams</span>
                        </div>
                     </div>
@@ -1195,9 +1281,7 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                          <CalendarIcon />
                        </div>
                        <div className="flex flex-col">
-                         <span className="font-tactical text-4xl font-extrabold text-cyan-400 leading-none">
-                           {activeTournamentsCount.toLocaleString()}
-                         </span>
+                         <AnimatedAdminNumber value={activeTournamentsCount} isLoading={loadingStats} />
                          <span className="font-tactical text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-[0.18em]">Tournaments</span>
                        </div>
                     </div>
@@ -1221,9 +1305,7 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                          <ClipboardCheckIcon />
                        </div>
                        <div className="flex flex-col">
-                         <span className="font-tactical text-4xl font-extrabold text-cyan-400 leading-none">
-                           {(pendingReportsCount > 0 ? pendingReportsCount : totalReportsCount).toLocaleString()}
-                         </span>
+                         <AnimatedAdminNumber value={pendingReportsCount > 0 ? pendingReportsCount : totalReportsCount} isLoading={loadingStats} />
                          <span className="font-tactical text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-[0.18em]">Verifications</span>
                        </div>
                     </div>
@@ -1249,9 +1331,7 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                          <LockIcon />
                        </div>
                        <div className="flex flex-col">
-                         <span className="font-tactical text-4xl font-extrabold text-cyan-400 leading-none">
-                           {totalAdminsCount.toLocaleString()}
-                         </span>
+                         <AnimatedAdminNumber value={totalAdminsCount} isLoading={loadingStats} />
                          <span className="font-tactical text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-[0.18em]">Admins</span>
                        </div>
                     </div>
