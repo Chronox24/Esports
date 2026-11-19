@@ -1796,7 +1796,9 @@ app.get('/api/teams', cacheMiddleware, async (req, res) => {
     const { game, tournament } = req.query;
     let query = supabase.from('teams').select('*').order('team_name', { ascending: true });
     if (game) query = query.eq('game', game);
-    if (tournament) query = query.eq('tournament_name', tournament);
+    if (tournament && tournament !== 'ALL' && tournament !== '*') {
+      query = query.ilike('tournament_name', tournament.trim());
+    }
     const { data, error } = await query;
     if (error) throw error;
     res.json(data);
@@ -1890,12 +1892,12 @@ app.get('/api/players', cacheMiddleware, async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   try {
     const { tournament, all } = req.query;
-    let query = supabase.from('players').select('*, teams(team_name, tournament_name)').order('player_name');
+    let query;
     if (all === 'true' || tournament === 'ALL' || tournament === '*') {
-      // return all players across all tournaments
+      query = supabase.from('players').select('*, teams(team_name, tournament_name)').order('player_name');
     } else {
-      const tournamentName = tournament || 'Default';
-      query = query.eq('teams.tournament_name', tournamentName);
+      const tournamentName = (tournament || 'Default').trim();
+      query = supabase.from('players').select('*, teams!inner(team_name, tournament_name)').ilike('teams.tournament_name', tournamentName).order('player_name');
     }
     const { data, error } = await query;
     if (error) throw error;

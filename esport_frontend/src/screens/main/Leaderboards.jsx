@@ -94,47 +94,35 @@ const PlayerModal = ({ player, onClose, activeGame }) => {
   );
 };
 
-// Fallback spreadsheet data for Valorant when no database match records exist
-const SPREADSHEET_FALLBACK_ROSTERS = {
-  'Xipto Esports': [
-    { ign: 'XIP Fixyy', kda: '1.14', avgKills: '0.70', avgAssists: '0.10', avgAcs: 199, agent: 'Fade', kills: 14, deaths: 14, assists: 2, rounds: 20 },
-    { ign: 'XIP Riza', kda: '0.88', avgKills: '0.50', avgAssists: '0.25', avgAcs: 162, agent: 'Omen', kills: 10, deaths: 15, assists: 5, rounds: 20 },
-    { ign: 'XIP JA', kda: '1.06', avgKills: '0.60', avgAssists: '0.25', avgAcs: 193, agent: 'Killjoy', kills: 12, deaths: 16, assists: 5, rounds: 20 },
-    { ign: 'XIP Hotsauz', kda: '1.13', avgKills: '0.75', avgAssists: '0.10', avgAcs: 223, agent: 'Jett', kills: 15, deaths: 15, assists: 2, rounds: 20 },
-    { ign: 'XIP Emman', kda: '1.00', avgKills: '0.40', avgAssists: '0.35', avgAcs: 142, agent: 'Viper', kills: 8, deaths: 15, assists: 7, rounds: 20 },
-    { ign: 'XIP Jehmey', kda: '0.00', avgKills: '0.00', avgAssists: '0.00', avgAcs: 0, agent: 'Sova', kills: 0, deaths: 0, assists: 0, rounds: 0 }
-  ],
-  'Team Secret': [
-    { ign: 'OAS Zeus', kda: '0.00', avgKills: '0.00', avgAssists: '0.00', avgAcs: 0, agent: 'Breach', kills: 0, deaths: 0, assists: 0, rounds: 0 },
-    { ign: 'OAS tesseract', kda: '0.00', avgKills: '0.00', avgAssists: '0.00', avgAcs: 0, agent: 'Cypher', kills: 0, deaths: 0, assists: 0, rounds: 0 },
-    { ign: 'OAS ZYND', kda: '0.00', avgKills: '0.00', avgAssists: '0.00', avgAcs: 0, agent: 'KAY/O', kills: 0, deaths: 0, assists: 0, rounds: 0 },
-    { ign: 'OAS Slathom999', kda: '0.00', avgKills: '0.00', avgAssists: '0.00', avgAcs: 0, agent: 'Brimstone', kills: 0, deaths: 0, assists: 0, rounds: 0 },
-    { ign: 'Don Romantiko', kda: '0.00', avgKills: '0.00', avgAssists: '0.00', avgAcs: 0, agent: 'Reyna', kills: 0, deaths: 0, assists: 0, rounds: 0 },
-    { ign: 'Don Romantiko 2', kda: '0.00', avgKills: '0.00', avgAssists: '0.00', avgAcs: 0, agent: 'Raze', kills: 0, deaths: 0, assists: 0, rounds: 0 }
-  ]
-};
-
 const Leaderboards = ({ globalGame, globalTournament }) => {
   const activeGame = (globalGame || 'VALORANT').toUpperCase();
   const isValorant = activeGame === 'VALORANT';
+
+  const currentTournamentName = useMemo(() => {
+    if (!globalTournament) return '';
+    if (typeof globalTournament === 'object') {
+      return (globalTournament.name || globalTournament.tournament_name || '').trim();
+    }
+    return String(globalTournament).trim();
+  }, [globalTournament]);
 
   // Navigation tab for Valorant: 'matchup' (Spreadsheet sections) | 'standings' | 'all'
   const [activeTab, setActiveTab] = useState('matchup');
 
   // Selected teams for Valorant matchup
-  const [team1Name, setTeam1Name] = useState('Xipto Esports');
-  const [team2Name, setTeam2Name] = useState('Team Secret');
+  const [team1Name, setTeam1Name] = useState('');
+  const [team2Name, setTeam2Name] = useState('');
 
   // Key Player selections (defaults to top player)
   const [keyPlayer1, setKeyPlayer1] = useState('');
   const [keyPlayer2, setKeyPlayer2] = useState('');
 
   // Map comparison selector (Valorant)
-  const [selectedMap, setSelectedMap] = useState('Abyss');
+  const [selectedMap, setSelectedMap] = useState('All Maps');
 
   // Series MVP selectors (Valorant)
   const [selectedMatchNo, setSelectedMatchNo] = useState('1');
-  const [selectedMvpPlayer, setSelectedMvpPlayer] = useState('XIP Emman');
+  const [selectedMvpPlayer, setSelectedMvpPlayer] = useState('');
 
   // Crossfire Head-to-Head & Player Matchup selectors
   const [h2hLeft, setH2hLeft] = useState('');
@@ -149,19 +137,31 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
   // Search filter
   const [standingsSearch, setStandingsSearch] = useState('');
 
-  // Match records from backend
+  // Live tournament records from backend
   const [matchRecords, setMatchRecords] = useState([]);
+  const [dbTeams, setDbTeams] = useState([]);
+  const [dbPlayers, setDbPlayers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    apiFetch(`/api/match-records?tournament=${encodeURIComponent(globalTournament || 'Default')}`)
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setMatchRecords(data);
-        }
-      })
-      .catch(err => console.error('Error fetching match records:', err));
-  }, [globalTournament]);
+    setIsLoading(true);
+    const tourneyParam = currentTournamentName ? encodeURIComponent(currentTournamentName) : '';
+    const tourneyQuery = tourneyParam ? `?tournament=${tourneyParam}` : '';
+
+    Promise.all([
+      apiFetch(`/api/match-records${tourneyQuery}`).then(res => res.ok ? res.json() : []).catch(() => []),
+      apiFetch(`/api/teams${tourneyQuery}`).then(res => res.ok ? res.json() : []).catch(() => []),
+      apiFetch(`/api/players${tourneyQuery}`).then(res => res.ok ? res.json() : []).catch(() => [])
+    ]).then(([recs, teams, players]) => {
+      setMatchRecords(Array.isArray(recs) ? recs : []);
+      setDbTeams(Array.isArray(teams) ? teams : []);
+      setDbPlayers(Array.isArray(players) ? players : []);
+      setIsLoading(false);
+    }).catch(err => {
+      console.error('Error fetching leaderboard data for tournament:', err);
+      setIsLoading(false);
+    });
+  }, [currentTournamentName]);
 
   // Design theme accents
   const theme = useMemo(() => ({
@@ -173,7 +173,7 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
     t2Bg: isValorant ? 'rgba(245, 158, 11, 0.08)' : 'rgba(239, 68, 68, 0.08)'
   }), [isValorant]);
 
-  // Compute standings table for the current activeGame
+  // Compute standings table for the current activeGame and tournament
   const standings = useMemo(() => {
     const gameRecords = matchRecords.filter(r => (r.game || 'VALORANT').toUpperCase() === activeGame);
     const teamStats = {};
@@ -181,10 +181,29 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
     const matchResults = {};
     const maxR = activeGame === 'VALORANT' ? 13 : 10;
 
+    // Seed all registered teams in the current tournament folder so they show in standings
+    dbTeams.forEach(t => {
+      const team = t.team_name;
+      if (!team) return;
+      teamStats[team] = {
+        team,
+        seriesWin: 0,
+        seriesLoss: 0,
+        setWin: 0,
+        setLoss: 0,
+        roundDiff: 0,
+        kills: 0,
+        deaths: 0,
+        logo_url: t.logo_url
+      };
+    });
+
     gameRecords.forEach(record => {
       const team = record.team_name;
       if (!team) return;
-      if (!teamStats[team]) teamStats[team] = { team, seriesWin: 0, seriesLoss: 0, setWin: 0, setLoss: 0, roundDiff: 0, kills: 0, deaths: 0 };
+      if (!teamStats[team]) {
+        teamStats[team] = { team, seriesWin: 0, seriesLoss: 0, setWin: 0, setLoss: 0, roundDiff: 0, kills: 0, deaths: 0 };
+      }
       teamStats[team].kills += Number(record.kills) || 0;
       teamStats[team].deaths += Number(record.deaths) || 0;
 
@@ -240,23 +259,34 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
       .map((t, idx) => ({ ...t, rank: idx + 1, w: t.seriesWin, l: t.seriesLoss }));
 
     return list;
-  }, [matchRecords, activeGame]);
+  }, [matchRecords, dbTeams, activeGame]);
 
-  // Available teams list (combines DB standings and spreadsheet fallback teams)
+  // Available teams list (combines DB teams, standings, and match records)
   const availableTeams = useMemo(() => {
-    const list = new Set(['Xipto Esports', 'Team Secret']);
-    standings.forEach(s => list.add(s.team));
+    const list = new Set();
+    dbTeams.forEach(t => { if (t.team_name) list.add(t.team_name); });
+    standings.forEach(s => { if (s.team) list.add(s.team); });
     matchRecords.forEach(r => { if (r.team_name) list.add(r.team_name); });
     return Array.from(list);
-  }, [standings, matchRecords]);
+  }, [dbTeams, standings, matchRecords]);
 
-  // Synchronize team1 and team2 when standings load
+  // Synchronize team1 and team2 when availableTeams load or change
   useEffect(() => {
-    if (standings.length >= 2 && (!team1Name || team1Name === 'Xipto Esports') && standings[0]?.team !== 'Xipto Esports') {
-      setTeam1Name(standings[0].team);
-      setTeam2Name(standings[1].team);
+    if (availableTeams.length >= 2) {
+      if (!team1Name || !availableTeams.includes(team1Name)) {
+        setTeam1Name(availableTeams[0]);
+      }
+      if (!team2Name || !availableTeams.includes(team2Name) || team2Name === availableTeams[0]) {
+        setTeam2Name(availableTeams[1]);
+      }
+    } else if (availableTeams.length === 1) {
+      setTeam1Name(availableTeams[0]);
+      setTeam2Name('');
+    } else {
+      setTeam1Name('');
+      setTeam2Name('');
     }
-  }, [standings]);
+  }, [availableTeams]);
 
   // Set / Round differentials for Standings
   const setDiff = useMemo(() => standings.map(t => ({ rank: t.rank, diff: t.setDiff, team: t.team })), [standings]);
@@ -360,16 +390,50 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
     return { kdaMap, killsMap, assistsMap, acsMap };
   }, [playerStats]);
 
-  // Helper function to get full roster for a team (DB records or spreadsheet fallback)
+  // Helper function to get full roster for a team from DB records or registered players
   const getTeamRoster = (teamName) => {
-    const dbPlayers = playerStats.filter(p => p.team === teamName);
-    if (dbPlayers.length > 0) return dbPlayers;
-    if (SPREADSHEET_FALLBACK_ROSTERS[teamName]) return SPREADSHEET_FALLBACK_ROSTERS[teamName];
+    if (!teamName) return [];
+    const dbMatchPlayers = playerStats.filter(p => (p.team || '').toLowerCase() === teamName.toLowerCase());
+    if (dbMatchPlayers.length > 0) return dbMatchPlayers;
+
+    const targetTeamObj = dbTeams.find(t => (t.team_name || '').toLowerCase() === teamName.toLowerCase());
+    const targetTeamId = targetTeamObj?.team_id;
+
+    const registered = dbPlayers.filter(p => {
+      if (targetTeamId && p.team_id === targetTeamId) return true;
+      const pTeam = p.teams?.team_name || p.team_name;
+      return pTeam && pTeam.toLowerCase() === teamName.toLowerCase();
+    });
+
+    if (registered.length > 0) {
+      return registered.map(p => ({
+        ign: p.player_name,
+        name: p.player_name,
+        player: p.player_name,
+        team: teamName,
+        agent: p.role_in_game || 'Duelist',
+        role: p.role_in_game || 'Player',
+        kda: '0.00',
+        kdaNum: 0,
+        avgKills: '0.00',
+        avgKillsNum: 0,
+        avgAssists: '0.00',
+        avgAssistsNum: 0,
+        avgAcs: 0,
+        avgAcsNum: 0,
+        kills: 0,
+        deaths: 0,
+        assists: 0,
+        rounds: 0,
+        pm: 0
+      }));
+    }
+
     return [];
   };
 
-  const team1Roster = useMemo(() => getTeamRoster(team1Name), [team1Name, playerStats]);
-  const team2Roster = useMemo(() => getTeamRoster(team2Name), [team2Name, playerStats]);
+  const team1Roster = useMemo(() => getTeamRoster(team1Name), [team1Name, playerStats, dbTeams, dbPlayers]);
+  const team2Roster = useMemo(() => getTeamRoster(team2Name), [team2Name, playerStats, dbTeams, dbPlayers]);
 
   // Key Player resolution for Team 1
   const resolvedKeyPlayer1 = useMemo(() => {
@@ -378,9 +442,9 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
       if (found) return found;
     }
     if (team1Roster.length > 0) {
-      return [...team1Roster].sort((a, b) => (b.avgAcs || 0) - (a.avgAcs || 0))[0];
+      return [...team1Roster].sort((a, b) => (Number(b.avgAcs) || 0) - (Number(a.avgAcs) || 0))[0];
     }
-    return { ign: 'XIP Hotsauz', kda: '1.13', avgKills: '0.75', avgAssists: '0.10', avgAcs: 223 };
+    return { ign: '—', kda: '0.00', avgKills: '0.00', avgAssists: '0.00', avgAcs: 0, agent: '—' };
   }, [keyPlayer1, team1Roster]);
 
   // Key Player resolution for Team 2
@@ -390,25 +454,37 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
       if (found) return found;
     }
     if (team2Roster.length > 0) {
-      return [...team2Roster].sort((a, b) => (b.avgAcs || 0) - (a.avgAcs || 0))[0];
+      return [...team2Roster].sort((a, b) => (Number(b.avgAcs) || 0) - (Number(a.avgAcs) || 0))[0];
     }
-    return { ign: 'OAS tesseract', kda: '0.00', avgKills: '0.00', avgAssists: '0.00', avgAcs: 0 };
+    return { ign: '—', kda: '0.00', avgKills: '0.00', avgAssists: '0.00', avgAcs: 0, agent: '—' };
   }, [keyPlayer2, team2Roster]);
 
-  // Key Player Stats Comparison Rows (matches Spreadsheet exactly!)
+  // Key Player Stats Comparison Rows
   const keyPlayerComparison = useMemo(() => {
     const p1 = resolvedKeyPlayer1;
     const p2 = resolvedKeyPlayer2;
 
-    const p1KdaRank = tournamentStatRanks.kdaMap[p1.ign] || (p1.ign === 'XIP Hotsauz' ? 7 : 1);
-    const p1KillsRank = tournamentStatRanks.killsMap[p1.ign] || (p1.ign === 'XIP Hotsauz' ? 4 : 1);
-    const p1AssistsRank = tournamentStatRanks.assistsMap[p1.ign] || (p1.ign === 'XIP Hotsauz' ? 8 : 1);
-    const p1AcsRank = tournamentStatRanks.acsMap[p1.ign] || (p1.ign === 'XIP Hotsauz' ? 4 : 1);
+    const p1HasStats = p1 && (Number(p1.rounds) > 0 || Number(p1.kills) > 0 || Number(p1.avgAcs) > 0);
+    const p2HasStats = p2 && (Number(p2.rounds) > 0 || Number(p2.kills) > 0 || Number(p2.avgAcs) > 0);
 
-    const p2KdaRank = tournamentStatRanks.kdaMap[p2.ign] || (p2.ign === 'OAS tesseract' ? 11 : '-');
-    const p2KillsRank = tournamentStatRanks.killsMap[p2.ign] || '-';
-    const p2AssistsRank = tournamentStatRanks.assistsMap[p2.ign] || '-';
-    const p2AcsRank = tournamentStatRanks.acsMap[p2.ign] || '-';
+    const p1KdaRank = p1HasStats && tournamentStatRanks.kdaMap[p1.ign] ? tournamentStatRanks.kdaMap[p1.ign] : '-';
+    const p1KillsRank = p1HasStats && tournamentStatRanks.killsMap[p1.ign] ? tournamentStatRanks.killsMap[p1.ign] : '-';
+    const p1AssistsRank = p1HasStats && tournamentStatRanks.assistsMap[p1.ign] ? tournamentStatRanks.assistsMap[p1.ign] : '-';
+    const p1AcsRank = p1HasStats && tournamentStatRanks.acsMap[p1.ign] ? tournamentStatRanks.acsMap[p1.ign] : '-';
+
+    const p2KdaRank = p2HasStats && tournamentStatRanks.kdaMap[p2.ign] ? tournamentStatRanks.kdaMap[p2.ign] : '-';
+    const p2KillsRank = p2HasStats && tournamentStatRanks.killsMap[p2.ign] ? tournamentStatRanks.killsMap[p2.ign] : '-';
+    const p2AssistsRank = p2HasStats && tournamentStatRanks.assistsMap[p2.ign] ? tournamentStatRanks.assistsMap[p2.ign] : '-';
+    const p2AcsRank = p2HasStats && tournamentStatRanks.acsMap[p2.ign] ? tournamentStatRanks.acsMap[p2.ign] : '-';
+
+    const p1KdaNum = parseFloat(p1.kda || 0);
+    const p2KdaNum = parseFloat(p2.kda || 0);
+    const p1KillsNum = parseFloat(p1.avgKills || 0);
+    const p2KillsNum = parseFloat(p2.avgKills || 0);
+    const p1AssistsNum = parseFloat(p1.avgAssists || 0);
+    const p2AssistsNum = parseFloat(p2.avgAssists || 0);
+    const p1AcsNum = Number(p1.avgAcs || 0);
+    const p2AcsNum = Number(p2.avgAcs || 0);
 
     return [
       {
@@ -417,80 +493,88 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
         p1Val: p1.kda || '0.00',
         p2Val: p2.kda || '0.00',
         p2Rank: p2KdaRank,
-        p1Wins: parseFloat(p1.kda || 0) >= parseFloat(p2.kda || 0)
+        p1Wins: p1KdaNum > p2KdaNum && p1KdaNum > 0,
+        p2Wins: p2KdaNum > p1KdaNum && p2KdaNum > 0
       },
       {
         stat: 'AVG KILLS',
         p1Rank: p1KillsRank,
-        p1Val: p1.avgKills || '0.00',
-        p2Val: p2.avgKills && parseFloat(p2.avgKills) > 0 ? p2.avgKills : '-',
+        p1Val: p1HasStats ? (p1.avgKills || '0.00') : (p1.ign && p1.ign !== '—' ? '0.00' : '-'),
+        p2Val: p2HasStats ? (p2.avgKills || '0.00') : (p2.ign && p2.ign !== '—' ? '0.00' : '-'),
         p2Rank: p2KillsRank,
-        p1Wins: parseFloat(p1.avgKills || 0) >= parseFloat(p2.avgKills || 0)
+        p1Wins: p1KillsNum > p2KillsNum && p1KillsNum > 0,
+        p2Wins: p2KillsNum > p1KillsNum && p2KillsNum > 0
       },
       {
         stat: 'AVG ASSIST',
         p1Rank: p1AssistsRank,
-        p1Val: p1.avgAssists || '0.00',
-        p2Val: p2.avgAssists && parseFloat(p2.avgAssists) > 0 ? p2.avgAssists : '-',
+        p1Val: p1HasStats ? (p1.avgAssists || '0.00') : (p1.ign && p1.ign !== '—' ? '0.00' : '-'),
+        p2Val: p2HasStats ? (p2.avgAssists || '0.00') : (p2.ign && p2.ign !== '—' ? '0.00' : '-'),
         p2Rank: p2AssistsRank,
-        p1Wins: parseFloat(p1.avgAssists || 0) >= parseFloat(p2.avgAssists || 0)
+        p1Wins: p1AssistsNum > p2AssistsNum && p1AssistsNum > 0,
+        p2Wins: p2AssistsNum > p1AssistsNum && p2AssistsNum > 0
       },
       {
         stat: 'AVG ACS',
         p1Rank: p1AcsRank,
-        p1Val: p1.avgAcs || 0,
-        p2Val: p2.avgAcs && p2.avgAcs > 0 ? p2.avgAcs : '-',
+        p1Val: p1HasStats ? (p1.avgAcs || 0) : (p1.ign && p1.ign !== '—' ? 0 : '-'),
+        p2Val: p2HasStats ? (p2.avgAcs || 0) : (p2.ign && p2.ign !== '—' ? 0 : '-'),
         p2Rank: p2AcsRank,
-        p1Wins: (p1.avgAcs || 0) >= (p2.avgAcs || 0)
+        p1Wins: p1AcsNum > p2AcsNum && p1AcsNum > 0,
+        p2Wins: p2AcsNum > p1AcsNum && p2AcsNum > 0
       }
     ];
   }, [resolvedKeyPlayer1, resolvedKeyPlayer2, tournamentStatRanks]);
 
   // Distinct Maps for Map Comparison
   const availableMaps = useMemo(() => {
-    const maps = new Set(['Abyss', 'Ascent', 'Haven', 'Split', 'Fracture', 'Breeze', 'Bind', 'Lotus', 'Sunset']);
+    const maps = new Set();
     matchRecords.forEach(r => { if (r.map) maps.add(r.map); });
-    return Array.from(maps);
-  }, [matchRecords]);
+    if (maps.size === 0) {
+      if (activeGame === 'VALORANT') {
+        ['Ascent', 'Haven', 'Bind', 'Split', 'Abyss', 'Lotus', 'Sunset'].forEach(m => maps.add(m));
+      } else {
+        ['Black Widow', 'Ankara', 'Sub Base', 'Port', 'Mexico'].forEach(m => maps.add(m));
+      }
+    }
+    return ['All Maps', ...Array.from(maps)];
+  }, [matchRecords, activeGame]);
 
   // Map & Team Comparison Computation
   const teamComparisonStats = useMemo(() => {
     const getTeamMapStats = (teamName) => {
-      let recs = matchRecords.filter(r => (r.game || 'VALORANT').toUpperCase() === activeGame && r.team_name === teamName);
+      if (!teamName) {
+        return {
+          kda: '0.00',
+          avgAcs: 0,
+          timesPlayed: 0,
+          winRate: '0%',
+          pistolWinRate: '0%',
+          roundWinRate: '0%',
+          atkWinRate: '0%',
+          defWinRate: '0%'
+        };
+      }
+      let recs = matchRecords.filter(r => (r.game || 'VALORANT').toUpperCase() === activeGame && (r.team_name || '').toLowerCase() === teamName.toLowerCase());
       if (selectedMap && selectedMap !== 'All Maps') {
         const mapFiltered = recs.filter(r => (r.map || '').toLowerCase() === selectedMap.toLowerCase());
-        if (mapFiltered.length > 0) {
-          recs = mapFiltered;
-        }
+        if (mapFiltered.length > 0) recs = mapFiltered;
       }
 
       if (recs.length === 0) {
-        // Fallback to roster-level aggregate or tournament standings
-        const roster = getTeamRoster(teamName);
-        if (roster.length > 0) {
-          const avgKda = (roster.reduce((acc, p) => acc + (parseFloat(p.kda) || 0), 0) / roster.length).toFixed(2);
-          const avgAcs = Math.round(roster.reduce((acc, p) => acc + (Number(p.avgAcs) || 0), 0) / roster.length);
-          const tStanding = standings.find(s => s.team === teamName);
-          const totalG = tStanding ? (tStanding.w + tStanding.l) : 0;
-          const winRate = totalG > 0 ? Math.round((tStanding.w / totalG) * 100) + '%' : (teamName === 'Xipto Esports' ? '75%' : '60%');
-          return {
-            kda: avgKda !== '0.00' ? avgKda : (teamName === 'Xipto Esports' ? '1.04' : '3.09'),
-            avgAcs: avgAcs || (teamName === 'Xipto Esports' ? 184 : 160),
-            timesPlayed: totalG || 1,
-            winRate,
-            pistolWinRate: '50%',
-            roundWinRate: totalG > 0 ? '58%' : '52%',
-            atkWinRate: '54%',
-            defWinRate: '56%'
-          };
-        }
-        if (teamName === 'Xipto Esports') {
-          return { kda: '1.04', avgAcs: 184, timesPlayed: 1, winRate: '100%', pistolWinRate: '50%', roundWinRate: '60%', atkWinRate: '55%', defWinRate: '65%' };
-        }
-        if (teamName === 'Team Secret') {
-          return { kda: '3.09', avgAcs: 160, timesPlayed: 1, winRate: '0%', pistolWinRate: '50%', roundWinRate: '40%', atkWinRate: '45%', defWinRate: '35%' };
-        }
-        return { kda: '0.00', avgAcs: 0, timesPlayed: 0, winRate: '0%', pistolWinRate: '0%', roundWinRate: '0%', atkWinRate: '0%', defWinRate: '0%' };
+        const tStanding = standings.find(s => (s.team || '').toLowerCase() === teamName.toLowerCase());
+        const totalG = tStanding ? (tStanding.w + tStanding.l) : 0;
+        const winRate = totalG > 0 ? Math.round((tStanding.w / totalG) * 100) + '%' : '0%';
+        return {
+          kda: '0.00',
+          avgAcs: 0,
+          timesPlayed: totalG,
+          winRate,
+          pistolWinRate: '0%',
+          roundWinRate: '0%',
+          atkWinRate: '0%',
+          defWinRate: '0%'
+        };
       }
 
       let totalKills = 0, totalDeaths = 0, totalAssists = 0, totalAcs = 0;
@@ -521,10 +605,10 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
         avgAcs,
         timesPlayed,
         winRate,
-        pistolWinRate: '50%',
+        pistolWinRate: timesPlayed > 0 ? '50%' : '0%',
         roundWinRate,
-        atkWinRate: '52%',
-        defWinRate: '55%'
+        atkWinRate: timesPlayed > 0 ? '50%' : '0%',
+        defWinRate: timesPlayed > 0 ? '50%' : '0%'
       };
     };
 
@@ -554,15 +638,12 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
       availablePlayers = Array.from(pSet);
     }
     if (availablePlayers.length === 0) {
-      const t1P = team1Roster.map(p => p.ign);
-      const t2P = team2Roster.map(p => p.ign);
+      const t1P = team1Roster.map(p => p.ign).filter(Boolean);
+      const t2P = team2Roster.map(p => p.ign).filter(Boolean);
       availablePlayers = Array.from(new Set([...t1P, ...t2P]));
     }
-    if (availablePlayers.length === 0) {
-      availablePlayers = ['XIP Emman', 'XIP Hotsauz', 'XIP Fixyy', 'XIP JA', 'XIP Riza'];
-    }
 
-    const currentMvp = (availablePlayers.includes(selectedMvpPlayer) ? selectedMvpPlayer : availablePlayers[0]) || 'XIP Emman';
+    const currentMvp = (availablePlayers.includes(selectedMvpPlayer) ? selectedMvpPlayer : availablePlayers[0]) || '';
     const playerRecs = matchRecs.filter(r => r.ign === currentMvp);
     const pProfile = playerStats.find(p => p.ign === currentMvp) || team1Roster.find(p => p.ign === currentMvp) || team2Roster.find(p => p.ign === currentMvp);
 
@@ -572,19 +653,9 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
         return {
           game: gameNum,
           agent: gRecord.agent || gRecord.group_label || pProfile?.agent || 'Duelist',
-          acs: gRecord.acs || pProfile?.avgAcs || 220,
-          kills: gRecord.kills || pProfile?.avgKills || 18,
+          acs: gRecord.acs || pProfile?.avgAcs || 0,
+          kills: gRecord.kills || pProfile?.avgKills || 0,
           map: gRecord.map || selectedMap || 'Abyss',
-          played: true
-        };
-      }
-      if (gameNum === 1 && pProfile) {
-        return {
-          game: 1,
-          agent: pProfile.agent || 'Duelist',
-          acs: pProfile.avgAcs || (pProfile.acs || 215),
-          kills: pProfile.kills || Math.round((parseFloat(pProfile.avgKills) || 0.8) * 20) || 16,
-          map: selectedMap || 'Abyss',
           played: true
         };
       }
@@ -826,6 +897,8 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
             {(activeTab === 'matchup' || activeTab === 'all') && (() => {
               const t1Standing = standings.find(s => s.team === team1Name);
               const t2Standing = standings.find(s => s.team === team2Name);
+              const t1Obj = dbTeams.find(t => (t.team_name || '').toLowerCase() === (team1Name || '').toLowerCase());
+              const t2Obj = dbTeams.find(t => (t.team_name || '').toLowerCase() === (team2Name || '').toLowerCase());
 
               return (
                 <div className="lb-card bg-gradient-to-r from-slate-950 via-slate-900/95 to-slate-950 border border-slate-800 shadow-2xl relative overflow-hidden" style={{ minHeight: "155px" }}>
@@ -854,7 +927,11 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
                         }}
                       >
                         <div className="absolute inset-0 bg-cyan-400/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        {(team1Name || 'T1')[0]}
+                        {t1Obj?.logo_url ? (
+                          <img src={t1Obj.logo_url} alt={team1Name} className="w-full h-full object-contain p-2" />
+                        ) : (
+                          (team1Name || 'T1')[0]
+                        )}
                       </div>
                       <div className="flex flex-col flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
@@ -951,7 +1028,11 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
                         }}
                       >
                         <div className="absolute inset-0 bg-amber-400/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        {(team2Name || 'T2')[0]}
+                        {t2Obj?.logo_url ? (
+                          <img src={t2Obj.logo_url} alt={team2Name} className="w-full h-full object-contain p-2" />
+                        ) : (
+                          (team2Name || 'T2')[0]
+                        )}
                       </div>
                     </div>
                   </div>
@@ -968,7 +1049,11 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
                           color: theme.t1Accent 
                         }}
                       >
-                        {(team1Name || 'T1')[0]}
+                        {t1Obj?.logo_url ? (
+                          <img src={t1Obj.logo_url} alt={team1Name} className="w-full h-full object-contain p-1.5" />
+                        ) : (
+                          (team1Name || 'T1')[0]
+                        )}
                       </div>
                       <div className="flex flex-col flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
@@ -1051,7 +1136,11 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
                           color: theme.t2Accent 
                         }}
                       >
-                        {(team2Name || 'T2')[0]}
+                        {t2Obj?.logo_url ? (
+                          <img src={t2Obj.logo_url} alt={team2Name} className="w-full h-full object-contain p-1.5" />
+                        ) : (
+                          (team2Name || 'T2')[0]
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1248,9 +1337,13 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
                               onChange={(e) => setKeyPlayer1(e.target.value)}
                               className="bg-slate-950 border border-slate-700/80 text-white font-black text-sm sm:text-base rounded-xl px-3 py-1.5 focus:outline-none focus:border-cyan-400 cursor-pointer lb-select-custom w-full max-w-[280px] mt-0.5"
                             >
-                              {team1Roster.map(p => (
-                                <option key={p.ign} value={p.ign}>{p.ign}</option>
-                              ))}
+                              {team1Roster.length > 0 ? (
+                                team1Roster.map(p => (
+                                  <option key={p.ign} value={p.ign}>{p.ign}</option>
+                                ))
+                              ) : (
+                                <option value="">No Players</option>
+                              )}
                             </select>
                             <div className="flex items-center gap-2 mt-1.5">
                               <AgentBadge agent={resolvedKeyPlayer1.agent || 'Duelist'} />
@@ -1283,9 +1376,13 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
                               onChange={(e) => setKeyPlayer2(e.target.value)}
                               className="bg-slate-950 border border-slate-700/80 text-white font-black text-sm sm:text-base rounded-xl px-3 py-1.5 focus:outline-none focus:border-amber-400 cursor-pointer lb-select-custom w-full max-w-[280px] mt-0.5"
                             >
-                              {team2Roster.map(p => (
-                                <option key={p.ign} value={p.ign}>{p.ign}</option>
-                              ))}
+                              {team2Roster.length > 0 ? (
+                                team2Roster.map(p => (
+                                  <option key={p.ign} value={p.ign}>{p.ign}</option>
+                                ))
+                              ) : (
+                                <option value="">No Players</option>
+                              )}
                             </select>
                             <div className="flex items-center gap-2 mt-1.5 justify-end">
                               <span className="text-[11px] font-mono text-slate-400">
@@ -1331,7 +1428,7 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
                               {/* Left Player Value */}
                               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'flex-start' }}>
                                 <span className="inline-block px-2 py-0.5 rounded-md text-[11px] font-mono font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-800/50 flex-shrink-0">
-                                  #{row.p1Rank}
+                                  {row.p1Rank !== '-' ? `#${row.p1Rank}` : '—'}
                                 </span>
                                 <span className={`font-mono text-base sm:text-lg font-black ${row.p1Wins ? 'text-emerald-400 stat-glow-t1' : 'text-slate-200'}`}>
                                   {row.p1Val}
@@ -1355,7 +1452,7 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
                                   ></div>
                                   <div className="w-0.5 h-full bg-slate-950"></div>
                                   <div
-                                    className={`h-full rounded-r-full transition-all duration-700 ${!row.p1Wins && row.p2Val !== '-' ? 'bg-gradient-to-l from-amber-500 to-emerald-400 shadow-[0_0_8px_rgba(245,158,11,0.6)]' : 'bg-amber-600/40'}`}
+                                    className={`h-full rounded-r-full transition-all duration-700 ${row.p2Wins ? 'bg-gradient-to-l from-amber-500 to-emerald-400 shadow-[0_0_8px_rgba(245,158,11,0.6)]' : 'bg-amber-600/40'}`}
                                     style={{ width: `${p2Percent}%` }}
                                   ></div>
                                 </div>
@@ -1363,12 +1460,12 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
 
                               {/* Right Player Value */}
                               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'flex-end' }}>
-                                {!row.p1Wins && row.p2Val !== '-' && (
+                                {row.p2Wins && (
                                   <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30 flex-shrink-0">
                                     LEAD
                                   </span>
                                 )}
-                                <span className={`font-mono text-base sm:text-lg font-black ${!row.p1Wins && row.p2Val !== '-' ? 'text-emerald-400 stat-glow-t2' : 'text-slate-200'}`}>
+                                <span className={`font-mono text-base sm:text-lg font-black ${row.p2Wins ? 'text-emerald-400 stat-glow-t2' : 'text-slate-200'}`}>
                                   {row.p2Val}
                                 </span>
                                 <span className="inline-block px-2 py-0.5 rounded-md text-[11px] font-mono font-bold bg-amber-950/80 text-amber-300 border border-amber-800/50 flex-shrink-0">
@@ -1996,4 +2093,4 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
   );
 };
 
-export default Leaderboards;
+export default Leaderboards;;
