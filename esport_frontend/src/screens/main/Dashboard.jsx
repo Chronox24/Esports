@@ -39,9 +39,9 @@ const db = {
     accentAlt: '#3b82f6',    
     timerSeconds: 225301,    
     kpis: [      
-      { title: 'VCT Tournaments', icon: 'globe', stats: [{ label: 'Active', value: '3' }, { label: 'Upcoming', value: '12' }] },      
-      { title: 'Valorant Players', icon: 'users', stats: [{ label: 'Registered', value: '18,250' }, { label: 'Active', value: '6,400' }] },      
-      { title: 'Total Teams', icon: 'crosshair', stats: [{ label: 'Verified', value: '450' }, { label: 'Amateur', value: '1,800' }] },      
+      { title: 'VCT Tournaments', icon: 'globe', stats: [{ label: 'Active', value: 0 }, { label: 'Total', value: 0 }] },      
+      { title: 'Valorant Players', icon: 'users', stats: [{ label: 'Registered', value: 0 }, { label: 'Active', value: 0 }] },      
+      { title: 'Total Teams', icon: 'crosshair', stats: [{ label: 'Verified', value: 0 }, { label: 'Amateur', value: 0 }] },      
     ],    
     liveMatch: { team1: 'PRX', team2: 'SEN', score: '7 – 9', map: 'Sunset', status: 'LIVE' },    
     standings: [      
@@ -66,9 +66,9 @@ const db = {
     accentAlt: '#ef4444',    
     timerSeconds: 86400,    
     kpis: [      
-      { title: 'CFS Tournaments', icon: 'globe', stats: [{ label: 'Active', value: '1' }, { label: 'Upcoming', value: '4' }] },      
-      { title: 'Crossfire Players', icon: 'users', stats: [{ label: 'Registered', value: '45,120' }, { label: 'Active', value: '12,300' }] },      
-      { title: 'Clan Rosters', icon: 'crosshair', stats: [{ label: 'Verified', value: '890' }, { label: 'Amateur', value: '3,200' }] },      
+      { title: 'CFS Tournaments', icon: 'globe', stats: [{ label: 'Active', value: 0 }, { label: 'Total', value: 0 }] },      
+      { title: 'Crossfire Players', icon: 'users', stats: [{ label: 'Registered', value: 0 }, { label: 'Active', value: 0 }] },      
+      { title: 'Clan Rosters', icon: 'crosshair', stats: [{ label: 'Verified', value: 0 }, { label: 'Amateur', value: 0 }] },      
     ],    
     liveMatch: { team1: 'ALL GAMERS', team2: 'BAISHA', score: '5 – 3', map: 'Black Widow', status: 'LIVE' },    
     standings: [      
@@ -89,7 +89,98 @@ const db = {
   },
 };
 
-const KpiCard = ({ card, accent, index = 0, onClick }) => {  
+const AnimatedKpiNumber = ({ value, isLoading, accent, isFirst = false }) => {
+  const [displayValue, setDisplayValue] = useState(0);
+  const [scrambleDigits, setScrambleDigits] = useState('00');
+
+  // Loading animation: rapid cycling of random digits with cyberpunk telemetry effect
+  useEffect(() => {
+    if (!isLoading) return;
+    const interval = setInterval(() => {
+      const rand = Math.floor(10 + Math.random() * 89);
+      setScrambleDigits(String(rand));
+    }, 60);
+    return () => clearInterval(interval);
+  }, [isLoading]);
+
+  // When database query completes: smoothly count up to real-time number
+  useEffect(() => {
+    if (isLoading) return;
+
+    const target = typeof value === 'number'
+      ? value
+      : parseInt(String(value ?? 0).replace(/,/g, ''), 10);
+
+    if (isNaN(target)) {
+      setDisplayValue(value ?? 0);
+      return;
+    }
+
+    if (target === 0) {
+      setDisplayValue(0);
+      return;
+    }
+
+    const duration = 650;
+    const startTime = performance.now();
+    let frameId;
+
+    const update = (currentTime) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease out cubic
+      const ease = 1 - Math.pow(1 - progress, 3);
+      const current = Math.round(target * ease);
+      setDisplayValue(current);
+
+      if (progress < 1) {
+        frameId = requestAnimationFrame(update);
+      } else {
+        setDisplayValue(target);
+      }
+    };
+
+    frameId = requestAnimationFrame(update);
+    return () => cancelAnimationFrame(frameId);
+  }, [value, isLoading]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-1.5 h-7 sm:h-9">
+        <span
+          className="font-tactical font-mono text-2xl sm:text-3xl font-extrabold tracking-widest animate-pulse inline-block"
+          style={{
+            color: accent || '#06b6d4',
+            textShadow: `0 0 16px ${accent || '#06b6d4'}90`,
+          }}
+        >
+          {scrambleDigits}
+        </span>
+        <span
+          className="w-1.5 h-4 sm:h-5 rounded-xs animate-ping"
+          style={{ backgroundColor: accent || '#06b6d4' }}
+        />
+      </div>
+    );
+  }
+
+  const formatted = typeof displayValue === 'number'
+    ? displayValue.toLocaleString()
+    : displayValue;
+
+  return (
+    <span
+      className="font-tactical text-2xl sm:text-3xl font-extrabold text-theme-text-base tracking-tight transition-all duration-300"
+      style={{
+        textShadow: isFirst ? `0 0 18px ${accent}33` : 'none',
+      }}
+    >
+      {formatted}
+    </span>
+  );
+};
+
+const KpiCard = ({ card, accent, index = 0, onClick, isLoading = false }) => {  
   const icons = { globe: <IconGlobe />, users: <IconUsers />, crosshair: <IconCrosshair />, trophy: <IconTrophy /> };  
   return (    
     <div
@@ -101,13 +192,20 @@ const KpiCard = ({ card, accent, index = 0, onClick }) => {
       
       <div className="flex items-center justify-between gap-3 relative z-10">        
         <div className="flex items-center gap-2.5">
-          <span className="hud-diamond" style={{ backgroundColor: accent, boxShadow: `0 0 8px ${accent}` }} />
+          <span className={`hud-diamond ${isLoading ? 'animate-pulse' : ''}`} style={{ backgroundColor: accent, boxShadow: `0 0 8px ${accent}` }} />
           <h3 className="font-tactical text-xs font-extrabold text-theme-text-base uppercase tracking-[0.18em] leading-tight">
             {card.title}
           </h3>        
         </div>
         <div className="hud-chamfer-sm bg-cyan-500/10 border border-cyan-400/25 shrink-0 flex items-center justify-center transition-transform duration-300 group-hover:scale-110" style={{ color: accent, padding: '9px' }}>          
-          {icons[card.icon]}        
+          {isLoading ? (
+            <svg className="w-5 h-5 animate-spin opacity-80" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          ) : (
+            icons[card.icon]
+          )}        
         </div>      
       </div>      
 
@@ -115,9 +213,12 @@ const KpiCard = ({ card, accent, index = 0, onClick }) => {
         {card.stats.map((s, i) => (          
           <div key={i} className="flex flex-col gap-1">            
             <span className="font-tactical text-[10px] text-theme-text-muted uppercase tracking-[0.16em] font-bold">{s.label}</span>            
-            <span className="font-tactical text-2xl sm:text-3xl font-extrabold text-theme-text-base tracking-tight" style={{ textShadow: i === 0 ? `0 0 18px ${accent}33` : 'none' }}>
-              {s.value}
-            </span>          
+            <AnimatedKpiNumber
+              value={s.value}
+              isLoading={isLoading}
+              accent={accent}
+              isFirst={i === 0}
+            />          
           </div>        
         ))}      
       </div>      
@@ -296,11 +397,33 @@ const LeaderboardOverviewModal = ({ isOpen, onClose, data, statsList, player, ac
   );
 };
 
+const getInitialKpiTemplate = (game) => {
+  const isVal = (game || 'valorant').toLowerCase() === 'valorant';
+  return [
+    {
+      title: isVal ? 'VCT Tournaments' : 'CFS Tournaments',
+      icon: 'globe',
+      stats: [{ label: 'Active', value: 0 }, { label: 'Total', value: 0 }],
+    },
+    {
+      title: isVal ? 'Valorant Players' : 'Crossfire Players',
+      icon: 'users',
+      stats: [{ label: 'Registered', value: 0 }, { label: 'Active', value: 0 }],
+    },
+    {
+      title: 'Total Teams',
+      icon: 'crosshair',
+      stats: [{ label: 'Verified', value: 0 }, { label: 'Amateur', value: 0 }],
+    },
+  ];
+};
+
 const Dashboard = ({ globalGame, globalTournament }) => {
   const activeGame = (globalGame || 'valorant').toLowerCase();
   const data = db[activeGame] || db.valorant;
   const [dbMatches, setDbMatches] = useState([]);
-  const [kpiData, setKpiData] = useState(data.kpis);
+  const [kpiData, setKpiData] = useState(() => getInitialKpiTemplate(activeGame));
+  const [isKpisLoading, setIsKpisLoading] = useState(true);
   const [playerStats, setPlayerStats] = useState([]);
   const [customStreamUrl, setCustomStreamUrl] = useState('');
   const [isStreamLive, setIsStreamLive] = useState(false);
@@ -355,7 +478,9 @@ const Dashboard = ({ globalGame, globalTournament }) => {
     return () => clearInterval(interval);
   }, [globalTournament]);
   useEffect(() => {
+    let isMounted = true;
     const fetchKpis = async () => {
+      setIsKpisLoading(true);
       try {
         const teamsUrl = globalTournament ? `/api/teams?tournament=${encodeURIComponent(globalTournament)}` : '/api/teams';
         const playersUrl = globalTournament ? `/api/players?tournament=${encodeURIComponent(globalTournament)}` : '/api/players';
@@ -367,33 +492,89 @@ const Dashboard = ({ globalGame, globalTournament }) => {
         const tournaments = await tournamentsRes.json();
         const teams = await teamsRes.json();
         const players = await playersRes.json();
+        
+        if (!isMounted) return;
+
         const gameUpper = activeGame.toUpperCase();
-        const gameTournaments = Array.isArray(tournaments) ? tournaments.filter(t => t.game === gameUpper) : [];
-        const gameTeams = Array.isArray(teams) ? teams.filter(t => t.game === gameUpper) : [];
-        const gameTeamIds = new Set(gameTeams.map(t => t.team_id));
-        const gamePlayers = Array.isArray(players) ? players.filter(p => gameTeamIds.has(p.team_id)) : [];
+        
+        // Map tournament names to their games for teams without explicit game property
+        const tournGameMap = {};
+        if (Array.isArray(tournaments)) {
+          tournaments.forEach(t => {
+            if (t.name) tournGameMap[t.name.trim().toLowerCase()] = (t.game || 'VALORANT').toUpperCase();
+          });
+        }
+
+        const gameTournaments = Array.isArray(tournaments) 
+          ? tournaments.filter(t => (t.game || '').toUpperCase() === gameUpper) 
+          : [];
+        
+        // Count active tournaments
+        const activeTournamentsCount = gameTournaments.filter(
+          t => (t.status || '').toUpperCase() === 'ACTIVE' || t.is_finished === false || t.is_finished === 0
+        ).length;
+
+        // Scoped target tournaments if globalTournament is selected
+        const targetTourn = globalTournament
+          ? gameTournaments.filter(t => t.name.trim().toLowerCase() === globalTournament.trim().toLowerCase())
+          : gameTournaments;
+        const totalTournamentsCount = globalTournament ? targetTourn.length : gameTournaments.length;
+        const activeTournScoped = globalTournament
+          ? (targetTourn.some(t => (t.status || '').toUpperCase() === 'ACTIVE' || !t.is_finished) ? 1 : 0)
+          : activeTournamentsCount;
+
+        // Filter teams belonging to this game
+        let gameTeams = [];
+        if (Array.isArray(teams)) {
+          gameTeams = teams.filter(t => {
+            if (t.game) return (t.game || '').toUpperCase() === gameUpper;
+            if (t.tournament_name) {
+              const mapped = tournGameMap[t.tournament_name.trim().toLowerCase()];
+              return mapped ? mapped === gameUpper : gameUpper === 'VALORANT';
+            }
+            return gameUpper === 'VALORANT';
+          });
+        }
+
+        const gameTeamIds = new Set(gameTeams.map(t => t.team_id || t.id));
+        const gamePlayers = Array.isArray(players) 
+          ? players.filter(p => gameTeamIds.has(p.team_id) || (p.game && p.game.toUpperCase() === gameUpper)) 
+          : [];
+
         setKpiData([
           { 
             title: `${gameUpper === 'VALORANT' ? 'VCT' : 'CFS'} Tournaments`, 
             icon: 'globe', 
-            stats: [{ label: 'Total', value: gameTournaments.length }, { label: 'Active', value: gameTournaments.length > 0 ? 1 : 0 }] 
+            stats: [
+              { label: 'Active', value: activeTournScoped }, 
+              { label: 'Total', value: totalTournamentsCount }
+            ] 
           },
           { 
             title: `${gameUpper === 'VALORANT' ? 'Valorant' : 'Crossfire'} Players`, 
             icon: 'users', 
-            stats: [{ label: 'Registered', value: gamePlayers.length }, { label: 'Active', value: gamePlayers.length }] 
+            stats: [
+              { label: 'Registered', value: gamePlayers.length }, 
+              { label: 'Active', value: gamePlayers.length }
+            ] 
           },
           { 
             title: 'Total Teams', 
             icon: 'crosshair', 
-            stats: [{ label: 'Verified', value: gameTeams.length }, { label: 'Amateur', value: 0 }] 
+            stats: [
+              { label: 'Verified', value: gameTeams.length }, 
+              { label: 'Amateur', value: 0 }
+            ] 
           },
         ]);
       } catch (e) {
         console.error('Failed to fetch KPIs', e);
+      } finally {
+        if (isMounted) setIsKpisLoading(false);
       }
     };
     fetchKpis();
+    return () => { isMounted = false; };
   }, [activeGame, globalTournament]);
   useEffect(() => {
     const fetchStats = async () => {
@@ -498,7 +679,14 @@ const Dashboard = ({ globalGame, globalTournament }) => {
         {/* KPI Cards Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
           {kpiData.map((card, i) => (
-            <KpiCard key={i} index={i} card={card} accent={data.accent} onClick={setActiveModal} />
+            <KpiCard
+              key={i}
+              index={i}
+              card={card}
+              accent={data.accent}
+              onClick={setActiveModal}
+              isLoading={isKpisLoading}
+            />
           ))}
         </div>
 
