@@ -199,7 +199,17 @@ const Mapping = ({ globalGame, globalTournament }) => {
       });
   }, [globalTournament]);
 
-  const [vetoFormat, setVetoFormat] = useState("BO3");
+  const [vetoFormat, setVetoFormat] = useState(() => {
+    const key = `veto_format_${currentTournamentName}_${game}`;
+    try {
+      const saved = localStorage.getItem(key) || localStorage.getItem(`veto_format_${currentTournamentName}`);
+      if (saved === "BO5" || saved === "BO3") return saved;
+    } catch {}
+    return "BO3";
+  });
+  const [isSavingFormat, setIsSavingFormat] = useState(false);
+  const [formatSaveSuccess, setFormatSaveSuccess] = useState(false);
+  const [vetoHistory, setVetoHistory] = useState([]);
   const [vetoActive, setVetoActive] = useState(false);
   const [timeLeft, setTimeLeft] = useState(45);
   const [phaseIndex, setPhaseIndex] = useState(0);
@@ -280,15 +290,93 @@ const Mapping = ({ globalGame, globalTournament }) => {
 
     fetchRemoteMapPool();
 
+    // Load veto format for this specific folder and game
+    const vetoKey = `veto_format_${currentTournamentName}_${game}`;
+    try {
+      const saved = localStorage.getItem(vetoKey) || localStorage.getItem(`veto_format_${currentTournamentName}`);
+      if (saved === "BO5" || saved === "BO3") {
+        setVetoFormat(saved);
+      } else {
+        setVetoFormat("BO3");
+      }
+    } catch {}
+
+    const fetchRemoteVetoSettings = async () => {
+      if (!currentTournamentName || currentTournamentName === "Default") return;
+      try {
+        const tParam = encodeURIComponent(currentTournamentName);
+        const gParam = encodeURIComponent(game);
+        const res = await apiFetch(`/api/veto-settings?tournament=${tParam}&game=${gParam}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted && data && (data.veto_format === "BO5" || data.veto_format === "BO3")) {
+            setVetoFormat(data.veto_format);
+            try {
+              localStorage.setItem(vetoKey, data.veto_format);
+            } catch {}
+          }
+        }
+      } catch (err) {
+        console.warn("Could not fetch remote veto settings:", err);
+      }
+    };
+    fetchRemoteVetoSettings();
+
     // Reset veto when folder or game changes
     setVetoActive(false);
     setPhaseIndex(0);
     setTimeLeft(45);
+    setVetoHistory([]);
 
     return () => {
       isMounted = false;
     };
   }, [currentTournamentName, game]);
+
+  // Persist veto format for this specific folder both locally and to Supabase
+  const handleSaveVetoFormat = async (formatToSave = vetoFormat) => {
+    if (!currentTournamentName || currentTournamentName === "Default") {
+      showToast("Please select a tournament folder first!");
+      return false;
+    }
+    setIsSavingFormat(true);
+    const key = `veto_format_${currentTournamentName}_${game}`;
+    const genericKey = `veto_format_${currentTournamentName}`;
+    try {
+      localStorage.setItem(key, formatToSave);
+      localStorage.setItem(genericKey, formatToSave);
+    } catch (e) {
+      console.warn("Failed saving format locally", e);
+    }
+
+    try {
+      const res = await apiFetch("/api/veto-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tournament_name: currentTournamentName,
+          game_title: game,
+          veto_format: formatToSave,
+        }),
+      });
+      setIsSavingFormat(false);
+      setFormatSaveSuccess(true);
+      setTimeout(() => setFormatSaveSuccess(false), 3000);
+      showToast(
+        `Series format saved as ${formatToSave === "BO5" ? "BEST OF 5" : "BEST OF 3"} for "${currentTournamentName}"!`
+      );
+      return res.ok;
+    } catch (err) {
+      console.warn("Failed saving format to server", err);
+      setIsSavingFormat(false);
+      setFormatSaveSuccess(true);
+      setTimeout(() => setFormatSaveSuccess(false), 3000);
+      showToast(
+        `Saved locally as ${formatToSave === "BO5" ? "BEST OF 5" : "BEST OF 3"}.`
+      );
+      return false;
+    }
+  };
 
   // Persist map pool for this specific folder both locally and to Supabase
   const persistMapPool = async (mapsToSave) => {
@@ -447,6 +535,17 @@ const Mapping = ({ globalGame, globalTournament }) => {
     if (!vetoActive || !currentPhase || currentPhase.action === "side") return;
     const map = currentMaps.find((m) => m.id === mapId);
     if (map.status !== "none" || !map.enabled) return;
+
+    // Save snapshot for Undo
+    setVetoHistory((prev) => [
+      ...prev,
+      {
+        maps: JSON.parse(JSON.stringify(currentMaps)),
+        phaseIndex,
+        timeLeft,
+      },
+    ]);
+
     const updatedMaps = currentMaps.map((m) => {
       if (m.id === mapId) {
         return {
@@ -473,6 +572,16 @@ const Mapping = ({ globalGame, globalTournament }) => {
           (m.status === "picked" || m.status === "decider") && m.side === null,
       );
     if (targetMap) {
+      // Save snapshot for Undo
+      setVetoHistory((prev) => [
+        ...prev,
+        {
+          maps: JSON.parse(JSON.stringify(currentMaps)),
+          phaseIndex,
+          timeLeft,
+        },
+      ]);
+
       const updatedMaps = currentMaps.map((m) => {
         if (m.id === targetMap.id) {
           return { ...m, side: sideStr, sideByTeam: currentPhase.team };
@@ -488,6 +597,15 @@ const Mapping = ({ globalGame, globalTournament }) => {
       setVetoActive(false);
     }
   };
+  const handleUndoAction = () => {
+    if (vetoHistory.length === 0 || phaseIndex === 0) return;
+    const lastSnapshot = vetoHistory[vetoHistory.length - 1];
+    setVetoHistory((prev) => prev.slice(0, -1));
+    setCurrentMaps(lastSnapshot.maps);
+    setPhaseIndex(lastSnapshot.phaseIndex);
+    setTimeLeft(lastSnapshot.timeLeft);
+    showToast("Reversed last veto action.");
+  };
   const submitVetoResult = async (finalMaps) => {
     try {
       const bans = finalMaps.filter((m) => m.status === "banned");
@@ -501,7 +619,7 @@ const Mapping = ({ globalGame, globalTournament }) => {
         week: matchWeek,
         day: matchDay,
         match: matchNumber,
-        series: "",
+        series: vetoFormat || "BO3",
         team_a: teamA,
         team_b: teamB,
         ban_1: bans[0] ? bans[0].name : "",
@@ -521,6 +639,7 @@ const Mapping = ({ globalGame, globalTournament }) => {
       });
       if (res.ok) {
         resetVeto();
+        showToast("Veto match results successfully saved!");
       } else {
         alert(
           "Failed to save veto result! Check the console or ensure your database schema is updated.",
@@ -540,6 +659,7 @@ const Mapping = ({ globalGame, globalTournament }) => {
     setVetoActive(false);
     setPhaseIndex(0);
     setTimeLeft(45);
+    setVetoHistory([]);
     setCurrentMaps((prev) =>
       prev.map((m) => ({
         ...m,
@@ -771,7 +891,54 @@ const Mapping = ({ globalGame, globalTournament }) => {
         </div>
 
         {/* Veto Sequence Bar */}
-        <div className="flex justify-center w-full mb-8">
+        <div className="flex flex-col items-center justify-center w-full mb-8">
+          <div className="flex flex-wrap items-center justify-between w-full mb-2.5 px-1 gap-2">
+            <div className="flex items-center gap-2.5">
+              <span className="font-tactical text-[10px] font-extrabold tracking-[0.2em] uppercase text-cyan-400">
+                // VETO SEQUENCE
+              </span>
+              <span className={`font-tactical text-[10px] font-black px-2.5 py-0.5 rounded hud-chamfer-sm border ${
+                vetoFormat === "BO5" 
+                  ? "bg-amber-500/15 text-amber-400 border-amber-400/40 shadow-[0_0_10px_rgba(245,158,11,0.2)]" 
+                  : "bg-cyan-500/15 text-cyan-400 border-cyan-400/40 shadow-[0_0_10px_rgba(6,182,212,0.2)]"
+              }`}>
+                {vetoFormat === "BO5" ? "BEST OF 5 SERIES" : "BEST OF 3 SERIES"}
+              </span>
+            </div>
+            {!vetoActive && phaseIndex === 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-tactical text-slate-400 tracking-wider">FORMAT:</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVetoFormat("BO3");
+                    handleSaveVetoFormat("BO3");
+                  }}
+                  className={`text-[9px] font-tactical font-black px-2.5 py-1 rounded hud-chamfer-sm cursor-pointer transition-all border ${
+                    vetoFormat === "BO3"
+                      ? "bg-cyan-500 text-slate-950 border-cyan-400 font-extrabold shadow-[0_0_8px_rgba(0,229,255,0.3)]"
+                      : "bg-slate-900/90 text-slate-400 hover:text-white border-slate-700/80"
+                  }`}
+                >
+                  BO3
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVetoFormat("BO5");
+                    handleSaveVetoFormat("BO5");
+                  }}
+                  className={`text-[9px] font-tactical font-black px-2.5 py-1 rounded hud-chamfer-sm cursor-pointer transition-all border ${
+                    vetoFormat === "BO5"
+                      ? "bg-cyan-500 text-slate-950 border-cyan-400 font-extrabold shadow-[0_0_8px_rgba(0,229,255,0.3)]"
+                      : "bg-slate-900/90 text-slate-400 hover:text-white border-slate-700/80"
+                  }`}
+                >
+                  BO5
+                </button>
+              </div>
+            )}
+          </div>
           <div className="hud-card flex flex-wrap justify-center items-center gap-2 p-3 w-full">
             {vetoSequence.map((seq, idx) => (
               <div
@@ -1136,9 +1303,11 @@ const Mapping = ({ globalGame, globalTournament }) => {
             </div>
             <button
               type="button"
-              className="hud-btn-secondary w-full py-3 px-5 text-xs font-tactical font-extrabold uppercase tracking-wider"
+              onClick={handleUndoAction}
+              disabled={vetoHistory.length === 0 || phaseIndex === 0}
+              className="hud-btn-secondary w-full py-3 px-5 text-xs font-tactical font-extrabold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
-              Undo Action
+              Undo Action {vetoHistory.length > 0 ? `(${vetoHistory.length})` : ""}
             </button>
           </div>
 
@@ -1148,23 +1317,35 @@ const Mapping = ({ globalGame, globalTournament }) => {
                 Override Turn Timer
               </h3>
               <p className="text-xs text-slate-400 mb-6">
-                Manually adjust the current turn's timer countdown.
+                Manually adjust the current turn's timer countdown (Current: {timeLeft}s).
               </p>
               <div className="flex gap-2.5">
                 <button
                   type="button"
-                  className="hud-btn-secondary flex-1 py-2.5 px-3 text-xs font-tactical font-extrabold"
+                  onClick={() => {
+                    setTimeLeft((prev) => prev + 10);
+                    showToast("Added 10s to turn timer.");
+                  }}
+                  className="hud-btn-secondary flex-1 py-2.5 px-3 text-xs font-tactical font-extrabold cursor-pointer"
                 >
                   +10s
                 </button>
                 <button
                   type="button"
-                  className="hud-btn-secondary flex-1 py-2.5 px-3 text-xs font-tactical font-extrabold"
+                  onClick={() => {
+                    setTimeLeft((prev) => prev + 30);
+                    showToast("Added 30s to turn timer.");
+                  }}
+                  className="hud-btn-secondary flex-1 py-2.5 px-3 text-xs font-tactical font-extrabold cursor-pointer"
                 >
                   +30s
                 </button>
                 <button
                   type="button"
+                  onClick={() => {
+                    setTimeLeft(0);
+                    showToast("Turn timer forced to 0s.");
+                  }}
                   className="hud-chamfer-sm flex-1 py-2.5 px-3 text-xs font-tactical font-extrabold uppercase bg-red-500/15 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/40 transition-all cursor-pointer"
                 >
                   Force 0s
@@ -1173,40 +1354,78 @@ const Mapping = ({ globalGame, globalTournament }) => {
             </div>
           </div>
 
-          <div className="hud-card flex flex-col justify-between p-6 gap-6">
+          <div className="hud-card flex flex-col justify-between p-6 gap-6 border border-slate-800">
             <div>
-              <h3 className="font-tactical text-sm font-extrabold text-white uppercase tracking-wider mb-2">
-                Match Format Setup
-              </h3>
-              <p className="text-xs text-slate-400">
-                Change the veto format sequence. This can only be changed before
-                the veto starts.
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-tactical text-sm font-extrabold text-white uppercase tracking-wider">
+                  Match Format Setup
+                </h3>
+                <span className={`text-[10px] font-tactical font-black px-2 py-0.5 rounded hud-chamfer-sm border ${
+                  vetoFormat === "BO5"
+                    ? "bg-amber-500/15 text-amber-400 border-amber-400/40 shadow-[0_0_8px_rgba(245,158,11,0.2)]"
+                    : "bg-cyan-500/15 text-cyan-400 border-cyan-400/40 shadow-[0_0_8px_rgba(0,229,255,0.2)]"
+                }`}>
+                  {vetoFormat === "BO5" ? "BEST OF 5" : "BEST OF 3"}
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Change the veto format sequence. Select Best of 5 for series finals and click Save Format to persist for this tournament folder.
               </p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => !vetoActive && setVetoFormat("BO3")}
+                  disabled={vetoActive && phaseIndex > 0}
+                  className={`flex-1 py-2.5 px-3 text-xs font-tactical font-extrabold uppercase tracking-wider transition-all cursor-pointer ${
+                    vetoFormat === "BO3"
+                      ? "hud-btn-primary shadow-[0_0_15px_rgba(0,229,255,0.3)]"
+                      : "hud-btn-secondary"
+                  } ${vetoActive && phaseIndex > 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  BEST OF 3
+                </button>
+                <button
+                  type="button"
+                  onClick={() => !vetoActive && setVetoFormat("BO5")}
+                  disabled={vetoActive && phaseIndex > 0}
+                  className={`flex-1 py-2.5 px-3 text-xs font-tactical font-extrabold uppercase tracking-wider transition-all cursor-pointer ${
+                    vetoFormat === "BO5"
+                      ? "hud-btn-primary shadow-[0_0_15px_rgba(0,229,255,0.3)]"
+                      : "hud-btn-secondary"
+                  } ${vetoActive && phaseIndex > 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  BEST OF 5
+                </button>
+              </div>
+
+              {/* SAVE FORMAT BUTTON */}
               <button
                 type="button"
-                onClick={() => !vetoActive && setVetoFormat("BO3")}
-                disabled={vetoActive && phaseIndex > 0}
-                className={`flex-1 py-2.5 px-3 text-xs font-tactical font-extrabold uppercase tracking-wider transition-all ${
-                  vetoFormat === "BO3"
-                    ? "hud-btn-primary"
-                    : "hud-btn-secondary"
-                } ${vetoActive && phaseIndex > 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+                onClick={() => handleSaveVetoFormat(vetoFormat)}
+                disabled={(vetoActive && phaseIndex > 0) || isSavingFormat}
+                className={`hud-chamfer-sm w-full py-2.5 px-4 text-xs font-tactical font-extrabold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 border ${
+                  formatSaveSuccess
+                    ? "bg-emerald-500/20 text-emerald-400 border-emerald-400/60 shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                    : "bg-cyan-500/15 hover:bg-cyan-500 text-cyan-300 hover:text-slate-950 border-cyan-400/50 shadow-[0_0_12px_rgba(0,229,255,0.2)]"
+                } ${(vetoActive && phaseIndex > 0) || isSavingFormat ? "opacity-50 cursor-not-allowed" : ""}`}
               >
-                BEST OF 3
-              </button>
-              <button
-                type="button"
-                onClick={() => !vetoActive && setVetoFormat("BO5")}
-                disabled={vetoActive && phaseIndex > 0}
-                className={`flex-1 py-2.5 px-3 text-xs font-tactical font-extrabold uppercase tracking-wider transition-all ${
-                  vetoFormat === "BO5"
-                    ? "hud-btn-primary"
-                    : "hud-btn-secondary"
-                } ${vetoActive && phaseIndex > 0 ? "opacity-50 cursor-not-allowed" : ""}`}
-              >
-                BEST OF 5
+                {formatSaveSuccess ? (
+                  <>
+                    <span className="text-emerald-400 font-bold">✓</span>
+                    <span>FORMAT SAVED AS {vetoFormat === "BO5" ? "BEST OF 5" : "BEST OF 3"}!</span>
+                  </>
+                ) : isSavingFormat ? (
+                  <span>SAVING FORMAT...</span>
+                ) : (
+                  <>
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                    <span>SAVE FORMAT ({vetoFormat === "BO5" ? "BEST OF 5" : "BEST OF 3"})</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
