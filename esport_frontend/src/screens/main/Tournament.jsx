@@ -783,6 +783,50 @@ const MatchCard = ({ match, showCountdown, game, index = 0 }) => {
     </div>
   );
 };
+
+const TournamentSkeletonRow = ({ color = 'cyan', label = 'Querying Tournaments...' }) => {
+  const isCyan = color === 'cyan';
+  const borderCol = isCyan ? 'border-cyan-500/30' : 'border-amber-500/30';
+  const textCol = isCyan ? 'text-cyan-300' : 'text-amber-300';
+  const pingCol = isCyan ? 'bg-cyan-400' : 'bg-amber-400';
+  const spinnerBorder = isCyan ? 'border-cyan-500/20 border-t-cyan-400' : 'border-amber-500/20 border-t-amber-400';
+  const shadowGlow = isCyan ? 'shadow-[0_0_20px_rgba(0,229,255,0.15)]' : 'shadow-[0_0_20px_rgba(245,158,11,0.15)]';
+
+  return (
+    <div className="flex gap-5 sm:gap-6 overflow-x-auto pb-4 px-1 custom-scrollbar">
+      {[1, 2, 3].map((idx) => (
+        <div
+          key={idx}
+          className={`flex-1 min-w-[260px] max-w-[360px] h-[245px] shrink-0 rounded-xl hud-card bg-slate-900/60 ${borderCol} ${shadowGlow} relative overflow-hidden flex flex-col justify-between p-6 animate-pulse`}
+        >
+          <div className="hud-sweep-overlay" />
+          <div className="flex justify-between items-center relative z-10">
+            <div className={`h-4 w-28 rounded hud-chamfer-sm ${isCyan ? 'bg-cyan-500/15 border border-cyan-500/30' : 'bg-amber-500/15 border border-amber-500/30'}`} />
+            <div className={`w-2 h-2 rounded-full ${pingCol} animate-ping`} />
+          </div>
+
+          <div className="flex flex-col items-center justify-center gap-3 my-auto relative z-10">
+            <div className="relative w-12 h-12 flex items-center justify-center">
+              <div className={`absolute inset-0 rounded-full border ${borderCol} animate-ping opacity-50`} />
+              <div className={`w-10 h-10 rounded-full border-2 ${spinnerBorder} animate-spin`} />
+              <div className={`w-2 h-2 rounded-full ${pingCol} shadow-[0_0_8px_currentColor]`} />
+            </div>
+            <div className="h-4 w-36 bg-slate-800/80 rounded hud-chamfer-sm" />
+            <span className={`font-tactical text-[10px] font-extrabold ${textCol} tracking-[0.2em] uppercase`}>
+              {label}
+            </span>
+          </div>
+
+          <div className="flex justify-between items-center border-t border-slate-800/80 pt-3 relative z-10">
+            <div className="h-3 w-16 bg-slate-800/80 rounded" />
+            <div className="h-3 w-20 bg-slate-800/80 rounded" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTournament, onOpenCreateModal, onNavigateToHub, onEditTournamentSchedule }) => {
   const currentTournamentName = typeof globalTournament === 'string'
     ? globalTournament
@@ -815,7 +859,8 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
         const [tRes, brRes, dashRes] = await Promise.all([
           apiFetch('/api/tournaments').then(r => r.json()).catch(() => []),
           apiFetch('/api/bracket-results').then(r => r.json()).catch(() => []),
-          apiFetch('/api/tournaments-dashboard').then(r => r.json()).catch(() => [])
+          apiFetch('/api/tournaments-dashboard').then(r => r.json()).catch(() => []),
+          new Promise(resolve => setTimeout(resolve, 550))
         ]);
 
         if (isCancelled) return;
@@ -1186,13 +1231,22 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
               </button>
             </div>
 
-            <span style={{ padding: '5px 14px' }} className="hud-chamfer-sm font-tactical text-[11px] font-extrabold text-cyan-300 bg-cyan-500/15 border border-cyan-400/35 uppercase tracking-[0.16em]">
-              {liveTournaments.length} Active
-            </span>
+            {isLoading ? (
+              <span style={{ padding: '5px 14px' }} className="hud-chamfer-sm flex items-center gap-2 font-tactical text-[11px] font-extrabold text-cyan-300 bg-cyan-500/15 border border-cyan-400/35 uppercase tracking-[0.16em] animate-pulse">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping shrink-0" />
+                Loading...
+              </span>
+            ) : (
+              <span style={{ padding: '5px 14px' }} className="hud-chamfer-sm font-tactical text-[11px] font-extrabold text-cyan-300 bg-cyan-500/15 border border-cyan-400/35 uppercase tracking-[0.16em] animate-fade-in">
+                {liveTournaments.length} Active
+              </span>
+            )}
           </div>
         </div>
 
-        {liveTournaments.length === 0 ? (
+        {isLoading ? (
+          <TournamentSkeletonRow color="cyan" label={`Querying ${game || 'VALORANT'} Live Stage...`} />
+        ) : liveTournaments.length === 0 ? (
           <div className="hud-card rounded-xl text-center py-14 font-tactical text-slate-400 font-bold uppercase tracking-[0.2em]">
             No live or upcoming {game || 'VALORANT'} tournaments found.
           </div>
@@ -1405,12 +1459,21 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
               Finished Tournaments
             </h3>
           </div>
-          <span style={{ padding: '5px 14px' }} className="hud-chamfer-sm font-tactical text-[11px] font-extrabold text-amber-300 bg-amber-500/15 border border-amber-500/35 uppercase tracking-[0.16em]">
-            {finishedTournaments.length} Concluded
-          </span>
+          {isLoading ? (
+            <span style={{ padding: '5px 14px' }} className="hud-chamfer-sm flex items-center gap-2 font-tactical text-[11px] font-extrabold text-amber-300 bg-amber-500/15 border border-amber-500/35 uppercase tracking-[0.16em] animate-pulse">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping shrink-0" />
+              Loading...
+            </span>
+          ) : (
+            <span style={{ padding: '5px 14px' }} className="hud-chamfer-sm font-tactical text-[11px] font-extrabold text-amber-300 bg-amber-500/15 border border-amber-500/35 uppercase tracking-[0.16em] animate-fade-in">
+              {finishedTournaments.length} Concluded
+            </span>
+          )}
         </div>
 
-        {finishedTournaments.length === 0 ? (
+        {isLoading ? (
+          <TournamentSkeletonRow color="amber" label="Querying Concluded Archives..." />
+        ) : finishedTournaments.length === 0 ? (
           <div className="hud-card text-center py-14 font-tactical text-slate-400 font-bold uppercase tracking-[0.2em]">
             No completed tournaments found yet.
           </div>
