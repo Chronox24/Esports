@@ -66,6 +66,11 @@ const ShieldCheckIcon = ({ className = "w-4 h-4" }) => (
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
   </svg>
 );
+const TrashIcon = ({ className = "w-4 h-4" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+  </svg>
+);
 const AnimatedAdminNumber = ({ value, isLoading, accent = '#22d3ee' }) => {
   const [displayValue, setDisplayValue] = useState(0);
   const [scrambleDigits, setScrambleDigits] = useState('00');
@@ -862,6 +867,47 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
     setIsUpdatingPermissions(false);
   };
 
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [isDeletingUser, setIsDeletingUser] = useState(false);
+
+  const handlePromptDelete = (user) => {
+    if (!user) return;
+    if (user.username?.toLowerCase() === 'admin') {
+      showToast('The primary root system "admin" account cannot be deleted.', 'warning');
+      return;
+    }
+    setUserToDelete(user);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!userToDelete) return;
+    setIsDeletingUser(true);
+    try {
+      const res = await apiFetch(`/api/admin/user/${userToDelete.user_id}`, {
+        method: 'DELETE'
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(data.message || `Account "${userToDelete.username}" deleted successfully!`, 'success');
+        setUserToDelete(null);
+        // Refresh account list and live stats
+        const resUsers = await apiFetch(`/api/users?t=${Date.now()}`);
+        if (resUsers.ok) {
+          const uData = await resUsers.json();
+          if (Array.isArray(uData)) setAccounts(uData);
+        }
+        fetchData();
+      } else {
+        showToast(data.error || 'Failed to delete account.', 'error');
+      }
+    } catch (err) {
+      console.error('Error deleting account:', err);
+      showToast('Network error while deleting account.', 'error');
+    } finally {
+      setIsDeletingUser(false);
+    }
+  };
+
   const fetchData = async () => {
     setLoadingStats(true);
     try {
@@ -1385,6 +1431,7 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                       <th className="font-bold" style={{ padding: "18px 26px" }}>Super Admin</th>
                       <th className="font-bold" style={{ padding: "18px 26px" }}>Permissions</th>
                       <th className="font-bold text-center w-24" style={{ padding: "18px 26px" }}>Active</th>
+                      <th className="font-bold text-center w-28" style={{ padding: "18px 26px" }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/40">
@@ -1403,7 +1450,7 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                       if (filteredAccounts.length === 0) {
                         return (
                           <tr>
-                            <td colSpan="5" className="text-center py-10 text-theme-text-muted font-tactical tracking-widest uppercase text-xs">
+                            <td colSpan="6" className="text-center py-10 text-theme-text-muted font-tactical tracking-widest uppercase text-xs">
                               No matching admin accounts found.
                             </td>
                           </tr>
@@ -1498,6 +1545,26 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                             <div className="flex items-center justify-center w-full h-full">
                               <svg className="w-5 h-5 text-cyan-400 drop-shadow-[0_0_6px_rgba(0,229,255,0.5)]" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
                             </div>
+                          </td>
+                          <td className="text-center" style={{ padding: "14px 20px" }} onClick={(e) => e.stopPropagation()}>
+                            {user.username?.toLowerCase() === 'admin' ? (
+                              <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest px-2.5 py-1 bg-slate-900/60 border border-slate-800 rounded inline-block">
+                                Protected
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handlePromptDelete(user);
+                                }}
+                                className="hud-chamfer-sm inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-tactical font-bold uppercase tracking-wider text-red-400 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 hover:border-red-500/60 transition-all cursor-pointer group/del shadow-sm hover:shadow-[0_0_10px_rgba(239,68,68,0.3)]"
+                                title={`Delete ${user.username}`}
+                              >
+                                <TrashIcon className="w-3.5 h-3.5 text-red-400 group-hover/del:scale-110 transition-transform" />
+                                <span>Delete</span>
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ));
@@ -2282,13 +2349,99 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                    })}
                 </div>
               </div>
+              <div className="flex items-center gap-3 mt-2">
+                {editingUser.username?.toLowerCase() !== 'admin' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const u = editingUser;
+                      setEditingUser(null);
+                      handlePromptDelete(u);
+                    }}
+                    className="hud-chamfer-sm px-4 py-3 font-tactical text-xs font-bold uppercase tracking-wider text-red-400 bg-red-500/10 border border-red-500/40 hover:bg-red-500/20 hover:border-red-500/70 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm hover:shadow-[0_0_12px_rgba(239,68,68,0.35)]"
+                    title="Delete this account"
+                  >
+                    <TrashIcon className="w-3.5 h-3.5 text-red-400" />
+                    <span>Delete</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleUpdatePermissions}
+                  disabled={isUpdatingPermissions}
+                  className="hud-btn-primary flex-1 py-3.5 font-tactical text-xs font-extrabold uppercase tracking-[0.18em] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  {isUpdatingPermissions ? 'Saving...' : 'Save Permissions'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {userToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-in fade-in duration-200">
+          <div className="hud-card bg-slate-950 rounded-xl border border-red-500/40 shadow-[0_20px_50px_rgba(239,68,68,0.25)] w-full max-w-md overflow-hidden relative animate-in zoom-in-95 duration-200 p-6 sm:p-7">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-lg bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400 shrink-0">
+                <TrashIcon className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-tactical text-base sm:text-lg font-extrabold uppercase tracking-[0.14em] text-red-400">
+                  Delete Admin Account
+                </h3>
+                <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">
+                  Permanent Action // Irreversible
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-slate-900/80 border border-slate-800 rounded-lg p-4 mb-5 flex flex-col gap-2">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-slate-400 font-mono">Username:</span>
+                <span className="text-white font-tactical font-bold text-sm tracking-wide">{userToDelete.username}</span>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-slate-400 font-mono">Role:</span>
+                <span className="text-cyan-400 font-bold uppercase tracking-wider">{userToDelete.role || 'Admin'}</span>
+              </div>
+              {userToDelete.user_id && (
+                <div className="flex justify-between items-center text-xs pt-1 border-t border-slate-800/80">
+                  <span className="text-slate-500 font-mono text-[10px]">User ID:</span>
+                  <span className="text-slate-400 font-mono text-[10px] truncate max-w-[200px]">{userToDelete.user_id}</span>
+                </div>
+              )}
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed mb-6 font-medium">
+              Are you sure you want to permanently delete account <strong className="text-white font-mono">{userToDelete.username}</strong>? This user will immediately lose all system privileges and login access.
+            </p>
+
+            <div className="flex items-center justify-end gap-3">
               <button
                 type="button"
-                onClick={handleUpdatePermissions}
-                disabled={isUpdatingPermissions}
-                className="hud-btn-primary w-full py-3.5 mt-2 font-tactical text-xs font-extrabold uppercase tracking-[0.18em] disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => setUserToDelete(null)}
+                disabled={isDeletingUser}
+                className="hud-btn-secondary px-4 py-2.5 font-tactical text-xs font-bold uppercase tracking-wider cursor-pointer"
               >
-                {isUpdatingPermissions ? 'Saving...' : 'Save Permissions'}
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={isDeletingUser}
+                className="hud-chamfer-sm px-5 py-2.5 font-tactical text-xs font-extrabold uppercase tracking-[0.16em] bg-red-600 hover:bg-red-500 text-white border border-red-400 shadow-[0_0_15px_rgba(239,68,68,0.5)] transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isDeletingUser ? (
+                  <>
+                    <RefreshIcon className="w-3.5 h-3.5 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <TrashIcon className="w-3.5 h-3.5" />
+                    <span>Confirm Delete</span>
+                  </>
+                )}
               </button>
             </div>
           </div>

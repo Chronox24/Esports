@@ -1159,6 +1159,76 @@ app.put('/api/admin/user/:id/permissions', authenticateToken, isAdmin, async (re
     res.status(500).json({ error: err.message });
   }
 });
+
+app.delete('/api/admin/user/:id', authenticateToken, isAdmin, async (req, res) => {
+  if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
+  
+  const isSuper = Boolean(req.adminUser?.is_super_admin || req.adminUser?.role === 'Super Admin');
+  if (!isSuper) {
+    return res.status(403).json({ error: 'Access denied. Only Super Admins can delete accounts.' });
+  }
+
+  const { id } = req.params;
+
+  // Prevent self-deletion
+  if (req.adminUser?.user_id === id || req.user?.id === id) {
+    return res.status(400).json({ error: 'Security restriction: You cannot delete your own logged-in account.' });
+  }
+
+  try {
+    const { data: targetUser, error: checkErr } = await supabase
+      .from('users')
+      .select('user_id, username, is_super_admin, role')
+      .eq('user_id', id)
+      .maybeSingle();
+
+    if (checkErr) throw checkErr;
+    if (!targetUser) {
+      return res.status(404).json({ error: 'User account not found.' });
+    }
+
+    if (targetUser.username?.toLowerCase() === 'admin') {
+      return res.status(403).json({ error: 'System integrity protection: The root system "admin" account cannot be deleted.' });
+    }
+
+    // 1. Delete from Supabase Auth
+    try {
+      if (supabase.auth?.admin?.deleteUser) {
+        await supabase.auth.admin.deleteUser(id);
+      }
+    } catch (authErr) {
+      console.warn('Auth deletion warning:', authErr.message);
+    }
+
+    // 2. Delete from public.users
+    const { error: dbDeleteErr } = await supabase
+      .from('users')
+      .delete()
+      .eq('user_id', id);
+
+    if (dbDeleteErr) throw dbDeleteErr;
+
+    // 3. Clear cache
+    apiCache.keys().forEach(k => {
+      if (k.includes('/api/users') || k.includes('/api/admin/quick-stats') || k.includes('/api/settings/admins')) {
+        apiCache.del(k);
+      }
+    });
+
+    await logAudit(
+      'USER_DELETED',
+      `Admin account "${targetUser.username}" (${targetUser.role || 'Admin'}) was deleted by ${req.adminUser.username}`,
+      { targetUserId: id, targetUsername: targetUser.username, targetRole: targetUser.role },
+      null,
+      req
+    );
+
+    res.json({ message: `Account "${targetUser.username}" deleted successfully.` });
+  } catch (err) {
+    console.error('Error deleting account:', err);
+    res.status(500).json({ error: err.message || 'Failed to delete account.' });
+  }
+});
 app.post('/api/admin/transfer-ownership', authenticateToken, isAdmin, async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   const { currentOwnerId, newOwnerId } = req.body;
