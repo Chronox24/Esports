@@ -2173,21 +2173,8 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                             </div>
                             {/* Divider */}
                             <div className="w-px h-5 bg-slate-700/50 light:bg-slate-300 flex-shrink-0 hidden md:block"></div>
-                            {/* Trades / FB / Plant / Defuse (Equal 4-Column Sizing) */}
+                            {/* FB / Plant / Defuse / ACE (Equal 4-Column Sizing) */}
                             <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-                              <div className="flex flex-col items-center w-9 sm:w-10">
-                                <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 light:text-slate-600 uppercase tracking-wider text-center">Trades</span>
-                                <input
-                                  type="number"
-                                  className={`${tableInput} text-emerald-400 light:text-emerald-600 !w-full text-center text-xs font-bold`}
-                                  value={p.econ !== undefined ? p.econ : ""}
-                                  placeholder="0"
-                                  onFocus={(e) => e.target.select()}
-                                  onClick={(e) => e.target.select()}
-                                  onChange={(e) => handleStatChange("A", idx, "econ", e.target.value)}
-                                  onBlur={(e) => handleStatBlur("A", idx, "econ", e)}
-                                />
-                              </div>
                               <div className="flex flex-col items-center w-9 sm:w-10">
                                 <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 light:text-slate-600 uppercase tracking-wider text-center">FB</span>
                                 <input
@@ -2225,6 +2212,19 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                                   onClick={(e) => e.target.select()}
                                   onChange={(e) => handleStatChange("A", idx, "defuse", e.target.value)}
                                   onBlur={(e) => handleStatBlur("A", idx, "defuse", e)}
+                                />
+                              </div>
+                              <div className="flex flex-col items-center w-9 sm:w-10">
+                                <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 light:text-slate-600 uppercase tracking-wider text-center">ACE</span>
+                                <input
+                                  type="number"
+                                  className={`${tableInput} text-emerald-400 light:text-emerald-600 !w-full text-center text-xs font-bold`}
+                                  value={p.ace !== undefined ? p.ace : ""}
+                                  placeholder="0"
+                                  onFocus={(e) => e.target.select()}
+                                  onClick={(e) => e.target.select()}
+                                  onChange={(e) => handleStatChange("A", idx, "ace", e.target.value)}
+                                  onBlur={(e) => handleStatBlur("A", idx, "ace", e)}
                                 />
                               </div>
                             </div>
@@ -2469,21 +2469,8 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                             </div>
                             {/* Divider */}
                             <div className="w-px h-5 bg-slate-700/50 light:bg-slate-300 flex-shrink-0 hidden md:block"></div>
-                            {/* Trades / FB / Plant / Defuse (Equal 4-Column Sizing) */}
+                            {/* FB / Plant / Defuse / ACE (Equal 4-Column Sizing) */}
                             <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-                              <div className="flex flex-col items-center w-9 sm:w-10">
-                                <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 light:text-slate-600 uppercase tracking-wider text-center">Trades</span>
-                                <input
-                                  type="number"
-                                  className={`${tableInput} text-[#f87171] light:text-red-600 !w-full text-center text-xs font-bold`}
-                                  value={p.econ !== undefined ? p.econ : ""}
-                                  placeholder="0"
-                                  onFocus={(e) => e.target.select()}
-                                  onClick={(e) => e.target.select()}
-                                  onChange={(e) => handleStatChange("B", idx, "econ", e.target.value)}
-                                  onBlur={(e) => handleStatBlur("B", idx, "econ", e)}
-                                />
-                              </div>
                               <div className="flex flex-col items-center w-9 sm:w-10">
                                 <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 light:text-slate-600 uppercase tracking-wider text-center">FB</span>
                                 <input
@@ -2521,6 +2508,19 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                                   onClick={(e) => e.target.select()}
                                   onChange={(e) => handleStatChange("B", idx, "defuse", e.target.value)}
                                   onBlur={(e) => handleStatBlur("B", idx, "defuse", e)}
+                                />
+                              </div>
+                              <div className="flex flex-col items-center w-9 sm:w-10">
+                                <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 light:text-slate-600 uppercase tracking-wider text-center">ACE</span>
+                                <input
+                                  type="number"
+                                  className={`${tableInput} text-[#f87171] light:text-red-600 !w-full text-center text-xs font-bold`}
+                                  value={p.ace !== undefined ? p.ace : ""}
+                                  placeholder="0"
+                                  onFocus={(e) => e.target.select()}
+                                  onClick={(e) => e.target.select()}
+                                  onChange={(e) => handleStatChange("B", idx, "ace", e.target.value)}
+                                  onBlur={(e) => handleStatBlur("B", idx, "ace", e)}
                                 />
                               </div>
                             </div>
@@ -2940,7 +2940,6 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                   <th className="px-3 py-3 font-bold text-center">KILLS</th>
                   <th className="px-3 py-3 font-bold text-center">DEATHS</th>
                   <th className="px-3 py-3 font-bold text-center">ASSIST</th>
-                  <th className="px-4 py-3 font-bold text-center text-emerald-400">TRADES</th>
                   <th className="px-4 py-3 font-bold text-center">FIRST KILLS</th>
                   <th className="px-4 py-3 font-bold text-center">PLANTS</th>
                   <th className="px-4 py-3 font-bold text-center">DEFUSE</th>
@@ -2950,7 +2949,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
               <tbody className="divide-y divide-slate-800/30 light:divide-slate-200">
                 {submittedRecords.length === 0 ? (
                   <tr>
-                    <td colSpan={17} className="px-4 py-12 text-center text-slate-500 light:text-slate-400">
+                    <td colSpan={16} className="px-4 py-12 text-center text-slate-500 light:text-slate-400">
                       <div className="flex flex-col items-center justify-center gap-2">
                         <svg className="w-8 h-8 text-slate-600 light:text-slate-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -2983,7 +2982,6 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                         <td className="px-3 py-2 text-center font-bold">{rec.kills}</td>
                         <td className="px-3 py-2 text-center font-bold">{rec.deaths}</td>
                         <td className="px-3 py-2 text-center font-bold">{rec.assists}</td>
-                        <td className="px-4 py-2 text-center font-bold text-emerald-400">{rec.econ}</td>
                         <td className="px-4 py-2 text-center font-bold">{rec.first_kills || 0}</td>
                         <td className="px-4 py-2 text-center font-bold">{rec.plants || 0}</td>
                         <td className="px-4 py-2 text-center font-bold">{rec.defuse || 0}</td>
