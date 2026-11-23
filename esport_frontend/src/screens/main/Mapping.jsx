@@ -612,9 +612,14 @@ const Mapping = ({ globalGame, globalTournament }) => {
       const picks = finalMaps.filter(
         (m) => m.status === "picked" || m.status === "decider",
       );
+      const tournName =
+        currentTournamentName ||
+        (typeof globalTournament === "object" ? globalTournament?.name : globalTournament) ||
+        "Default";
+
       const payload = {
         game,
-        tournament_name: globalTournament?.name || globalTournament || "Default",
+        tournament_name: tournName,
         stage: "",
         week: matchWeek,
         day: matchDay,
@@ -641,10 +646,13 @@ const Mapping = ({ globalGame, globalTournament }) => {
         resetVeto();
         showToast("Veto match results successfully saved!");
       } else {
-        alert(
-          "Failed to save veto result! Check the console or ensure your database schema is updated.",
-        );
-        console.error("Failed to save veto result");
+        let errMsg = "Failed to save veto result! Check console for details.";
+        try {
+          const errData = await res.json();
+          if (errData?.error) errMsg = errData.error;
+        } catch {}
+        alert(errMsg);
+        console.error("Failed to save veto result:", errMsg);
       }
     } catch (err) {
       alert("Error connecting to backend!");

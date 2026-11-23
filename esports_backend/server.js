@@ -18,7 +18,7 @@ const app = express();
 
 
 app.use(helmet({ crossOriginResourcePolicy: false }));
-app.use(timeout('10s'));
+app.use(timeout('30s'));
 app.use((req, res, next) => {
   if (!req.timedout) next();
 });
@@ -1764,30 +1764,93 @@ app.get('/api/vetoes', cacheMiddleware, async (req, res) => {
   try {
     const tournamentName = req.query.tournament || 'Default';
     const game = req.query.game;
-    let query = supabase.from('map_vetoes').select('*').eq('tournament_name', tournamentName).order('created_at', { ascending: false });
-    if (game) {
-      query = query.eq('game', game);
+    let query = supabase.from('map_vetoes').select('*');
+    if (tournamentName && tournamentName !== 'ALL' && tournamentName !== '*') {
+      query = query.ilike('tournament_name', tournamentName.trim());
     }
+    if (game) {
+      query = query.ilike('game', game.trim());
+    }
+    query = query.order('created_at', { ascending: false });
     const { data, error } = await query;
     if (error) throw error;
-    res.json(data || []);
+
+    // Restore map_4 and map_5 if encoded in stage
+    const restored = (data || []).map(row => {
+      const copy = { ...row };
+      if (!copy.map_4 || !copy.map_5) {
+        const stage = copy.stage || '';
+        const m4 = stage.match(/MAP4:([^;\]]+)/i) || stage.match(/Map 4:\s*([^,)]+)/i);
+        const m5 = stage.match(/MAP5:([^;\]]+)/i) || stage.match(/Map 5:\s*([^,)]+)/i);
+        if (!copy.map_4 && m4) copy.map_4 = m4[1].trim();
+        if (!copy.map_5 && m5) copy.map_5 = m5[1].trim();
+        if (copy.stage && copy.stage.includes('[MAP4:')) {
+          copy.stage = copy.stage.replace(/\s*\[MAP4:[^\]]+\]/i, '').trim();
+        }
+      }
+      return copy;
+    });
+
+    res.json(restored);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
 app.post('/api/vetoes', authenticateToken, isAdmin, canEdit, async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   try {
-    const payload = req.body;
+    const payload = { ...req.body };
     if (!payload.tournament_name) {
       payload.tournament_name = 'Default';
     }
-    const { data, error } = await supabase.from('map_vetoes').insert([payload]).select();
+
+    // Prepare payload for map_vetoes schema (which supports up to map_3 natively, while encoding map_4 and map_5 into stage)
+    const dbPayload = { ...payload };
+    const extra = [];
+    if (payload.map_4) extra.push(`MAP4:${payload.map_4}`);
+    if (payload.map_5) extra.push(`MAP5:${payload.map_5}`);
+
+    delete dbPayload.map_4;
+    delete dbPayload.map_5;
+
+    if (extra.length > 0) {
+      const extraStr = `[${extra.join(';')}]`;
+      dbPayload.stage = dbPayload.stage
+        ? `${dbPayload.stage} ${extraStr}`
+        : extraStr;
+    }
+
+    const { data, error } = await supabase.from('map_vetoes').insert([dbPayload]).select();
     if (error) throw error;
-    await logAudit('VETO', `Submitted map veto for ${payload.team_a} vs ${payload.team_b}`, { payload }, payload.game, req);
-    res.json({ message: 'Veto data successfully saved!', data: data[0] });
+
+    // Mirror complete rich veto state into bracket_states (format: 'map_veto')
+    // Bracket_data is jsonb so all maps, sides, deciders, and series formats are saved with zero column limitations
+    supabase.from('bracket_states').insert([{
+      tournament_name: payload.tournament_name,
+      game_title: payload.game || 'VALORANT',
+      format: 'map_veto',
+      team_pool: [payload.team_a, payload.team_b].filter(Boolean),
+      bracket_data: payload,
+      updated_at: new Date()
+    }]).then(() => {}).catch(mirrorErr => {
+      console.warn('Could not mirror veto to bracket_states:', mirrorErr.message);
+    });
+
+    logAudit('VETO', `Submitted map veto for ${payload.team_a} vs ${payload.team_b}`, { payload }, payload.game, req)
+      .then(() => {}).catch(auditErr => console.warn('Audit error:', auditErr.message));
+
+    const returnedRow = data?.[0]
+      ? { ...data[0], map_4: payload.map_4, map_5: payload.map_5 }
+      : payload;
+
+    if (req.timedout) return;
+    res.json({ message: 'Veto data successfully saved!', data: returnedRow });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Failed to save veto:', err);
+    if (!req.timedout) {
+      res.status(500).json({ error: err.message || 'Failed to save veto result' });
+    }
   }
 });
 app.get('/api/teams', cacheMiddleware, async (req, res) => {
