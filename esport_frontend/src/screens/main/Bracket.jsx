@@ -626,11 +626,14 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
         const resAll = await apiFetch(`/api/bracket-states-all`);
         if (resAll.ok) {
           const allStates = await resAll.json();
+          const VALID_BRACKET_FORMATS = ['single elimination', 'double elimination', 'round robin'];
           const tournamentStates = allStates
             .filter(s => 
               s.tournament_name && 
               s.tournament_name.trim().toLowerCase() === tName.trim().toLowerCase() && 
-              (s.game_title || '').trim().toUpperCase() === activeGame.trim().toUpperCase()
+              (s.game_title || '').trim().toUpperCase() === activeGame.trim().toUpperCase() &&
+              s.format &&
+              VALID_BRACKET_FORMATS.includes(s.format.toLowerCase())
             )
             .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
 
@@ -646,6 +649,45 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
             setTeamPool(dbTeams);
           }
 
+          // Fetch finished matches from DB to auto-sync scores into bracket nodes
+          let finishedMatches = [];
+          try {
+            const resMatches = await apiFetch(`/api/matches?status=finished&tournament=${encodeURIComponent(tName)}`);
+            if (resMatches.ok) {
+              const mData = await resMatches.json();
+              if (Array.isArray(mData)) finishedMatches = mData;
+            }
+          } catch (mErr) {
+            console.warn("Could not fetch finished matches for bracket sync:", mErr);
+          }
+
+          const syncSingleElimWithMatches = (data) => {
+            if (!Array.isArray(data) || finishedMatches.length === 0) return data;
+            return data.map(round => {
+              if (!Array.isArray(round)) return round;
+              return round.map(bMatch => {
+                const t1 = cleanTeamName(bMatch.team1);
+                const t2 = cleanTeamName(bMatch.team2);
+                if (!t1 || !t2) return bMatch;
+                for (const fm of finishedMatches) {
+                  const fmTeamA = (fm.team_a?.team_name || fm.team_a || '').trim();
+                  const fmTeamB = (fm.team_b?.team_name || fm.team_b || '').trim();
+                  const scoreA = fm.team_a_score ?? 0;
+                  const scoreB = fm.team_b_score ?? 0;
+                  const isDirect = t1.toLowerCase() === fmTeamA.toLowerCase() && t2.toLowerCase() === fmTeamB.toLowerCase();
+                  const isFlipped = t1.toLowerCase() === fmTeamB.toLowerCase() && t2.toLowerCase() === fmTeamA.toLowerCase();
+                  if (isDirect) {
+                    return { ...bMatch, score1: scoreA, score2: scoreB };
+                  }
+                  if (isFlipped) {
+                    return { ...bMatch, score1: scoreB, score2: scoreA };
+                  }
+                }
+                return bMatch;
+              });
+            });
+          };
+
           if (stateData && stateData.format) {
             const dbFormat = stateData.format.toLowerCase();
             const normalizedFormat = dbFormat === 'single elimination' ? 'Single Elimination' :
@@ -656,12 +698,16 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
             if (isReadOnly || activeFormat === "Results" || !activeFormat) {
               setActiveFormat(normalizedFormat);
             }
-            setSingleElimData(normalizedFormat === "Single Elimination" && stateData.bracket_data ? stateData.bracket_data : generateSingleElimBracket(currentTeamPool.length, currentTeamPool));
+            const rawSingle = normalizedFormat === "Single Elimination" && stateData.bracket_data 
+              ? stateData.bracket_data 
+              : generateSingleElimBracket(currentTeamPool.length, currentTeamPool);
+            setSingleElimData(syncSingleElimWithMatches(rawSingle));
             setDoubleElimData(normalizedFormat === "Double Elimination" && stateData.bracket_data ? stateData.bracket_data : generateDoubleElimBracket(currentTeamPool.length, currentTeamPool));
             setRoundRobinData(normalizedFormat === "Round Robin" && stateData.bracket_data ? stateData.bracket_data : generateRoundRobin(currentTeamPool, roundRobinEncounters));
           } else {
             setIsFormatLocked(false);
-            setSingleElimData(generateSingleElimBracket(dbTeams.length, dbTeams));
+            const rawSingle = generateSingleElimBracket(dbTeams.length, dbTeams);
+            setSingleElimData(syncSingleElimWithMatches(rawSingle));
             setDoubleElimData(generateDoubleElimBracket(dbTeams.length, dbTeams));
             setRoundRobinData(generateRoundRobin(dbTeams, roundRobinEncounters));
           }
