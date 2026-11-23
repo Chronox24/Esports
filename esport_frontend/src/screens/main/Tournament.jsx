@@ -4511,7 +4511,10 @@ const TournamentHubTab = ({
 };
 
 const Tournament = ({ globalGame, setGlobalGame, globalTournament, setGlobalTournament, initialTab, initialHubSubTab }) => {
-  const [selectedGame, setSelectedGame] = useState((globalGame || "VALORANT").toUpperCase());
+  const [selectedGame, setSelectedGame] = useState(() => {
+    if (globalGame) return globalGame.toUpperCase();
+    return (localStorage.getItem('tournament_selectedGame') || "VALORANT").toUpperCase();
+  });
   const activeGame = (selectedGame || globalGame || "VALORANT").toUpperCase();
   const currentTournamentName = typeof globalTournament === 'string'
     ? globalTournament
@@ -4520,10 +4523,35 @@ const Tournament = ({ globalGame, setGlobalGame, globalTournament, setGlobalTour
         : (globalTournament?.name && typeof globalTournament.name.name === 'string'
             ? globalTournament.name.name
             : ''));
-  const [activeTab, setActiveTab] = useState(initialTab || "LIVE & UPCOMING");
-  const [hubSubTab, setHubSubTab] = useState(initialHubSubTab || "predictions");
+  const [activeTab, setActiveTab] = useState(() => {
+    if (initialTab) return initialTab;
+    return localStorage.getItem('tournament_activeTab') || "LIVE & UPCOMING";
+  });
+  const [hubSubTab, setHubSubTab] = useState(() => {
+    if (initialHubSubTab) return initialHubSubTab;
+    return localStorage.getItem('tournament_hubSubTab') || "predictions";
+  });
   const [selectedTournamentForEdit, setSelectedTournamentForEdit] = useState(null);
   const [availableTournaments, setAvailableTournaments] = useState([]);
+
+  // Persist Tournament tab, subtab, and discipline across browser refresh
+  useEffect(() => {
+    if (activeTab) {
+      localStorage.setItem('tournament_activeTab', activeTab);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (hubSubTab) {
+      localStorage.setItem('tournament_hubSubTab', hubSubTab);
+    }
+  }, [hubSubTab]);
+
+  useEffect(() => {
+    if (selectedGame) {
+      localStorage.setItem('tournament_selectedGame', selectedGame);
+    }
+  }, [selectedGame]);
 
   useEffect(() => {
     if (globalGame) {

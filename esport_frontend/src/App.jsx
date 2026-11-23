@@ -36,6 +36,10 @@ const App = () => {
         localStorage.removeItem('username');
         localStorage.removeItem('user_ign');
         localStorage.removeItem('lastActivityTime');
+        localStorage.removeItem('activeMainTab');
+        localStorage.removeItem('tournament_activeTab');
+        localStorage.removeItem('tournament_hubSubTab');
+        localStorage.removeItem('admin_activeTab');
         if (typeof window !== 'undefined') {
           sessionStorage.setItem('session_expired_notice', 'true');
         }
@@ -70,6 +74,10 @@ const App = () => {
     localStorage.removeItem('username');
     localStorage.removeItem('user_ign');
     localStorage.removeItem('lastActivityTime');
+    localStorage.removeItem('activeMainTab');
+    localStorage.removeItem('tournament_activeTab');
+    localStorage.removeItem('tournament_hubSubTab');
+    localStorage.removeItem('admin_activeTab');
     if (isExpired) {
       setSessionNotice('Your session ended after 8 hours of inactivity. You can log in again anytime.');
       if (typeof window !== 'undefined') {

@@ -49,16 +49,37 @@ const iconMap = {
   'Settings': SettingsIcon,
 };
 const MainUIScreen = ({ onLogout }) => {
-  const [activeTab, setActiveTab] = useState('Dashboard');
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('activeMainTab') || 'Dashboard');
   const [theme, setTheme] = useState('dark');
   const [themeBg, setThemeBg] = useState(() => localStorage.getItem('themeBg') || '#090e14');
   const [themeAccent, setThemeAccent] = useState(() => localStorage.getItem('themeAccent') || '#06b6d4');
-  const [globalGame, setGlobalGame] = useState('VALORANT');
-  const [globalTournament, setGlobalTournament] = useState('');
+  const [globalGame, setGlobalGame] = useState(() => localStorage.getItem('globalGame') || 'VALORANT');
+  const [globalTournament, setGlobalTournament] = useState(() => localStorage.getItem('globalTournament') || '');
   const [tournaments, setTournaments] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => (typeof window !== 'undefined' ? window.innerWidth >= 1024 : true));
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [folderToDelete, setFolderToDelete] = useState(null);
+
+  // Sync navigation states to localStorage to persist across page refresh
+  useEffect(() => {
+    if (activeTab) {
+      localStorage.setItem('activeMainTab', activeTab);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (globalGame) {
+      localStorage.setItem('globalGame', globalGame);
+    }
+  }, [globalGame]);
+
+  useEffect(() => {
+    if (globalTournament) {
+      const tName = typeof globalTournament === 'string' ? globalTournament : globalTournament?.name;
+      if (tName) localStorage.setItem('globalTournament', tName);
+    }
+  }, [globalTournament]);
+
   // Responsive sidebar state handling on screen resize
   useEffect(() => {
     const handleResize = () => {
@@ -77,7 +98,6 @@ const MainUIScreen = ({ onLogout }) => {
 
     const handlePopState = () => {
       window.history.pushState({ isApp: true }, '', window.location.href);
-      setActiveTab((prev) => (prev !== 'Dashboard' ? 'Dashboard' : 'Dashboard'));
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -160,7 +180,15 @@ const MainUIScreen = ({ onLogout }) => {
           setTournaments(data);
           if (data.length > 0) {
             setGlobalTournament(prev => {
-              if (prev) return prev;
+              if (prev) {
+                const prevName = typeof prev === 'string' ? prev : prev.name;
+                const matchFound = data.find(t => t.name.toLowerCase() === prevName.toLowerCase());
+                if (matchFound) return matchFound.name;
+              }
+              const saved = localStorage.getItem('globalTournament');
+              if (saved && data.some(t => t.name.toLowerCase() === saved.toLowerCase())) {
+                return saved;
+              }
               const currentUpperGame = (globalGame || 'VALORANT').toUpperCase();
               const match = data.find(t => (t.game || 'VALORANT').toUpperCase() === currentUpperGame);
               return match ? match.name : data[0].name;

@@ -407,7 +407,13 @@ const LiveMatchManager = ({ globalTournament, globalGame, teams }) => {
   );
 };
 const Admin = ({ globalGame, globalTournament, onLogout }) => {
-  const [activeTab, setActiveTab] = React.useState("League Quick Stats");
+  const [activeTab, setActiveTab] = React.useState(() => localStorage.getItem('admin_activeTab') || "League Quick Stats");
+
+  React.useEffect(() => {
+    if (activeTab) {
+      localStorage.setItem('admin_activeTab', activeTab);
+    }
+  }, [activeTab]);
 
   // Upper-Right System Toast Notification
   const [toast, setToast] = useState(null);
