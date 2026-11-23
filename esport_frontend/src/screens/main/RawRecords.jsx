@@ -119,9 +119,21 @@ const RawRecords = ({ globalTournament }) => {
         let valB = b[sortField];
 
         // Numerical comparison for metrics
-        if (['kills', 'deaths', 'assists', 'acs', 'econ', 'rounds', 'headshots', 'set_num', 'match', 'week', 'day'].includes(sortField)) {
-          const numA = Number(valA) || 0;
-          const numB = Number(valB) || 0;
+        if (['kills', 'deaths', 'assists', 'plants', 'defuse', 'aces', 'rounds', 'headshots', 'set_num', 'match', 'week', 'day', 'first_kills', 'acs', 'econ'].includes(sortField)) {
+          let rawA = valA;
+          let rawB = valB;
+          if (sortField === 'plants') {
+            rawA = a.plants ?? a.plant ?? 0;
+            rawB = b.plants ?? b.plant ?? 0;
+          } else if (sortField === 'defuse') {
+            rawA = a.defuse ?? a.defuses ?? 0;
+            rawB = b.defuse ?? b.defuses ?? 0;
+          } else if (sortField === 'aces') {
+            rawA = a.aces ?? a.ace ?? 0;
+            rawB = b.aces ?? b.ace ?? 0;
+          }
+          const numA = Number(rawA) || 0;
+          const numB = Number(rawB) || 0;
           return sortOrder === 'asc' ? numA - numB : numB - numA;
         }
 
@@ -421,8 +433,15 @@ const RawRecords = ({ globalTournament }) => {
                 )}
                 {(!isCfFilter) && (
                   <>
-                    <th onClick={() => handleSort('acs')} className="cursor-pointer hover:text-white transition-colors text-center">ACS</th>
-                    <th onClick={() => handleSort('econ')} className="cursor-pointer hover:text-white transition-colors text-center">Econ</th>
+                    <th onClick={() => handleSort('plants')} className="cursor-pointer hover:text-white transition-colors text-center">
+                      <div className="flex items-center justify-center gap-1">Plant {sortField === 'plants' && (sortOrder === 'asc' ? '▲' : '▼')}</div>
+                    </th>
+                    <th onClick={() => handleSort('defuse')} className="cursor-pointer hover:text-white transition-colors text-center">
+                      <div className="flex items-center justify-center gap-1">Defuse {sortField === 'defuse' && (sortOrder === 'asc' ? '▲' : '▼')}</div>
+                    </th>
+                    <th onClick={() => handleSort('aces')} className="cursor-pointer hover:text-white transition-colors text-center">
+                      <div className="flex items-center justify-center gap-1">Ace {sortField === 'aces' && (sortOrder === 'asc' ? '▲' : '▼')}</div>
+                    </th>
                   </>
                 )}
                 <th onClick={() => handleSort('rounds')} className="cursor-pointer hover:text-white transition-colors text-center">Rounds</th>
@@ -551,14 +570,17 @@ const RawRecords = ({ globalTournament }) => {
                         </td>
                       )}
 
-                      {/* ACS & Econ (for Valorant or All) */}
+                      {/* Plant, Defuse, Ace (for Valorant or All) */}
                       {!isCfFilter && (
                         <>
                           <td className="px-3 py-3 text-sm border-r border-slate-800/40 text-center font-mono font-bold text-emerald-400">
-                            {row.acs || '-'}
+                            {row.plants !== undefined && row.plants !== null ? row.plants : (row.plant !== undefined && row.plant !== null ? row.plant : 0)}
                           </td>
-                          <td className="px-3 py-3 text-sm border-r border-slate-800/40 text-center font-mono text-slate-400">
-                            {row.econ || '-'}
+                          <td className="px-3 py-3 text-sm border-r border-slate-800/40 text-center font-mono font-bold text-cyan-400">
+                            {row.defuse !== undefined && row.defuse !== null ? row.defuse : (row.defuses !== undefined && row.defuses !== null ? row.defuses : 0)}
+                          </td>
+                          <td className="px-3 py-3 text-sm border-r border-slate-800/40 text-center font-mono font-bold text-amber-400">
+                            {row.aces !== undefined && row.aces !== null ? row.aces : (row.ace !== undefined && row.ace !== null ? row.ace : 0)}
                           </td>
                         </>
                       )}

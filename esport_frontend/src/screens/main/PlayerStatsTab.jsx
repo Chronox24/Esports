@@ -154,8 +154,9 @@ const PlayerStatsTab = ({ globalGame, globalTournament }) => {
               <th className="text-red-500">TOTAL DEATHS</th>
               <th className="text-emerald-500">TOTAL ASSIST</th>
               {activeGame === 'CROSSFIRE' && <th>TOTAL HEADSHOTS</th>}
-              {activeGame === 'VALORANT' && <th>TOTAL ACS</th>}
-              {activeGame === 'VALORANT' && <th>TOTAL ECON</th>}
+              {activeGame === 'VALORANT' && <th>PLANTS</th>}
+              {activeGame === 'VALORANT' && <th>DEFUSES</th>}
+              {activeGame === 'VALORANT' && <th>ACES</th>}
               <th className="col-highlight text-orange-400">K/D</th>
               <th className="col-highlight text-orange-400">K/R</th>
               {activeGame === 'CROSSFIRE' && <th className="col-highlight text-orange-400">H/K</th>}
@@ -189,8 +190,9 @@ const PlayerStatsTab = ({ globalGame, globalTournament }) => {
                 <td className="font-bold text-theme-text-muted light:text-slate-600">{row.total_deaths || 0}</td>
                 <td className="font-bold text-theme-text-muted light:text-slate-600">{row.total_assists || 0}</td>
                 {activeGame === 'CROSSFIRE' && <td><span className="text-theme-text-muted light:text-theme-text-muted">{row.total_headshots || 0}</span></td>}
-                {activeGame === 'VALORANT' && <td><span className="text-theme-text-muted light:text-theme-text-muted">{row.total_acs || 0}</span></td>}
-                {activeGame === 'VALORANT' && <td><span className="text-theme-text-muted light:text-theme-text-muted">{row.total_econ || 0}</span></td>}
+                {activeGame === 'VALORANT' && <td className="font-bold text-emerald-400">{row.total_plants ?? 0}</td>}
+                {activeGame === 'VALORANT' && <td className="font-bold text-cyan-400">{row.total_defuse ?? 0}</td>}
+                {activeGame === 'VALORANT' && <td className="font-bold text-amber-400">{row.total_aces ?? 0}</td>}
                 <td className="col-highlight font-black text-theme-text-base light:text-slate-800">{row.kd}</td>
                 <td className="col-highlight font-black text-theme-text-base light:text-slate-800">{row.kr}</td>
                 {activeGame === 'CROSSFIRE' && <td className="col-highlight font-black text-theme-text-base light:text-slate-800">{row.hk}</td>}
