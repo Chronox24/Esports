@@ -885,16 +885,20 @@ const DataEntry = ({ globalGame, globalTournament }) => {
         const payloadMap = {};
         const extractNewStats = (p, teamName, isWin) => {
           if (p.ign) {
+            const rawFk = Number(p.first_kills !== undefined ? p.first_kills : p.fk) || 0;
+            const rawAce = Number(p.ace !== undefined ? p.ace : p.aces) || 0;
             if (payloadMap[p.ign]) {
               payloadMap[p.ign].kills += Number(p.k) || 0;
               payloadMap[p.ign].deaths += Number(p.d) || 0;
               payloadMap[p.ign].assists += Number(p.a) || 0;
               payloadMap[p.ign].acs += Number(p.acs) || 0;
               payloadMap[p.ign].econ += Number(p.econ) || 0;
-              payloadMap[p.ign].first_kills = (payloadMap[p.ign].first_kills || 0) + (Number(p.first_kills) || 0);
+              payloadMap[p.ign].first_kills = (payloadMap[p.ign].first_kills || 0) + rawFk;
+              payloadMap[p.ign].fk = payloadMap[p.ign].first_kills;
               payloadMap[p.ign].plants = (payloadMap[p.ign].plants || 0) + (Number(p.plants) || 0);
               payloadMap[p.ign].defuse = (payloadMap[p.ign].defuse || 0) + (Number(p.defuse) || 0);
-              payloadMap[p.ign].aces = (payloadMap[p.ign].aces || 0) + (Number(p.ace) || 0);
+              payloadMap[p.ign].aces = (payloadMap[p.ign].aces || 0) + rawAce;
+              payloadMap[p.ign].ace = payloadMap[p.ign].aces;
             } else {
               payloadMap[p.ign] = {
                 ign: p.ign,
@@ -903,10 +907,12 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                 assists: Number(p.a) || 0,
                 acs: Number(p.acs) || 0,
                 econ: Number(p.econ) || 0,
-                first_kills: Number(p.first_kills) || 0,
+                first_kills: rawFk,
+                fk: rawFk,
                 plants: Number(p.plants) || 0,
                 defuse: Number(p.defuse) || 0,
-                aces: Number(p.ace) || 0,
+                aces: rawAce,
+                ace: rawAce,
                 agent: p.agent || "",
                 rounds: scoreA + scoreB,
                 team_name: teamName,
@@ -2936,7 +2942,6 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                   <th className="px-4 py-3 font-bold text-left">PLAYER</th>
                   <th className="px-4 py-3 font-bold text-center">AGENTS</th>
                   <th className="px-3 py-3 font-bold text-center text-emerald-400">Win</th>
-                  <th className="px-4 py-3 font-bold text-center text-emerald-400">PERFORMANCE SCORE</th>
                   <th className="px-3 py-3 font-bold text-center">KILLS</th>
                   <th className="px-3 py-3 font-bold text-center">DEATHS</th>
                   <th className="px-3 py-3 font-bold text-center">ASSIST</th>
@@ -2949,7 +2954,7 @@ const DataEntry = ({ globalGame, globalTournament }) => {
               <tbody className="divide-y divide-slate-800/30 light:divide-slate-200">
                 {submittedRecords.length === 0 ? (
                   <tr>
-                    <td colSpan={16} className="px-4 py-12 text-center text-slate-500 light:text-slate-400">
+                    <td colSpan={15} className="px-4 py-12 text-center text-slate-500 light:text-slate-400">
                       <div className="flex flex-col items-center justify-center gap-2">
                         <svg className="w-8 h-8 text-slate-600 light:text-slate-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -2978,7 +2983,6 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                           {rec.agent ? <AgentBadge agent={rec.agent} /> : '—'}
                         </td>
                         <td className={`px-3 py-2 text-center font-bold ${rec.win ? 'text-emerald-400' : 'text-red-500'}`}>{rec.win ? 'Yes' : 'No'}</td>
-                        <td className="px-4 py-2 text-center font-bold text-emerald-400">{rec.acs}</td>
                         <td className="px-3 py-2 text-center font-bold">{rec.kills}</td>
                         <td className="px-3 py-2 text-center font-bold">{rec.deaths}</td>
                         <td className="px-3 py-2 text-center font-bold">{rec.assists}</td>

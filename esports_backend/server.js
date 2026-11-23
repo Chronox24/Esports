@@ -1595,10 +1595,10 @@ app.post('/api/stats/valorant/match', authenticateToken, isAdmin, canEdit, async
       const matchTCS = (Number(p.acs) || 0) * matchRounds;
       const newTotalAcs = existing.total_acs + matchTCS;
       const newTotalEcon = existing.total_econ + (Number(p.econ) || 0);
-      const newTotalFirstKills = (existing.total_first_kills || 0) + (Number(p.fk) || 0);
+      const newTotalFirstKills = (existing.total_first_kills || 0) + (Number(p.first_kills !== undefined ? p.first_kills : p.fk) || 0);
       const newTotalPlants = (existing.total_plants || 0) + (Number(p.plants) || 0);
       const newTotalDefuse = (existing.total_defuse || 0) + (Number(p.defuse) || 0);
-      const newTotalAces = (existing.total_aces || 0) + (Number(p.ace) || 0);
+      const newTotalAces = (existing.total_aces || 0) + (Number(p.aces !== undefined ? p.aces : p.ace) || 0);
       const newTotalRounds = existing.total_rounds_played + matchRounds;
       const newMatchesPlayed = existing.matches_played + 1;
       const overallACS = newTotalRounds > 0 ? (newTotalAcs / newTotalRounds) : 0;
@@ -1645,10 +1645,10 @@ app.post('/api/stats/valorant/match', authenticateToken, isAdmin, canEdit, async
       assists: Number(p.assists) || 0,
       acs: Number(p.acs) || 0,
       econ: Number(p.econ) || 0,
-      first_kills: Number(p.fk) || 0,
+      first_kills: Number(p.first_kills !== undefined ? p.first_kills : p.fk) || 0,
       plants: Number(p.plants) || 0,
       defuse: Number(p.defuse) || 0,
-      aces: Number(p.ace) || 0,
+      aces: Number(p.aces !== undefined ? p.aces : p.ace) || 0,
       rounds: Number(p.rounds) || 0
     }));
 
