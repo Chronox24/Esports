@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { apiFetch } from "../../utils/api";
+import { getAgentImagePath, getAgentRoleStyle } from "../../utils/agentHelper";
 const SearchIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -1509,11 +1510,66 @@ const Analytics = ({ globalGame, globalTournament }) => {
     });
   };
   const openSynergyOverview = (synergy) => {
+    const matchingRecords = matchRecords.filter((r) => {
+      const rAgent = r.agent || r.group_label;
+      const rMap = r.map;
+      return (
+        rAgent &&
+        rMap &&
+        rAgent.toLowerCase() === synergy.agent.toLowerCase() &&
+        rMap.toLowerCase() === synergy.map.toLowerCase()
+      );
+    });
+
+    let totalKills = 0, totalDeaths = 0, totalAssists = 0, totalRounds = 0, totalAcs = 0, totalHs = 0, calculatedWins = 0;
+    const playersSet = new Set();
+    const teamsSet = new Set();
+
+    matchingRecords.forEach((r) => {
+      totalKills += Number(r.kills) || 0;
+      totalDeaths += Number(r.deaths) || 0;
+      totalAssists += Number(r.assists) || 0;
+      totalRounds += Number(r.rounds) || 0;
+      totalAcs += Number(r.acs) || 0;
+      totalHs += Number(r.headshots) || 0;
+      if (r.ign && r.ign !== "-" && r.ign !== "Unknown") playersSet.add(r.ign);
+      if (r.team_name) teamsSet.add(r.team_name);
+      const isWin = String(r.win).toLowerCase() === 'true' || r.win === 1;
+      if (isWin) calculatedWins++;
+    });
+
+    const sampleCount = matchingRecords.length || synergy.pickRate || 1;
+    const avgAcs = sampleCount > 0 ? Math.round(totalAcs / sampleCount) : 0;
+    const kd = totalDeaths > 0 ? (totalKills / totalDeaths).toFixed(2) : totalKills.toFixed(2);
+    const avgKills = sampleCount > 0 ? (totalKills / sampleCount).toFixed(1) : "0.0";
+    const avgDeaths = sampleCount > 0 ? (totalDeaths / sampleCount).toFixed(1) : "0.0";
+    const avgAssists = sampleCount > 0 ? (totalAssists / sampleCount).toFixed(1) : "0.0";
+    const hsPct = totalKills > 0 ? Math.round((totalHs / totalKills) * 100) : 0;
+    const winRate = synergy.winRate ?? (sampleCount > 0 ? Math.round((calculatedWins / sampleCount) * 100) : 0);
+    const wins = matchingRecords.length > 0 ? calculatedWins : (winRate >= 50 ? synergy.pickRate || 1 : 0);
+    const losses = Math.max(0, sampleCount - wins);
+
     setModalData({
       title: `${synergy.agent} on ${synergy.map} Synergy`,
-      description:
-        "Detailed metrics explaining the effectiveness of this specific agent pick on this map.",
-      data: synergy,
+      description: `Comprehensive tactical assessment of ${synergy.agent} deployment on ${synergy.map}.`,
+      data: {
+        type: "Synergy",
+        agent: synergy.agent,
+        map: synergy.map,
+        pickRate: synergy.pickRate || sampleCount,
+        winRate,
+        wins,
+        losses,
+        sampleCount,
+        avgAcs,
+        kd,
+        avgKills,
+        avgDeaths,
+        avgAssists,
+        hsPct,
+        players: Array.from(playersSet),
+        teams: Array.from(teamsSet),
+      },
     });
   };
   const openHeatmapOverview = (heatmap) => {
@@ -1708,7 +1764,7 @@ const Analytics = ({ globalGame, globalTournament }) => {
           onClick={() => setModalData(null)}
         >
           <div
-            className={`bg-bg-300 border border-[#232f40] rounded-xl w-full shadow-2xl transform transition-all scale-100 opacity-100 ${modalData.data?.type === "Heatmap" ? "max-w-4xl" : "max-w-md"}`}
+            className={`bg-bg-300 border border-[#232f40] rounded-xl w-full shadow-2xl transform transition-all scale-100 opacity-100 ${modalData.data?.type === "Heatmap" ? "max-w-4xl" : (modalData.data?.type === "Synergy" || (modalData.data?.agent && modalData.data?.map)) ? "max-w-2xl" : "max-w-md"}`}
             style={{ padding: "32px" }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -2006,14 +2062,224 @@ const Analytics = ({ globalGame, globalTournament }) => {
                   </div>
                 )}
               </div>
+            ) : (modalData.data?.type === "Synergy" || (modalData.data?.agent && modalData.data?.map)) ? (
+              (() => {
+                const syn = modalData.data;
+                const roleInfo = getAgentRoleStyle(syn.agent);
+                const agentImg = getAgentImagePath(syn.agent);
+                const mapImg = `/assets/${syn.map.replace(/ /g, '_')}.png`;
+                const winRate = syn.winRate || 0;
+                const wins = syn.wins ?? (winRate >= 50 ? syn.pickRate || 1 : 0);
+                const losses = syn.losses ?? Math.max(0, (syn.pickRate || 1) - wins);
+                const totalPicks = syn.pickRate || syn.sampleCount || (wins + losses) || 1;
+
+                // SVG Circular Progress calculation
+                const radius = 38;
+                const circumference = 2 * Math.PI * radius;
+                const strokeDashoffset = circumference - (winRate / 100) * circumference;
+
+                const winColor = winRate >= 70 ? '#10b981' : winRate >= 50 ? '#06b6d4' : winRate >= 35 ? '#f59e0b' : '#f43f5e';
+                const tierLabel = winRate >= 75 ? 'S-TIER SYNERGY' : winRate >= 50 ? 'A-TIER SYNERGY' : winRate >= 35 ? 'B-TIER SYNERGY' : 'LOW IMPACT';
+                const tierBadgeBg = winRate >= 75 ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300' : winRate >= 50 ? 'bg-cyan-500/15 border-cyan-500/40 text-cyan-300' : 'bg-amber-500/15 border-amber-500/40 text-amber-300';
+
+                return (
+                  <div className="flex flex-col gap-4 animate-fade-in">
+                    {/* Hero Visual Card: Map Banner + Agent Portrait */}
+                    <div className="relative rounded-2xl overflow-hidden border border-[#2a3648] bg-slate-950 shadow-xl min-h-[135px] flex items-center p-4 sm:p-5">
+                      {/* Background Map Image with Dark Overlay */}
+                      <img
+                        src={mapImg}
+                        alt={syn.map}
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                        className="absolute inset-0 w-full h-full object-cover opacity-25 pointer-events-none filter blur-[1px]"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 to-transparent pointer-events-none" />
+
+                      {/* Content inside Hero Card */}
+                      <div className="relative z-10 flex items-center gap-4 w-full justify-between flex-wrap sm:flex-nowrap">
+                        <div className="flex items-center gap-4 min-w-0">
+                          {/* Agent Portrait Avatar */}
+                          <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-slate-900 border-2 border-cyan-500/40 shadow-[0_0_20px_rgba(6,182,212,0.3)] overflow-hidden shrink-0 flex items-center justify-center">
+                            {agentImg ? (
+                              <img
+                                src={agentImg}
+                                alt={syn.agent}
+                                className="w-full h-full object-cover object-top"
+                                onError={(e) => {
+                                  e.target.onerror = null;
+                                  e.target.style.display = 'none';
+                                }}
+                              />
+                            ) : (
+                              <span className="font-tactical font-black text-2xl text-cyan-400">
+                                {syn.agent?.[0] || 'A'}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Agent & Map Labels */}
+                          <div className="min-w-0 flex flex-col">
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${roleInfo.badge}`}>
+                                {roleInfo.icon} {roleInfo.role}
+                              </span>
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-800/80 text-cyan-300 border border-cyan-500/30">
+                                MAP: {syn.map}
+                              </span>
+                            </div>
+                            <h3 className="font-tactical text-xl sm:text-2xl font-black text-white uppercase tracking-wider drop-shadow-md truncate">
+                              {syn.agent}
+                            </h3>
+                            <span className="text-xs font-semibold text-slate-400">
+                              Combat deployment on {syn.map}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Synergy Tier Badge */}
+                        <div className="shrink-0 flex flex-col items-end">
+                          <span className={`px-3 py-1 rounded-xl text-xs font-tactical font-extrabold uppercase tracking-widest border shadow-lg ${tierBadgeBg}`}>
+                            {tierLabel}
+                          </span>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">
+                            Tactical Rating
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Graphics Metrics Arena */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {/* Graphic 1: Circular Win Rate Gauge */}
+                      <div className="bg-bg-200/90 rounded-xl p-4 border border-slate-700/50 flex flex-col items-center justify-center text-center shadow-md relative overflow-hidden">
+                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">
+                          Synergy Win Rate
+                        </div>
+                        <div className="relative w-24 h-24 flex items-center justify-center my-1">
+                          <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
+                            <circle
+                              cx="50"
+                              cy="50"
+                              r={radius}
+                              className="stroke-slate-800"
+                              strokeWidth="8"
+                              fill="transparent"
+                            />
+                            <circle
+                              cx="50"
+                              cy="50"
+                              r={radius}
+                              stroke={winColor}
+                              strokeWidth="8"
+                              strokeLinecap="round"
+                              strokeDasharray={circumference}
+                              strokeDashoffset={strokeDashoffset}
+                              fill="transparent"
+                              style={{
+                                filter: `drop-shadow(0 0 6px ${winColor}80)`,
+                                transition: 'stroke-dashoffset 0.8s ease-in-out',
+                              }}
+                            />
+                          </svg>
+                          <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <span className="font-tactical font-black text-xl text-white tracking-tight">
+                              {winRate}%
+                            </span>
+                            <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: winColor }}>
+                              {wins}W - {losses}L
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-semibold text-slate-400 mt-1">
+                          Win Efficiency
+                        </span>
+                      </div>
+
+                      {/* Graphic 2: Pick Rate & Deployment Frequency */}
+                      <div className="bg-bg-200/90 rounded-xl p-4 border border-slate-700/50 flex flex-col justify-between shadow-md">
+                        <div>
+                          <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">
+                            Pick Volume
+                          </div>
+                          <div className="flex items-baseline gap-2 mb-1">
+                            <span className="font-tactical text-3xl font-black text-cyan-400 tracking-tight">
+                              {totalPicks}
+                            </span>
+                            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                              Pick{totalPicks === 1 ? '' : 's'} Logged
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 leading-relaxed mb-3">
+                            Total times {syn.agent} was deployed on {syn.map} in this tournament.
+                          </p>
+                        </div>
+                        <div className="w-full bg-slate-800/80 rounded-full h-2 overflow-hidden border border-slate-700/60">
+                          <div
+                            className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full"
+                            style={{ width: `${Math.min(100, Math.max(20, totalPicks * 25))}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Graphic 3: Combat ACS & K/D Performance */}
+                      <div className="bg-bg-200/90 rounded-xl p-4 border border-slate-700/50 flex flex-col justify-between shadow-md">
+                        <div>
+                          <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">
+                            Combat Impact
+                          </div>
+                          <div className="flex items-baseline gap-2 mb-1">
+                            <span className="font-tactical text-3xl font-black text-white tracking-tight">
+                              {syn.avgAcs || syn.meta?.acs || 200}
+                            </span>
+                            <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
+                              Avg ACS
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-xs font-bold text-slate-400">K/D Ratio:</span>
+                            <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold text-xs border border-emerald-500/30">
+                              {syn.kd || "1.00"}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] font-semibold text-slate-400 border-t border-slate-700/40 pt-2 mt-2">
+                          <span>Avg Kills: <strong className="text-white">{syn.avgKills || "-"}</strong></span>
+                          <span>HS%: <strong className="text-cyan-400">{syn.hsPct || "-"}%</strong></span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Tactical Intel & Contributing Teams */}
+                    <div className="bg-bg-200/70 rounded-xl p-3.5 border border-slate-700/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping shrink-0" />
+                        <span className="text-slate-300">
+                          <strong className="text-white font-bold">Piloting Teams: </strong>
+                          {syn.teams && syn.teams.length > 0 ? syn.teams.join(', ') : "Active Tournament Roster"}
+                        </span>
+                      </div>
+                      {syn.players && syn.players.length > 0 && (
+                        <div className="text-slate-400 text-[11px] truncate">
+                          Pilots: <strong className="text-cyan-300">{syn.players.join(', ')}</strong>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()
             ) : (
-              <div className="bg-bg-300 rounded-lg border border-[#1c2532] overflow-x-auto" style={{ padding: "16px" }}>
-                <div className="text-[10px] font-black tracking-widest text-theme-text-faint mb-2 uppercase">
-                  Raw Analytic Node Data
+              <div className="bg-bg-200/90 rounded-xl p-5 border border-slate-700/50 flex flex-col gap-3">
+                <div className="text-xs font-black uppercase tracking-widest text-cyan-400">
+                  Tactical Node Metrics
                 </div>
-                <pre className="text-xs font-mono text-blue-400">
-                  {JSON.stringify(modalData.data, null, 2)}
-                </pre>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  {Object.entries(modalData.data || {}).map(([key, val]) => (
+                    <div key={key} className="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
+                      <span className="text-slate-400 uppercase text-[10px] block font-bold">{key}</span>
+                      <span className="font-mono font-bold text-white text-sm">{String(val)}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
             <button
