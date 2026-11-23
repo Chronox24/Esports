@@ -2127,20 +2127,6 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                             })()}
                             {/* Divider */}
                             <div className="w-px h-5 bg-slate-700/50 light:bg-slate-300 flex-shrink-0 hidden md:block"></div>
-                            {/* Performance score */}
-                            <div className="flex flex-col items-center w-9 sm:w-10 flex-shrink-0">
-                              <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 light:text-slate-600 uppercase tracking-wider text-center truncate w-full" title="Performance Score">Perf</span>
-                              <input
-                                type="number"
-                                className={`${tableInput} text-emerald-400 light:text-emerald-600 !w-full text-center text-xs font-bold`}
-                                value={p.acs !== undefined ? p.acs : ""}
-                                placeholder="0"
-                                onFocus={(e) => e.target.select()}
-                                onClick={(e) => e.target.select()}
-                                onChange={(e) => handleStatChange("A", idx, "acs", e.target.value)}
-                                onBlur={(e) => handleStatBlur("A", idx, "acs", e)}
-                              />
-                            </div>
                             {/* K / D / A */}
                             <div className="flex items-end rounded-lg bg-slate-800/40 light:bg-slate-100 border border-slate-700/30 light:border-slate-200 px-2 sm:px-2.5 py-1 gap-1 sm:gap-1.5 flex-shrink-0">
                               <div className="flex flex-col items-center w-10 sm:w-11">
@@ -2437,20 +2423,6 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                             })()}
                             {/* Divider */}
                             <div className="w-px h-5 bg-slate-700/50 light:bg-slate-300 flex-shrink-0 hidden md:block"></div>
-                            {/* Performance score */}
-                            <div className="flex flex-col items-center w-9 sm:w-10 flex-shrink-0">
-                              <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 light:text-slate-600 uppercase tracking-wider text-center truncate w-full" title="Performance Score">Perf</span>
-                              <input
-                                type="number"
-                                className={`${tableInput} text-[#f87171] light:text-red-600 !w-full text-center text-xs font-bold`}
-                                value={p.acs !== undefined ? p.acs : ""}
-                                placeholder="0"
-                                onFocus={(e) => e.target.select()}
-                                onClick={(e) => e.target.select()}
-                                onChange={(e) => handleStatChange("B", idx, "acs", e.target.value)}
-                                onBlur={(e) => handleStatBlur("B", idx, "acs", e)}
-                              />
-                            </div>
                             {/* K / D / A */}
                             <div className="flex items-end rounded-lg bg-slate-800/40 light:bg-slate-100 border border-slate-700/30 light:border-slate-200 px-2 sm:px-2.5 py-1 gap-1 sm:gap-1.5 flex-shrink-0">
                               <div className="flex flex-col items-center w-10 sm:w-11">
