@@ -1894,6 +1894,7 @@ const ResultTab = ({ game, globalTournament, setGlobalTournament, availableTourn
       return (r.tournament_name || "").toLowerCase() === selectedTournament.toLowerCase();
     });
 
+    const maxR = gameUpper === "CROSSFIRE" ? 10 : 13;
     const matchesMap = {};
     relevantRecords.forEach((r) => {
       const key = `${r.tournament_name || "Tournament"}::${r.week || "1"}::${r.day || "1"}::${r.match || "1"}::${r.set_num || "1"}`;
@@ -1907,11 +1908,16 @@ const ResultTab = ({ game, globalTournament, setGlobalTournament, availableTourn
         };
       }
       if (r.team_name) {
+        const isWin = String(r.win).toLowerCase() === "true" || r.win === 1 || r.win === true;
+        const rounds = Number(r.rounds) || 0;
         if (!matchesMap[key].teams[r.team_name]) {
           matchesMap[key].teams[r.team_name] = {
-            win: String(r.win).toLowerCase() === "true" || r.win === 1,
-            rounds: Number(r.rounds) || 0,
+            win: isWin,
+            rounds: rounds,
           };
+        } else {
+          if (isWin) matchesMap[key].teams[r.team_name].win = true;
+          if (rounds > 0) matchesMap[key].teams[r.team_name].rounds = rounds;
         }
       }
     });
@@ -1921,8 +1927,40 @@ const ResultTab = ({ game, globalTournament, setGlobalTournament, availableTourn
       const teamNames = Object.keys(m.teams);
       if (teamNames.length >= 2) {
         const [t1, t2] = teamNames;
-        const s1 = m.teams[t1].rounds || (m.teams[t1].win ? 13 : 0);
-        const s2 = m.teams[t2].rounds || (m.teams[t2].win ? 13 : 0);
+        const totalRounds = m.teams[t1].rounds || m.teams[t2].rounds || 0;
+        const t1Win = m.teams[t1].win;
+        const t2Win = m.teams[t2].win;
+
+        let s1 = 0;
+        let s2 = 0;
+
+        if (totalRounds > 0) {
+          if (t1Win && !t2Win) {
+            if (totalRounds >= maxR * 2) {
+              s1 = Math.round((totalRounds + 2) / 2);
+              s2 = Math.round((totalRounds - 2) / 2);
+            } else {
+              s1 = maxR;
+              s2 = Math.max(0, totalRounds - maxR);
+            }
+          } else if (t2Win && !t1Win) {
+            if (totalRounds >= maxR * 2) {
+              s2 = Math.round((totalRounds + 2) / 2);
+              s1 = Math.round((totalRounds - 2) / 2);
+            } else {
+              s2 = maxR;
+              s1 = Math.max(0, totalRounds - maxR);
+            }
+          } else {
+            // Fallback if win status isn't differentiated
+            s1 = t1Win ? maxR : Math.floor(totalRounds / 2);
+            s2 = t2Win ? maxR : Math.ceil(totalRounds / 2);
+          }
+        } else {
+          s1 = t1Win ? maxR : 0;
+          s2 = t2Win ? maxR : 0;
+        }
+
         list.push({
           league: m.league,
           stage: m.stage,
