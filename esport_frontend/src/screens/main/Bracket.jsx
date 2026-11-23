@@ -838,6 +838,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
         throw new Error(errData.error || `Server responded with ${response.status}`);
       }
       setIsFormatLocked(true);
+      window.dispatchEvent(new CustomEvent('bracket-updated', { detail: { tournament: resolvedTournamentName } }));
       alert('Bracket saved successfully!');
     } catch (err) {
       console.error(err);

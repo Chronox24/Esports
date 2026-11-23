@@ -972,15 +972,15 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
     }
   }, [liveTournaments, currentTournamentName]);
 
-  const fetchTournamentData = async (tName) => {
-    if (!matchesByTournament[tName]) {
+  const fetchTournamentData = async (tName, force = false) => {
+    if (!matchesByTournament[tName] || force) {
       try {
         const res = await apiFetch(`/api/matches?tournament=${encodeURIComponent(tName)}`);
         if (res.ok) {
           const data = await res.json();
           const mapped = data.map(m => {
-            const s1 = m.team_a_score ?? m.score_a ?? 0;
-            const s2 = m.team_b_score ?? m.score_b ?? 0;
+            const s1 = m.team_a_score ?? m.score_a ?? m.team1_score ?? 0;
+            const s2 = m.team_b_score ?? m.score_b ?? m.team2_score ?? 0;
             return {
               id: m.id || m.match_id,
               team1: m.team_a?.team_name || "",
@@ -1010,7 +1010,7 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
       }
     }
 
-    if (!standingsByTournament[tName]) {
+    if (!standingsByTournament[tName] || force) {
       try {
         const res = await apiFetch(`/api/bracket-results?tournament_name=${encodeURIComponent(tName)}`);
         if (res.ok) {
@@ -1025,6 +1025,19 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
     }
   };
 
+  useEffect(() => {
+    const handleSync = () => {
+      if (expandedLiveTournament) fetchTournamentData(expandedLiveTournament, true);
+      if (expandedFinishedTournament) fetchTournamentData(expandedFinishedTournament, true);
+    };
+    window.addEventListener('bracket-updated', handleSync);
+    window.addEventListener('focus', handleSync);
+    return () => {
+      window.removeEventListener('bracket-updated', handleSync);
+      window.removeEventListener('focus', handleSync);
+    };
+  }, [expandedLiveTournament, expandedFinishedTournament]);
+
   const toggleLiveTournament = (tName) => {
     if (expandedLiveTournament === tName) {
       setExpandedLiveTournament(null);
@@ -1037,7 +1050,7 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
     }
     setExpandedLiveTournament(tName);
     setShowLiveBracket(false);
-    fetchTournamentData(tName);
+    fetchTournamentData(tName, true);
   };
 
   const toggleFinishedTournament = (tName) => {
@@ -1052,7 +1065,7 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
     }
     setExpandedFinishedTournament(tName);
     setShowFinishedBracket(false);
-    fetchTournamentData(tName);
+    fetchTournamentData(tName, true);
   };
 
   const handleLiveCardClick = (tName) => {
@@ -1388,6 +1401,15 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
                     </button>
 
                     <button
+                      onClick={() => fetchTournamentData(expandedLiveTournament, true)}
+                      style={{ padding: '8px 14px' }}
+                      className="hud-chamfer-sm flex items-center justify-center gap-1.5 border border-cyan-500/30 bg-slate-900/80 hover:bg-cyan-500/20 text-cyan-300 font-tactical font-bold uppercase tracking-wider text-xs transition-all cursor-pointer shadow-sm hover:border-cyan-400"
+                      title="Refresh matches and latest bracket scores"
+                    >
+                      <RefreshCw size={13} /> Refresh
+                    </button>
+
+                    <button
                       onClick={() => handleToggleCompletion(expandedLiveTournament, false)}
                       disabled={isTogglingStatus}
                       style={{ padding: '8px 16px' }}
@@ -1596,6 +1618,15 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
                       title="Edit this tournament's match schedule"
                     >
                       <Calendar size={13} /> Edit Schedule
+                    </button>
+
+                    <button
+                      onClick={() => fetchTournamentData(expandedFinishedTournament, true)}
+                      style={{ padding: '8px 14px' }}
+                      className="hud-chamfer-sm flex items-center justify-center gap-1.5 border border-amber-500/30 bg-slate-900/80 hover:bg-amber-500/20 text-amber-300 font-tactical font-bold uppercase tracking-wider text-xs transition-all cursor-pointer shadow-sm hover:border-amber-400"
+                      title="Refresh matches and latest bracket scores"
+                    >
+                      <RefreshCw size={13} /> Refresh
                     </button>
 
                     <button

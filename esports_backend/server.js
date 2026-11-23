@@ -1940,6 +1940,179 @@ app.delete('/api/players/:id', authenticateToken, isAdmin, canEdit, async (req, 
     res.status(500).json({ error: err.message });
   }
 });
+// ----------------------------------------------------
+// BRACKET & MATCHES BIDIRECTIONAL SYNC HELPERS
+// ----------------------------------------------------
+function extractBracketMatches(bracketData) {
+  const matches = [];
+  if (!bracketData) return matches;
+
+  const processMatch = (m) => {
+    if (!m || typeof m !== 'object') return;
+    const t1 = (m.team1 || '').toString().trim();
+    const t2 = (m.team2 || '').toString().trim();
+    if (!t1 || !t2 || t1.toUpperCase() === 'TBD' || t2.toUpperCase() === 'TBD') return;
+
+    const rawS1 = m.score1;
+    const rawS2 = m.score2;
+    const hasS1 = rawS1 !== undefined && rawS1 !== null && rawS1 !== '';
+    const hasS2 = rawS2 !== undefined && rawS2 !== null && rawS2 !== '';
+
+    const s1 = parseInt(rawS1, 10);
+    const s2 = parseInt(rawS2, 10);
+    const hasValidScores = (hasS1 && !isNaN(s1)) || (hasS2 && !isNaN(s2));
+
+    matches.push({
+      id: m.id,
+      team1: t1,
+      team2: t2,
+      score1: isNaN(s1) ? 0 : s1,
+      score2: isNaN(s2) ? 0 : s2,
+      hasScore: hasValidScores,
+      isFinals: !!m.isFinals
+    });
+  };
+
+  if (Array.isArray(bracketData)) {
+    bracketData.forEach(roundOrMatch => {
+      if (Array.isArray(roundOrMatch)) {
+        roundOrMatch.forEach(m => processMatch(m));
+      } else if (typeof roundOrMatch === 'object') {
+        processMatch(roundOrMatch);
+      }
+    });
+  } else if (typeof bracketData === 'object') {
+    ['upper', 'lower', 'finals'].forEach(sec => {
+      if (Array.isArray(bracketData[sec])) {
+        bracketData[sec].forEach(round => {
+          if (Array.isArray(round)) {
+            round.forEach(m => processMatch(m));
+          } else if (typeof round === 'object') {
+            processMatch(round);
+          }
+        });
+      }
+    });
+  }
+
+  return matches;
+}
+
+async function syncBracketMatchesToMatchesTable(tournamentName, bracketData, gameTitle = 'VALORANT') {
+  if (!supabase || !tournamentName || !bracketData) return;
+  try {
+    const bMatches = extractBracketMatches(bracketData);
+    if (!bMatches || bMatches.length === 0) return;
+
+    const { data: dbMatches, error: matchErr } = await supabase
+      .from('matches')
+      .select('*, team_a:teams!matches_team_a_id_fkey(*), team_b:teams!matches_team_b_id_fkey(*)')
+      .ilike('tournament_name', tournamentName.trim());
+
+    if (matchErr) throw matchErr;
+
+    for (const bMatch of bMatches) {
+      if (!bMatch.hasScore && bMatch.score1 === 0 && bMatch.score2 === 0) continue;
+
+      const t1Lower = bMatch.team1.toLowerCase();
+      const t2Lower = bMatch.team2.toLowerCase();
+
+      const found = (dbMatches || []).find(m => {
+        const aName = (m.team_a?.team_name || '').toLowerCase();
+        const bName = (m.team_b?.team_name || '').toLowerCase();
+        return (aName === t1Lower && bName === t2Lower) || (aName === t2Lower && bName === t1Lower);
+      });
+
+      if (found) {
+        const isDirect = (found.team_a?.team_name || '').toLowerCase() === t1Lower;
+        const scoreA = isDirect ? bMatch.score1 : bMatch.score2;
+        const scoreB = isDirect ? bMatch.score2 : bMatch.score1;
+
+        const updates = {
+          team_a_score: scoreA,
+          team_b_score: scoreB,
+          team1_score: scoreA,
+          team2_score: scoreB,
+        };
+
+        if (scoreA > 0 || scoreB > 0) {
+          if (found.status === 'scheduled') {
+            updates.status = (scoreA !== scoreB) ? 'finished' : 'in_progress';
+          }
+        }
+
+        await supabase
+          .from('matches')
+          .update(updates)
+          .eq('match_id', found.match_id);
+      }
+    }
+  } catch (err) {
+    console.warn('Could not sync bracket matches to matches table:', err.message);
+  }
+}
+
+async function syncBracketScoresIntoFetchedMatches(tournamentName, matchesData) {
+  if (!supabase || !tournamentName || !matchesData || matchesData.length === 0) return;
+  try {
+    const { data: bStates, error: bErr } = await supabase
+      .from('bracket_states')
+      .select('*')
+      .ilike('tournament_name', tournamentName.trim())
+      .neq('format', 'map_pool')
+      .neq('format', 'veto_settings');
+
+    if (bErr || !bStates || bStates.length === 0) return;
+
+    for (const bState of bStates) {
+      const bMatches = extractBracketMatches(bState.bracket_data);
+      for (const bMatch of bMatches) {
+        if (!bMatch.hasScore && bMatch.score1 === 0 && bMatch.score2 === 0) continue;
+
+        const t1Lower = bMatch.team1.toLowerCase();
+        const t2Lower = bMatch.team2.toLowerCase();
+
+        const matchRecord = matchesData.find(m => {
+          const aName = (m.team_a?.team_name || '').toLowerCase();
+          const bName = (m.team_b?.team_name || '').toLowerCase();
+          return (aName === t1Lower && bName === t2Lower) || (aName === t2Lower && bName === t1Lower);
+        });
+
+        if (matchRecord) {
+          const isDirect = (matchRecord.team_a?.team_name || '').toLowerCase() === t1Lower;
+          const scoreA = isDirect ? bMatch.score1 : bMatch.score2;
+          const scoreB = isDirect ? bMatch.score2 : bMatch.score1;
+
+          if (matchRecord.team_a_score !== scoreA || matchRecord.team_b_score !== scoreB) {
+            matchRecord.team_a_score = scoreA;
+            matchRecord.team_b_score = scoreB;
+            matchRecord.team1_score = scoreA;
+            matchRecord.team2_score = scoreB;
+            if (matchRecord.status === 'scheduled' && (scoreA > 0 || scoreB > 0)) {
+              matchRecord.status = (scoreA !== scoreB) ? 'finished' : 'in_progress';
+            }
+
+            // Also persist to DB in background so next query has it pre-updated
+            supabase
+              .from('matches')
+              .update({
+                team_a_score: scoreA,
+                team_b_score: scoreB,
+                team1_score: scoreA,
+                team2_score: scoreB,
+                status: matchRecord.status
+              })
+              .eq('match_id', matchRecord.match_id)
+              .then();
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Could not sync bracket scores into fetched matches:', err.message);
+  }
+}
+
 app.get('/api/matches', async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   try {
@@ -1951,6 +2124,12 @@ app.get('/api/matches', async (req, res) => {
     if (status) query = query.in('status', status.split(','));
     const { data, error } = await query;
     if (error) throw error;
+
+    // Check if bracket_states has scores for these matches and auto-sync!
+    if (tournament && tournament.toLowerCase() !== 'all' && data && data.length > 0) {
+      await syncBracketScoresIntoFetchedMatches(tournament, data);
+    }
+
     res.json(data || []);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2372,11 +2551,13 @@ app.get('/api/bracket-states-all', async (req, res) => {
 });
 
 app.get('/api/bracket-state', async (req, res) => {
-  const { tournament, game_title, format } = req.query;
+  const tournament = req.query.tournament || req.query.tournament_name;
+  const game_title = req.query.game_title || req.query.game;
+  const format = req.query.format;
   try {
     let query = supabase.from('bracket_states').select('*');
-    if (tournament) query = query.eq('tournament_name', tournament);
-    if (game_title) query = query.eq('game_title', game_title);
+    if (tournament) query = query.ilike('tournament_name', tournament.trim());
+    if (game_title) query = query.ilike('game_title', game_title.trim());
     if (format) query = query.eq('format', format);
 
     const { data, error } = await query;
@@ -2395,8 +2576,8 @@ app.post('/api/bracket-state', authenticateToken, isAdmin, canEdit, async (req, 
     // check if exists
     const { data: existing } = await supabase.from('bracket_states')
       .select('id')
-      .eq('tournament_name', tournament_name)
-      .eq('game_title', game_title)
+      .ilike('tournament_name', (tournament_name || '').trim())
+      .ilike('game_title', (game_title || '').trim())
       .eq('format', format);
 
     let query;
@@ -2406,11 +2587,17 @@ app.post('/api/bracket-state', authenticateToken, isAdmin, canEdit, async (req, 
         .eq('id', existing[0].id);
     } else {
       query = supabase.from('bracket_states')
-        .insert([{ tournament_name, game_title, format, team_pool, bracket_data }]);
+        .insert([{ tournament_name: (tournament_name || '').trim(), game_title: (game_title || '').trim(), format, team_pool, bracket_data }]);
     }
 
     const { data, error } = await query.select();
     if (error) throw error;
+
+    // Auto-sync scored matches into the matches table
+    if (format !== 'map_pool' && format !== 'veto_settings') {
+      await syncBracketMatchesToMatchesTable(tournament_name, bracket_data, game_title);
+    }
+
     await logAudit('BRACKET_STATE_UPDATED', `Updated bracket tournament tree for ${tournament_name} (${game_title} - ${format})`, { tournament_name, game_title, format, teamsCount: team_pool?.length || 0 }, game_title || null, req);
     res.status(200).json(data[0]);
   } catch (err) {
