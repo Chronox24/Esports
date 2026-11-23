@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { apiFetch, getUserAccount, resolveLogoUrl } from "../../utils/api";
 import { io } from "socket.io-client";
 import { AgentBadge, getAgentImagePath } from "../../utils/agentHelper";
@@ -308,6 +308,16 @@ const DataEntry = ({ globalGame, globalTournament }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submittedRecords, setSubmittedRecords] = useState([]);
+  const [toast, setToast] = useState(null);
+  const toastTimerRef = useRef(null);
+
+  const showToast = (message, type = "success", title = "Match Submitted") => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ message, type, title });
+    toastTimerRef.current = setTimeout(() => {
+      setToast(null);
+    }, 5000);
+  };
 
   useEffect(() => {
     const fetchRecords = async () => {
@@ -848,16 +858,19 @@ const DataEntry = ({ globalGame, globalTournament }) => {
         }
         setIsSubmitting(false);
         setSubmitSuccess(true);
-        alert(
-          `Match Submitted! ${matchWin === "A" ? teamA.name : teamB.name} has won the match!`,
+        const winnerName = matchWin === "A" ? teamA.name : teamB.name;
+        showToast(
+          `Match Submitted! ${winnerName} has won the match!`,
+          "success",
+          "Match Submitted"
         );
-        setTimeout(() => setSubmitSuccess(false), 3000);
+        setTimeout(() => setSubmitSuccess(false), 5000);
         setHeatmapData([]);
         setCfGroups([{ id: "g1", label: "TOTAL PLAYER STATS", isTotal: true }]);
       } catch (err) {
         console.error(err);
         setIsSubmitting(false);
-        alert("Error submitting Crossfire stats: " + err.message);
+        showToast(`Error submitting Crossfire stats: ${err.message}`, "error", "Submission Failed");
       }
     } else {
       setIsSubmitting(true);
@@ -965,15 +978,18 @@ const DataEntry = ({ globalGame, globalTournament }) => {
         }
         setIsSubmitting(false);
         setSubmitSuccess(true);
-        alert(
-          `Match Submitted! ${matchWin === "A" ? teamA.name : teamB.name} has won the match!`,
+        const winnerName = matchWin === "A" ? teamA.name : teamB.name;
+        showToast(
+          `Match Submitted! ${winnerName} has won the match!`,
+          "success",
+          "Match Submitted"
         );
-        setTimeout(() => setSubmitSuccess(false), 3000);
+        setTimeout(() => setSubmitSuccess(false), 5000);
         setHeatmapData([]);
       } catch (err) {
         console.error(err);
         setIsSubmitting(false);
-        alert("Error submitting Valorant stats: " + err.message);
+        showToast(`Error submitting Valorant stats: ${err.message}`, "error", "Submission Failed");
       }
     }
   };
@@ -3002,24 +3018,63 @@ const DataEntry = ({ globalGame, globalTournament }) => {
       </div>
     </div>
       
-      {submitSuccess && (
-        <div className="fixed bottom-6 right-6 z-50 bg-emerald-500/90 backdrop-blur-xl text-white px-6 py-3 rounded-xl shadow-[0_8px_30px_rgba(16,185,129,0.4)] flex items-center gap-3 animate-[fadeIn_0.3s_ease]">
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2.5}
+      {/* ── Notification Toast ── */}
+      {toast && (
+        <div 
+          className="fixed top-6 right-6 z-[99999] max-w-md w-full animate-in slide-in-from-top-4 fade-in duration-200 p-4 rounded-2xl shadow-2xl backdrop-blur-xl border transition-all flex items-start gap-3.5"
+          style={{
+            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+            borderColor: toast.type === 'error'
+              ? 'rgba(244, 63, 94, 0.6)'
+              : 'rgba(16, 185, 129, 0.6)',
+            boxShadow: toast.type === 'error'
+              ? '0 20px 40px -10px rgba(244, 63, 94, 0.35), 0 0 20px rgba(244, 63, 94, 0.2)'
+              : '0 20px 40px -10px rgba(16, 185, 129, 0.35), 0 0 20px rgba(16, 185, 129, 0.2)'
+          }}
+        >
+          {/* Icon Badge */}
+          <div className="shrink-0 mt-0.5">
+            {toast.type === 'error' ? (
+              <div className="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400 shadow-[0_0_15px_rgba(244,63,94,0.3)]">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+            ) : (
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            )}
+          </div>
+
+          {/* Text Content */}
+          <div className="flex-1 min-w-0 pr-1">
+            <div className="flex items-center gap-2 mb-1">
+              <span className={`w-2 h-2 rounded-full ${toast.type === 'error' ? 'bg-rose-400' : 'bg-emerald-400'} animate-ping`} />
+              <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${toast.type === 'error' ? 'text-rose-400' : 'text-emerald-400'}`}>
+                {toast.title}
+              </span>
+            </div>
+            <div className="text-sm font-bold text-white tracking-wide leading-snug">
+              {toast.message}
+            </div>
+            <div className="text-[11px] text-slate-400 mt-1 font-medium">
+              {toast.type === 'error' ? 'Please review match entries and try again.' : 'Match results recorded & synchronized.'}
+            </div>
+          </div>
+
+          {/* Dismiss Button */}
+          <button
+            onClick={() => setToast(null)}
+            className="shrink-0 p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+            title="Dismiss notification"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
-          <span className="text-sm font-bold tracking-wide">
-            Data submitted successfully!
-          </span>
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
       )}
     </div>
