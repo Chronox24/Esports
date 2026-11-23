@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { apiFetch } from "../../utils/api";
 import { getAgentImagePath, getAgentRoleStyle } from "../../utils/agentHelper";
 const SearchIcon = () => (
@@ -1757,27 +1758,26 @@ const Analytics = ({ globalGame, globalTournament }) => {
         </div>
       </div>
       {}
-      {modalData && (
+      {modalData && typeof document !== "undefined" && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
-          style={{ padding: "16px" }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 sm:p-6 overflow-y-auto"
           onClick={() => setModalData(null)}
         >
           <div
-            className={`bg-bg-300 border border-[#232f40] rounded-xl w-full shadow-2xl transform transition-all scale-100 opacity-100 ${modalData.data?.type === "Heatmap" ? "max-w-4xl" : (modalData.data?.type === "Synergy" || (modalData.data?.agent && modalData.data?.map)) ? "max-w-2xl" : "max-w-md"}`}
-            style={{ padding: "32px" }}
+            className={`bg-bg-300 border border-[#232f40] rounded-2xl w-full shadow-2xl transform transition-all scale-100 opacity-100 my-auto max-h-[92vh] flex flex-col overflow-hidden animate-fade-in ${modalData.data?.type === "Heatmap" ? "max-w-4xl" : (modalData.data?.type === "Synergy" || (modalData.data?.agent && modalData.data?.map)) ? "max-w-2xl" : "max-w-md"}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-between items-center mb-4 border-b border-[#232f40] pb-2">
-              <h2 className="text-xl font-black text-theme-text-base">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center px-6 py-4 border-b border-[#232f40] bg-bg-300 shrink-0">
+              <h2 className="text-lg sm:text-xl font-black text-theme-text-base truncate pr-2">
                 {modalData.title}
               </h2>
               <button
                 onClick={() => setModalData(null)}
-                className="text-theme-text-muted hover:text-theme-text-base transition-colors"
+                className="text-theme-text-muted hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/10 shrink-0 cursor-pointer"
               >
                 <svg
-                  className="w-6 h-6"
+                  className="w-5 h-5"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -1791,9 +1791,12 @@ const Analytics = ({ globalGame, globalTournament }) => {
                 </svg>
               </button>
             </div>
-            <p className="text-theme-text-base text-sm mb-6 leading-relaxed">
-              {modalData.description}
-            </p>
+
+            {/* Scrollable Content Body */}
+            <div className="p-5 sm:p-6 overflow-y-auto flex-1 custom-scrollbar">
+              <p className="text-theme-text-base text-xs sm:text-sm mb-4 leading-relaxed text-slate-300">
+                {modalData.description}
+              </p>
             {modalData.data?.type === "Heatmap" ? (
               <div className="relative w-full aspect-[4/3] bg-bg-100 rounded-xl border border-[#2a3648] overflow-hidden shadow-inner flex items-center justify-center mt-4">
                 {modalData.data.area && modalData.data.area !== "No Data" ? (
@@ -2282,14 +2285,20 @@ const Analytics = ({ globalGame, globalTournament }) => {
                 </div>
               </div>
             )}
-            <button
-              onClick={() => setModalData(null)}
-              className="mt-6 w-full py-3 bg-bg-400 hover:bg-bg-500 border border-[#334155] rounded-lg text-theme-text-base font-bold tracking-wider transition-colors"
-            >
-              Close Analysis
-            </button>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-3.5 border-t border-[#232f40] bg-bg-200/60 shrink-0">
+              <button
+                onClick={() => setModalData(null)}
+                className="w-full py-2.5 bg-bg-400 hover:bg-bg-500 border border-[#334155] rounded-xl text-theme-text-base font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
+              >
+                Close Analysis
+              </button>
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
