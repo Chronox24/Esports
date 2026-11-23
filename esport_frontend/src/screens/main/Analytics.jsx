@@ -1008,6 +1008,7 @@ const Analytics = ({ globalGame, globalTournament }) => {
   });
   const [matchRecords, setMatchRecords] = useState([]);
   const [heatmapEvents, setHeatmapEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [plantColor, setPlantColor] = useState(() => localStorage.getItem('plantColor') || '#ef4444');
   const [defuseColor, setDefuseColor] = useState(() => localStorage.getItem('defuseColor') || '#10b981');
 
@@ -1029,13 +1030,15 @@ const Analytics = ({ globalGame, globalTournament }) => {
     };
   }, []);
   useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
     const fetchRecords = async () => {
       try {
         const queryTournament = globalTournament || "all";
         const res = await apiFetch(
           `/api/match-records?tournament=${encodeURIComponent(queryTournament)}`,
         );
-        if (res.ok) {
+        if (res.ok && isMounted) {
           const data = await res.json();
           setMatchRecords(data || []);
         }
@@ -1046,7 +1049,7 @@ const Analytics = ({ globalGame, globalTournament }) => {
     const fetchHeatmap = async () => {
       try {
         const res = await apiFetch("/api/stats/heatmap");
-        if (res.ok) {
+        if (res.ok && isMounted) {
           const eventsData = await res.json();
           setHeatmapEvents(eventsData || []);
         }
@@ -1055,8 +1058,11 @@ const Analytics = ({ globalGame, globalTournament }) => {
       }
     };
 
-    fetchRecords();
-    fetchHeatmap();
+    Promise.all([fetchRecords(), fetchHeatmap()]).finally(() => {
+      if (isMounted) setLoading(false);
+    });
+
+    return () => { isMounted = false; };
   }, [globalTournament]);
   const tournamentName = useMemo(() => {
     if (!globalTournament || globalTournament === "all") return "";
@@ -1520,8 +1526,35 @@ const Analytics = ({ globalGame, globalTournament }) => {
   const accent = activeGame.toUpperCase() === "VALORANT" ? "#ff4655" : "#4c7fd6";
   const accentAlt = activeGame.toUpperCase() === "VALORANT" ? "#a855f7" : "#22d3ee";
 
+  if (loading) {
+    return (
+      <div className="flex-1 bg-bg-100 text-theme-text-base flex flex-col items-center justify-center p-12 min-h-[500px] animate-fade-in">
+        <div className="relative w-20 h-20 mb-6 flex items-center justify-center">
+          <div className="absolute inset-0 rounded-full border border-emerald-500/20 animate-ping" />
+          <div className="w-16 h-16 rounded-full border-2 border-emerald-500/30 border-t-emerald-400 border-r-emerald-400 animate-spin" />
+          <div className="absolute w-10 h-10 rounded-full border border-emerald-400/50 border-b-transparent animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.2s' }} />
+          <div className="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-400/60 flex items-center justify-center text-emerald-400 shadow-[0_0_16px_rgba(16,185,129,0.5)]">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+            </svg>
+          </div>
+        </div>
+        <div className="font-tactical text-xs font-black uppercase tracking-[0.25em] text-emerald-400 mb-2">
+          Loading Analytics & Strategy Heatmaps...
+        </div>
+        <div className="font-tactical text-[10px] font-bold text-slate-500 uppercase tracking-[0.16em]">
+          Synthesizing round telemetry & map strategies
+        </div>
+        <div className="w-48 h-1.5 bg-slate-900 rounded-full mt-6 overflow-hidden border border-emerald-500/20">
+          <div className="h-full bg-gradient-to-r from-transparent via-emerald-400 to-transparent w-full animate-shimmer" />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex-1 bg-bg-100 text-theme-text-base overflow-y-auto flex flex-col h-full custom-scrollbar relative">
+    <div className="flex-1 bg-bg-100 text-theme-text-base overflow-y-auto flex flex-col h-full custom-scrollbar relative animate-fade-in">
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }

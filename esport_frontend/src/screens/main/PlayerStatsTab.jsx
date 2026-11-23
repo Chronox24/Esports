@@ -4,21 +4,24 @@ const PlayerStatsTab = ({ globalGame, globalTournament }) => {
   const activeGame = (globalGame || 'VALORANT').toUpperCase();
   const [stats, setStats] = useState([]);
   const [players, setPlayers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
+    setLoading(true);
     const playersUrl = globalTournament ? `/api/players?tournament=${encodeURIComponent(globalTournament)}` : '/api/players';
-    apiFetch(playersUrl)
-      .then(r => r.json())
-      .then(data => {
-        if (Array.isArray(data)) setPlayers(data);
-      })
-      .catch(console.error);
     const endpoint = activeGame === 'VALORANT' ? 'valorant' : 'crossfire';
-    apiFetch(`/api/stats/${endpoint}?tournament=${encodeURIComponent(globalTournament || 'Default')}`)
-      .then(r => r.json())
-      .then(data => {
-        if (Array.isArray(data)) setStats(data);
-      })
-      .catch(console.error);
+    
+    Promise.all([
+      apiFetch(playersUrl).then(r => r.json()).catch(() => []),
+      apiFetch(`/api/stats/${endpoint}?tournament=${encodeURIComponent(globalTournament || 'Default')}`).then(r => r.json()).catch(() => [])
+    ]).then(([playersData, statsData]) => {
+      if (Array.isArray(playersData)) setPlayers(playersData);
+      if (Array.isArray(statsData)) setStats(statsData);
+      setLoading(false);
+    }).catch(err => {
+      console.error(err);
+      setLoading(false);
+    });
   }, [activeGame, globalTournament]);
   const mergedData = useMemo(() => {
     const dataToUse = stats || [];
@@ -49,8 +52,35 @@ const PlayerStatsTab = ({ globalGame, globalTournament }) => {
       };
     }).sort((a, b) => b.total_kills - a.total_kills);
   }, [stats, players, activeGame]);
+
+  if (loading) {
+    return (
+      <div className="flex-1 bg-bg-100 text-theme-text-base flex flex-col items-center justify-center p-12 min-h-[500px] animate-fade-in">
+        <div className="relative w-20 h-20 mb-6 flex items-center justify-center">
+          <div className="absolute inset-0 rounded-full border border-cyan-500/20 animate-ping" />
+          <div className="w-16 h-16 rounded-full border-2 border-cyan-500/30 border-t-cyan-400 border-r-cyan-400 animate-spin" />
+          <div className="absolute w-10 h-10 rounded-full border border-cyan-400/50 border-b-transparent animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.2s' }} />
+          <div className="w-8 h-8 rounded-full bg-cyan-500/10 border border-cyan-400/60 flex items-center justify-center text-cyan-400 shadow-[0_0_16px_rgba(6,182,212,0.5)]">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+        </div>
+        <div className="font-tactical text-xs font-black uppercase tracking-[0.25em] text-cyan-400 mb-2">
+          Loading Player Statistics...
+        </div>
+        <div className="font-tactical text-[10px] font-bold text-slate-500 uppercase tracking-[0.16em]">
+          Compiling combat metrics & player scorecards
+        </div>
+        <div className="w-48 h-1.5 bg-slate-900 rounded-full mt-6 overflow-hidden border border-cyan-500/20">
+          <div className="h-full bg-gradient-to-r from-transparent via-cyan-400 to-transparent w-full animate-shimmer" />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex-1 bg-bg-100 light:bg-slate-50 text-theme-text-base light:text-slate-900 flex flex-col h-full">
+    <div className="flex-1 bg-bg-100 light:bg-slate-50 text-theme-text-base light:text-slate-900 flex flex-col h-full animate-fade-in">
       <style>{`
         .spreadsheet-container::-webkit-scrollbar { width: 8px; height: 8px; }
         .spreadsheet-container::-webkit-scrollbar-track { background: #0a0f16; border-radius: 8px; }

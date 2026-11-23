@@ -826,8 +826,34 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
     return 'text-rose-400 bg-rose-500/10 border-rose-500/30';
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex-1 bg-bg-100 text-theme-text-base flex flex-col items-center justify-center p-12 min-h-[500px] animate-fade-in">
+        <div className="relative w-20 h-20 mb-6 flex items-center justify-center">
+          <div className="absolute inset-0 rounded-full border border-cyan-500/20 animate-ping" />
+          <div className="w-16 h-16 rounded-full border-2 border-cyan-500/30 border-t-cyan-400 border-r-cyan-400 animate-spin" />
+          <div className="absolute w-10 h-10 rounded-full border border-cyan-400/50 border-b-transparent animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.2s' }} />
+          <div className="w-8 h-8 rounded-full bg-cyan-500/10 border border-cyan-400/60 flex items-center justify-center text-cyan-400 shadow-[0_0_16px_rgba(6,182,212,0.5)]">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+            </svg>
+          </div>
+        </div>
+        <div className="font-tactical text-xs font-black uppercase tracking-[0.25em] text-cyan-400 mb-2">
+          Loading Leaderboard Standings...
+        </div>
+        <div className="font-tactical text-[10px] font-bold text-slate-500 uppercase tracking-[0.16em]">
+          Querying tournament records & head-to-head metrics
+        </div>
+        <div className="w-48 h-1.5 bg-slate-900 rounded-full mt-6 overflow-hidden border border-cyan-500/20">
+          <div className="h-full bg-gradient-to-r from-transparent via-cyan-400 to-transparent w-full animate-shimmer" />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex-1 bg-bg-100 text-theme-text-base overflow-y-auto flex flex-col h-full custom-scrollbar">
+    <div className="flex-1 bg-bg-100 text-theme-text-base overflow-y-auto flex flex-col h-full custom-scrollbar animate-fade-in">
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }

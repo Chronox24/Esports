@@ -4282,6 +4282,7 @@ const TournamentHubTab = ({
   setActiveSubTab
 }) => {
   const [availableTournaments, setAvailableTournaments] = useState([]);
+  const [isSubTabLoading, setIsSubTabLoading] = useState(true);
 
   useEffect(() => {
     apiFetch('/api/tournaments')
@@ -4315,6 +4316,18 @@ const TournamentHubTab = ({
       layer2: subTabs.slice(mid),
     };
   }, [subTabs]);
+
+  useEffect(() => {
+    setIsSubTabLoading(true);
+    const timer = setTimeout(() => {
+      setIsSubTabLoading(false);
+    }, 420);
+    return () => clearTimeout(timer);
+  }, [activeSubTab]);
+
+  const currentTabObj = useMemo(() => {
+    return subTabs.find(st => st.key === activeSubTab) || subTabs[0];
+  }, [subTabs, activeSubTab]);
 
   if (!tournamentName) {
     return (
@@ -4510,9 +4523,51 @@ const TournamentHubTab = ({
 
       {/* ── Render Sub-module Content ── */}
       <div className="w-full">
-        <ErrorBoundary>
-          {renderActiveSubContent()}
-        </ErrorBoundary>
+        {isSubTabLoading ? (
+          <div className="hud-card min-h-[500px] flex flex-col items-center justify-center p-8 sm:p-14 text-center relative overflow-hidden animate-fade-in shadow-2xl border border-cyan-500/25">
+            <div className="hud-sweep-overlay" />
+            <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-cyan-500/10 blur-[90px] rounded-full pointer-events-none translate-x-1/3 -translate-y-1/3" />
+            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-blue-500/10 blur-[90px] rounded-full pointer-events-none -translate-x-1/3 translate-y-1/3" />
+
+            {/* Cybernetic glowing background rings & pulse */}
+            <div className="relative w-24 h-24 mb-6 flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full border border-cyan-500/25 animate-ping opacity-60" />
+              <div className="w-20 h-20 rounded-full border-2 border-cyan-500/30 border-t-cyan-400 border-r-cyan-400 animate-spin" />
+              <div
+                className="absolute w-12 h-12 rounded-full border border-cyan-400/50 border-b-transparent animate-spin"
+                style={{ animationDirection: 'reverse', animationDuration: '1.2s' }}
+              />
+              <div className="w-10 h-10 rounded-full bg-cyan-500/10 border border-cyan-400/60 flex items-center justify-center text-cyan-400 shadow-[0_0_24px_rgba(6,182,212,0.5)] relative z-10">
+                {(() => {
+                  const CurrentIcon = currentTabObj?.icon || Layers;
+                  return <CurrentIcon size={20} className="animate-pulse" />;
+                })()}
+              </div>
+            </div>
+
+            {/* Tactical Loading Header */}
+            <div className="flex items-center gap-2 mb-2 relative z-10">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+              <span className="font-tactical text-xs md:text-sm font-black uppercase tracking-[0.22em] text-cyan-400">
+                Loading {currentTabObj?.label || "Module"} Module...
+              </span>
+            </div>
+            <p className="font-tactical text-[10px] md:text-[11px] font-bold text-slate-400 uppercase tracking-[0.16em] max-w-md relative z-10">
+              Synchronizing {tournamentName || "Tournament"} match intelligence & telemetry
+            </p>
+
+            {/* Cyber scanline / shimmer bar */}
+            <div className="w-56 h-1.5 bg-slate-900 rounded-full mt-6 overflow-hidden border border-cyan-500/30 relative z-10">
+              <div className="h-full bg-gradient-to-r from-transparent via-cyan-400 to-transparent w-full animate-shimmer" />
+            </div>
+          </div>
+        ) : (
+          <div className="w-full animate-fade-in">
+            <ErrorBoundary>
+              {renderActiveSubContent()}
+            </ErrorBoundary>
+          </div>
+        )}
       </div>
     </div>
   );
