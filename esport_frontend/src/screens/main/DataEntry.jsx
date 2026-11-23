@@ -837,7 +837,9 @@ const DataEntry = ({ globalGame, globalTournament }) => {
           }
         }
         if (heatmapData.length > 0) {
-          const match_id = `${teamA.name}_vs_${teamB.name}_${mapName}_Set${setNum}_${Date.now()}`;
+          const tName = typeof globalTournament === 'string' ? globalTournament : (globalTournament?.name || '');
+          const tournPrefix = tName ? `${tName}___` : '';
+          const match_id = `${tournPrefix}${teamA.name}_vs_${teamB.name}_${mapName}_Set${setNum}_${Date.now()}`;
           const formattedHeatmap = heatmapData.map((h) => ({
             game: "Crossfire",
             match_id,
@@ -957,7 +959,9 @@ const DataEntry = ({ globalGame, globalTournament }) => {
           }
         }
         if (heatmapData.length > 0) {
-          const match_id = `${teamA.name}_vs_${teamB.name}_${mapName}_Set${setNum}_${Date.now()}`;
+          const tName = typeof globalTournament === 'string' ? globalTournament : (globalTournament?.name || '');
+          const tournPrefix = tName ? `${tName}___` : '';
+          const match_id = `${tournPrefix}${teamA.name}_vs_${teamB.name}_${mapName}_Set${setNum}_${Date.now()}`;
           const formattedHeatmap = heatmapData.map((h) => ({
             game: "Valorant",
             match_id,
