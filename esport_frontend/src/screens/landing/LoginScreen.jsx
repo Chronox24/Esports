@@ -315,9 +315,6 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
               <button type="submit" className="login-submit-btn" disabled={isLoading}>
                 {isLoading ? 'LOGGING IN...' : 'LOGIN'}
               </button>
-              <button type="button" className="login-alt-btn" onClick={() => alert('Redirecting to Access Request form...')}>
-                REQUEST ACCESS
-              </button>
             </form>
           </>
         )}
