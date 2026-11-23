@@ -484,14 +484,18 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
   const resolvedTournamentName = getTournamentName(globalTournament);
 
   const [activeFormat, setActiveFormat] = useState(() => {
-    const saved = localStorage.getItem('activeFormat') || 'Single Elimination';
-    if (saved.toLowerCase() === 'round robin') return 'Round Robin';
-    if (saved.toLowerCase() === 'single elimination') return 'Single Elimination';
-    if (saved.toLowerCase() === 'double elimination') return 'Double Elimination';
-    if (saved.toLowerCase() === 'results') return 'Results';
-    return saved;
+    if (isReadOnly) return 'Single Elimination';
+    const saved = localStorage.getItem('activeFormat');
+    if (saved && saved.toLowerCase() === 'round robin') return 'Round Robin';
+    if (saved && saved.toLowerCase() === 'single elimination') return 'Single Elimination';
+    if (saved && saved.toLowerCase() === 'double elimination') return 'Double Elimination';
+    return 'Single Elimination';
   });
-  useEffect(() => { localStorage.setItem('activeFormat', activeFormat); }, [activeFormat]);
+  useEffect(() => { 
+    if (activeFormat && activeFormat !== 'Results') {
+      localStorage.setItem('activeFormat', activeFormat); 
+    }
+  }, [activeFormat]);
   const [isFormatLocked, setIsFormatLocked] = useState(false);
   const [roundRobinEncounters, setRoundRobinEncounters] = useState(1);
   const [isLiveConnected, setIsLiveConnected] = useState(false);
@@ -540,8 +544,9 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
     }
   }, [isFormatLocked, activeFormat]);
 
+  const activeLockedFormat = lockedFormatName || (activeFormat !== "Results" ? activeFormat : "Single Elimination");
   const formats = (isFormatLocked
-    ? [activeFormat !== "Results" ? activeFormat : lockedFormatName, "Results"].filter(Boolean)
+    ? [activeLockedFormat, "Results"].filter(Boolean)
     : ["Single Elimination", "Double Elimination", "Round Robin", "Results"]).filter(f => !isReadOnly || f !== "Results");
 
   const [allTeamsData, setAllTeamsData] = useState([]);
@@ -622,7 +627,11 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
         if (resAll.ok) {
           const allStates = await resAll.json();
           const tournamentStates = allStates
-            .filter(s => s.tournament_name === tName && s.game_title === activeGame)
+            .filter(s => 
+              s.tournament_name && 
+              s.tournament_name.trim().toLowerCase() === tName.trim().toLowerCase() && 
+              (s.game_title || '').trim().toUpperCase() === activeGame.trim().toUpperCase()
+            )
             .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
 
           const stateData = tournamentStates.length > 0 ? tournamentStates[0] : null;
@@ -642,18 +651,32 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
             const normalizedFormat = dbFormat === 'single elimination' ? 'Single Elimination' :
                                      dbFormat === 'double elimination' ? 'Double Elimination' :
                                      dbFormat === 'round robin' ? 'Round Robin' : stateData.format;
-            if (activeFormat !== "Results") {
+            setLockedFormatName(normalizedFormat);
+            setIsFormatLocked(true);
+            if (isReadOnly || activeFormat === "Results" || !activeFormat) {
               setActiveFormat(normalizedFormat);
             }
-            setIsFormatLocked(true);
-            setSingleElimData(normalizedFormat === "Single Elimination" ? stateData.bracket_data : generateSingleElimBracket(currentTeamPool.length, currentTeamPool));
-            setDoubleElimData(normalizedFormat === "Double Elimination" ? stateData.bracket_data : generateDoubleElimBracket(currentTeamPool.length, currentTeamPool));
-            setRoundRobinData(normalizedFormat === "Round Robin" ? stateData.bracket_data : generateRoundRobin(currentTeamPool, roundRobinEncounters));
+            setSingleElimData(normalizedFormat === "Single Elimination" && stateData.bracket_data ? stateData.bracket_data : generateSingleElimBracket(currentTeamPool.length, currentTeamPool));
+            setDoubleElimData(normalizedFormat === "Double Elimination" && stateData.bracket_data ? stateData.bracket_data : generateDoubleElimBracket(currentTeamPool.length, currentTeamPool));
+            setRoundRobinData(normalizedFormat === "Round Robin" && stateData.bracket_data ? stateData.bracket_data : generateRoundRobin(currentTeamPool, roundRobinEncounters));
           } else {
             setIsFormatLocked(false);
             setSingleElimData(generateSingleElimBracket(dbTeams.length, dbTeams));
             setDoubleElimData(generateDoubleElimBracket(dbTeams.length, dbTeams));
             setRoundRobinData(generateRoundRobin(dbTeams, roundRobinEncounters));
+          }
+
+          // 3. Fetch saved results if available
+          try {
+            const resResults = await apiFetch(`/api/bracket-results?tournament_name=${encodeURIComponent(tName)}&game_title=${encodeURIComponent(activeGame)}`);
+            if (resResults.ok) {
+              const rData = await resResults.json();
+              if (Array.isArray(rData) && rData.length > 0) {
+                setResultsData(rData);
+              }
+            }
+          } catch (rErr) {
+            console.warn("Could not fetch bracket results:", rErr);
           }
         }
       } catch (err) {
@@ -663,7 +686,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
       }
     };
     fetchState();
-  }, [resolvedTournamentName, globalGame]);
+  }, [resolvedTournamentName, globalGame, isReadOnly]);
 
 
   const [processedLiveMatches, setProcessedLiveMatches] = useStickyState([], "bracket_processed_live_matches");
@@ -1108,7 +1131,10 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
           results: resultsData
         })
       });
-      if (res.ok) alert("Results officially submitted!");
+      if (res.ok) {
+        alert("Results officially submitted!");
+        setActiveFormat(lockedFormatName || "Single Elimination");
+      }
     } catch (e) {
       console.error(e);
       alert("Failed to submit results.");
@@ -1149,13 +1175,23 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
           ))}
         </div>
 
-        <button
-          onClick={submitResults}
-          disabled={resultsData.length === 0 || isSaving}
-          className="mt-6 py-4 hud-btn-primary text-xs font-black uppercase tracking-[0.2em] shadow-lg transition-all disabled:opacity-50 cursor-pointer"
-        >
-          {isSaving ? "Submitting..." : "Submit Official Results"}
-        </button>
+        <div className="flex flex-col sm:flex-row gap-4 mt-6">
+          <button
+            onClick={() => setActiveFormat(lockedFormatName || "Single Elimination")}
+            className="flex-1 py-4 hud-chamfer-sm border border-slate-700 hover:border-cyan-400 text-slate-300 hover:text-cyan-300 font-tactical text-xs font-black uppercase tracking-[0.2em] transition-all cursor-pointer text-center"
+          >
+            ← Back to Bracket
+          </button>
+          {!isReadOnly && (
+            <button
+              onClick={submitResults}
+              disabled={resultsData.length === 0 || isSaving}
+              className="flex-1 py-4 hud-btn-primary text-xs font-black uppercase tracking-[0.2em] shadow-lg transition-all disabled:opacity-50 cursor-pointer"
+            >
+              {isSaving ? "Submitting..." : "Submit Official Results"}
+            </button>
+          )}
+        </div>
       </div>
     );
   };
@@ -1780,7 +1816,7 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
             <div className="flex items-center space-x-3 mb-1.5">
               <p className="font-tactical text-[10px] text-cyan-400 uppercase tracking-[0.2em] font-bold flex items-center gap-1.5">
                 <span className="hud-diamond" />
-                Tournament Bracket Management
+                {isReadOnly ? "Official Tournament Bracket" : "Tournament Bracket Management"}
               </p>
             </div>
             <h1 className="font-tactical text-2xl font-black uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400 leading-tight truncate">
@@ -1788,8 +1824,13 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
             </h1>
           </div>
 
-          {/* Right: Live Statistics toggle panel */}
-          {!isReadOnly && (
+          {/* Right: Live Statistics toggle panel or Read-only format badge */}
+          {isReadOnly ? (
+            <div className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-slate-900/80 border border-cyan-500/30 hud-chamfer-sm">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#00e5ff]" />
+              <span className="font-tactical text-xs font-bold text-cyan-300 uppercase tracking-widest">{activeFormat || 'Single Elimination'} Bracket</span>
+            </div>
+          ) : (
           <div className="flex-shrink-0 w-full lg:w-auto flex flex-col items-start lg:items-end justify-center gap-3">
             <div className="flex items-center gap-4">
               <div className="text-left lg:text-right">
@@ -1820,54 +1861,56 @@ const Bracket = ({ globalGame, globalTournament, isReadOnly = false }) => {
           )}
         </div>
 
-        {/* Format Tabs */}
-        <div className="sticky top-0 z-50 w-full shrink-0" style={{ padding: "0 64px 24px 96px", marginTop: "-16px", marginBottom: "20px" }}>
-          <div className="flex items-center w-full hud-card shadow-2xl" style={{ padding: "8px", gap: "10px" }}>
-            {formats.map(format => (
-              <button
-                key={format}
-                onClick={() => setActiveFormat(format)}
-                className={`flex-1 font-tactical text-xs font-extrabold uppercase tracking-[0.14em] hud-chamfer-sm transition-all duration-300 whitespace-nowrap shrink-0 cursor-pointer
-                  ${activeFormat === format
-                    ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-[0_0_16px_rgba(0,229,255,0.4)]"
-                    : "bg-transparent text-theme-text-muted hover:text-theme-text-base hover:bg-cyan-500/10"
-                  } ${isReadOnly && activeFormat !== format ? 'hidden' : ''}`}
-                style={{ padding: "14px" }}
-              >
-                {format}
-              </button>
-            ))}
+        {/* Format Tabs (Admin Mode Only) */}
+        {!isReadOnly && formats.length > 0 && (
+          <div className="sticky top-0 z-50 w-full shrink-0" style={{ padding: "0 64px 24px 96px", marginTop: "-16px", marginBottom: "20px" }}>
+            <div className="flex items-center w-full hud-card shadow-2xl" style={{ padding: "8px", gap: "10px" }}>
+              {formats.map(format => (
+                <button
+                  key={format}
+                  onClick={() => setActiveFormat(format)}
+                  className={`flex-1 font-tactical text-xs font-extrabold uppercase tracking-[0.14em] hud-chamfer-sm transition-all duration-300 whitespace-nowrap shrink-0 cursor-pointer
+                    ${activeFormat === format
+                      ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-[0_0_16px_rgba(0,229,255,0.4)]"
+                      : "bg-transparent text-theme-text-muted hover:text-theme-text-base hover:bg-cyan-500/10"
+                    }`}
+                  style={{ padding: "14px" }}
+                >
+                  {format}
+                </button>
+              ))}
 
-            {isFormatLocked && !isReadOnly && (
-              <button
-                onClick={async () => {
-                  if (window.confirm("Changing the format will reset your current bracket. Are you sure you want to proceed?")) {
-                    setIsFormatLocked(false);
-                    try {
-                      const activeGame = (globalGame || 'VALORANT').toUpperCase();
-                      await apiFetch(`/api/bracket-state?tournament_name=${encodeURIComponent(resolvedTournamentName)}&game_title=${encodeURIComponent(activeGame)}`, {
-                        method: 'DELETE'
-                      });
-                    } catch (e) {
-                      console.warn("Could not clear previous bracket state:", e);
+              {isFormatLocked && (
+                <button
+                  onClick={async () => {
+                    if (window.confirm("Changing the format will reset your current bracket. Are you sure you want to proceed?")) {
+                      setIsFormatLocked(false);
+                      try {
+                        const activeGame = (globalGame || 'VALORANT').toUpperCase();
+                        await apiFetch(`/api/bracket-state?tournament_name=${encodeURIComponent(resolvedTournamentName)}&game_title=${encodeURIComponent(activeGame)}`, {
+                          method: 'DELETE'
+                        });
+                      } catch (e) {
+                        console.warn("Could not clear previous bracket state:", e);
+                      }
                     }
-                  }
-                }}
-                className="font-tactical text-xs font-bold uppercase tracking-wider text-red-400 hover:text-red-300 hover:bg-red-900/20 transition-all duration-300 px-5 py-3.5 hud-chamfer-sm border border-red-500/35 shrink-0 ml-2 cursor-pointer"
-              >
-                Change Format
-              </button>
-            )}
+                  }}
+                  className="font-tactical text-xs font-bold uppercase tracking-wider text-red-400 hover:text-red-300 hover:bg-red-900/20 transition-all duration-300 px-5 py-3.5 hud-chamfer-sm border border-red-500/35 shrink-0 ml-2 cursor-pointer"
+                >
+                  Change Format
+                </button>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Bracket Area */}
         <div className="relative z-10 hud-card shadow-2xl shrink-0" style={{ minHeight: "fit-content", margin: "0 64px 24px 96px", overflowX: "auto" }}>
           <div className="p-6 flex items-start justify-center min-w-max">
-            {activeFormat === "Single Elimination" && renderSingleElimination()}
-            {activeFormat === "Double Elimination" && renderDoubleElimination()}
-            {activeFormat === "Round Robin" && renderRoundRobin()}
-            {activeFormat === "Results" && renderResults()}
+            {activeFormat === "Double Elimination" ? renderDoubleElimination() :
+             activeFormat === "Round Robin" ? renderRoundRobin() :
+             activeFormat === "Results" ? renderResults() :
+             renderSingleElimination()}
           </div>
         </div>
 

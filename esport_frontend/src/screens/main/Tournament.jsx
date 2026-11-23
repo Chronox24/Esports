@@ -1683,11 +1683,19 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
                 </div>
 
                 {/* Read-Only Interactive Bracket */}
-                {showFinishedBracket && (
-                  <div className="hud-card w-full border-amber-500/40 overflow-hidden shadow-2xl mt-6 animate-fade-in-up">
-                    <Bracket globalGame={game} globalTournament={{ name: expandedFinishedTournament }} isReadOnly={true} />
-                  </div>
-                )}
+                {showFinishedBracket && (() => {
+                  const finishedTournObj = finishedTournaments.find(t => t.name === expandedFinishedTournament);
+                  const tournGame = (finishedTournObj?.game || game || 'VALORANT').toUpperCase();
+                  return (
+                    <div className="hud-card w-full border-amber-500/40 overflow-hidden shadow-2xl mt-6 animate-fade-in-up">
+                      <Bracket 
+                        globalGame={tournGame} 
+                        globalTournament={finishedTournObj || { name: expandedFinishedTournament, game: tournGame }} 
+                        isReadOnly={true} 
+                      />
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>
