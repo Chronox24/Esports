@@ -4033,8 +4033,17 @@ const TournamentRulebookTab = ({ globalGame, globalTournament }) => {
   const [rulebook, setRulebook] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [notification, setNotification] = useState(null);
 
   const tourneyName = globalTournament?.name || (typeof globalTournament === 'string' ? globalTournament : '');
+
+  const showNotification = (message, type = 'success') => {
+    setNotification({ message, type });
+    setTimeout(() => {
+      setNotification((prev) => (prev?.message === message ? null : prev));
+    }, 6000);
+  };
 
   const loadRulebook = React.useCallback(async () => {
     setLoading(true);
@@ -4059,6 +4068,42 @@ const TournamentRulebookTab = ({ globalGame, globalTournament }) => {
   React.useEffect(() => {
     loadRulebook();
   }, [loadRulebook]);
+
+  const handleRulebookUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const activeTourney = tourneyName || 'Default';
+    const formData = new FormData();
+    formData.append('rulebook', file);
+    formData.append('tournament_name', activeTourney);
+
+    setIsUploading(true);
+    setNotification(null);
+
+    try {
+      const res = await apiFetch('/api/admin/rulebook', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setRulebook(data);
+        showNotification(`Official rulebook updated for "${activeTourney}"!`, 'success');
+        await loadRulebook();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        showNotification(errData.error || 'Failed to upload rulebook. Check admin permissions.', 'error');
+      }
+    } catch (err) {
+      console.error('Failed to upload rulebook:', err);
+      showNotification('Error connecting to server while uploading rulebook.', 'error');
+    } finally {
+      setIsUploading(false);
+      if (e.target) e.target.value = '';
+    }
+  };
 
   const resolvedUrl = rulebook?.file_url
     ? (rulebook.file_url.startsWith('http') ? rulebook.file_url : `${window.location.origin}${rulebook.file_url}`)
@@ -4094,37 +4139,80 @@ const TournamentRulebookTab = ({ globalGame, globalTournament }) => {
           </div>
         </div>
 
-        {resolvedUrl && (
-          <div className="flex items-center gap-3 z-10 flex-wrap">
-            <button
-              onClick={loadRulebook}
-              disabled={loading}
-              className="hud-chamfer-sm p-2.5 bg-slate-900 border border-slate-700 text-slate-300 hover:text-cyan-300 hover:border-cyan-500/40 hover:bg-slate-800 transition-colors"
-              title="Reload Rulebook"
-            >
-              <RefreshCw size={16} className={loading ? 'animate-spin text-cyan-400' : ''} />
-            </button>
-            <a
-              href={resolvedUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hud-btn-primary px-6 py-2.5 font-extrabold text-xs uppercase tracking-[0.14em] flex items-center gap-2 cursor-pointer"
-            >
-              <span>Open in New Tab</span>
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-            </a>
-            <a
-              href={resolvedUrl}
-              download
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hud-btn-secondary px-5 py-2.5 font-extrabold text-xs uppercase tracking-[0.14em] transition-all"
-            >
-              Download PDF
-            </a>
-          </div>
-        )}
+        <div className="flex items-center gap-3 z-10 flex-wrap">
+          <button
+            onClick={loadRulebook}
+            disabled={loading}
+            className="hud-chamfer-sm p-2.5 bg-slate-900 border border-slate-700 text-slate-300 hover:text-cyan-300 hover:border-cyan-500/40 hover:bg-slate-800 transition-colors"
+            title="Reload Rulebook"
+          >
+            <RefreshCw size={16} className={loading ? 'animate-spin text-cyan-400' : ''} />
+          </button>
+
+          {/* Change / Upload Rulebook Button */}
+          <label className="hud-chamfer-sm px-4 py-2.5 bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/45 hover:border-cyan-400 text-cyan-300 hover:text-white font-tactical font-extrabold text-xs uppercase tracking-[0.14em] flex items-center gap-2 cursor-pointer transition-all shadow-[0_0_12px_rgba(6,182,212,0.15)]">
+            <svg className={`w-4 h-4 shrink-0 ${isUploading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              {isUploading ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              )}
+            </svg>
+            <span>{isUploading ? 'Uploading to DB...' : resolvedUrl ? 'Change Rulebook' : 'Upload Rulebook'}</span>
+            <input
+              type="file"
+              className="hidden"
+              accept="application/pdf,image/*"
+              onChange={handleRulebookUpload}
+              disabled={isUploading}
+            />
+          </label>
+
+          {resolvedUrl && (
+            <>
+              <a
+                href={resolvedUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hud-btn-primary px-6 py-2.5 font-extrabold text-xs uppercase tracking-[0.14em] flex items-center gap-2 cursor-pointer"
+              >
+                <span>Open in New Tab</span>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+              </a>
+              <a
+                href={resolvedUrl}
+                download
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hud-btn-secondary px-5 py-2.5 font-extrabold text-xs uppercase tracking-[0.14em] transition-all"
+              >
+                Download PDF
+              </a>
+            </>
+          )}
+        </div>
       </div>
+
+      {/* Notification Toast */}
+      {notification && (
+        <div className={`hud-chamfer-sm p-3.5 flex items-center justify-between text-xs font-tactical font-bold uppercase tracking-wider ${
+          notification.type === 'error'
+            ? 'bg-rose-500/15 border border-rose-500/40 text-rose-300'
+            : 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-300'
+        }`}>
+          <div className="flex items-center gap-2">
+            <span>{notification.type === 'error' ? '⚠' : '✓'}</span>
+            <span>{notification.message}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setNotification(null)}
+            className="text-slate-400 hover:text-white ml-4 cursor-pointer font-bold"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Main Content Area */}
       {loading ? (
@@ -4156,6 +4244,19 @@ const TournamentRulebookTab = ({ globalGame, globalTournament }) => {
             <p className="text-xs text-slate-400 mt-1 max-w-md">
               The tournament administrator has not yet published an official rulebook for {tourneyName || 'this tournament'}.
             </p>
+            <label className="hud-btn-primary font-tactical text-xs font-extrabold uppercase tracking-[0.14em] cursor-pointer inline-flex items-center gap-2 px-6 py-2.5 mt-5 shadow-lg">
+              <svg className={`w-4 h-4 shrink-0 ${isUploading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              <span>{isUploading ? 'Uploading to DB...' : 'Upload Official Rulebook'}</span>
+              <input
+                type="file"
+                className="hidden"
+                accept="application/pdf,image/*"
+                onChange={handleRulebookUpload}
+                disabled={isUploading}
+              />
+            </label>
           </div>
         </div>
       )}
