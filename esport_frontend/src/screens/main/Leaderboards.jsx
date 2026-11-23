@@ -629,7 +629,7 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
 
   // Series MVP & Game-by-Game Breakdown
   const seriesMvpData = useMemo(() => {
-    const matchRecs = matchRecords.filter(r => String(r.match || '1') === String(selectedMatchNo));
+    let matchRecs = matchRecords.filter(r => String(r.match || '1') === String(selectedMatchNo));
 
     let availablePlayers = [];
     if (matchRecs.length > 0) {
@@ -648,7 +648,22 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
     const pProfile = playerStats.find(p => p.ign === currentMvp) || team1Roster.find(p => p.ign === currentMvp) || team2Roster.find(p => p.ign === currentMvp);
 
     const games = [1, 2, 3, 4, 5].map(gameNum => {
-      const gRecord = playerRecs.find(r => String(r.set_num) === String(gameNum) || (gameNum === 1 && (!r.set_num || playerRecs.length === 1)));
+      let gRecord = playerRecs.find(r => String(r.set_num) === String(gameNum));
+
+      // Fallback: if not found in filtered matchRecs, check across all tournament match records for this player and set
+      if (!gRecord) {
+        gRecord = matchRecords.find(r => 
+          r.ign === currentMvp && 
+          String(r.set_num) === String(gameNum) &&
+          (r.team_name === team1Name || r.team_name === team2Name)
+        );
+      }
+
+      // Fallback for single match format without set_num
+      if (!gRecord && gameNum === 1 && (!playerRecs[0]?.set_num || playerRecs.length === 1)) {
+        gRecord = playerRecs[0];
+      }
+
       if (gRecord) {
         return {
           game: gameNum,
@@ -674,7 +689,7 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
       currentMvp,
       games
     };
-  }, [selectedMatchNo, selectedMvpPlayer, matchRecords, team1Roster, team2Roster, playerStats, selectedMap]);
+  }, [selectedMatchNo, selectedMvpPlayer, matchRecords, team1Roster, team2Roster, playerStats, selectedMap, team1Name, team2Name]);
 
   // Keep selectedMvpPlayer in sync when availablePlayers updates
   useEffect(() => {
