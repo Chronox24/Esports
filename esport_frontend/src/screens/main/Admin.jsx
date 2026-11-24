@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { apiFetch } from '../../utils/api';
+import { apiFetch, isTournamentAdminUser } from '../../utils/api';
 const UsersIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -407,6 +407,7 @@ const LiveMatchManager = ({ globalTournament, globalGame, teams }) => {
   );
 };
 const Admin = ({ globalGame, globalTournament, onLogout }) => {
+  const hasAccess = isTournamentAdminUser();
   const [activeTab, setActiveTab] = React.useState(() => localStorage.getItem('admin_activeTab') || "League Quick Stats");
 
   React.useEffect(() => {
@@ -1026,6 +1027,23 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
     const status = (r.status || '').toLowerCase();
     return reporter.includes(q) || reported.includes(q) || reason.includes(q) || statement.includes(q) || status.includes(q);
   });
+
+  if (!hasAccess) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-8 bg-bg-100 min-h-screen">
+        <div className="border border-red-500/30 bg-slate-900/60 rounded-2xl p-10 text-center animate-fade-in shadow-2xl backdrop-blur-sm max-w-md w-full">
+          <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400">
+            <LockIcon />
+          </div>
+          <h2 className="text-xl font-black text-theme-text-base mb-2 uppercase tracking-[0.16em]">Access Restricted</h2>
+          <p className="text-xs text-theme-text-muted leading-relaxed">
+            This module is restricted to Tournament Administrators only. Tournament moderators and observers do not have access.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 bg-bg-100 text-theme-text-base flex flex-col min-h-full relative font-sans custom-scrollbar">
       {/* Upper-Right System Toast Notification */}
@@ -1405,7 +1423,7 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                     </div>
                     <div className="flex-1 min-w-[160px] sm:w-[210px] sm:flex-initial">
                       <SelectDropdown
-                        options={['All Roles', 'Super Admin', 'Standard Admin']}
+                        options={['All Roles', 'Super Admin', 'Tournament Admin', 'Tournament Mod', 'Observer', 'Standard Admin']}
                         value={accountRoleFilter}
                         onChange={(e) => setAccountRoleFilter(e.target.value)}
                       />
@@ -1427,12 +1445,16 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                   <tbody className="divide-y divide-slate-800/40">
                     {(() => {
                       const filteredAccounts = accounts.filter((user) => {
-                        if (accountRoleFilter === 'Super Admin' && !user.is_super_admin) return false;
-                        if (accountRoleFilter === 'Standard Admin' && user.is_super_admin) return false;
+                        const uRole = (user.role || '').toLowerCase();
+                        if (accountRoleFilter === 'Super Admin' && !user.is_super_admin && uRole !== 'super admin') return false;
+                        if (accountRoleFilter === 'Tournament Admin' && !uRole.includes('tournament admin')) return false;
+                        if (accountRoleFilter === 'Tournament Mod' && !uRole.includes('mod')) return false;
+                        if (accountRoleFilter === 'Observer' && !uRole.includes('observer')) return false;
+                        if (accountRoleFilter === 'Standard Admin' && (user.is_super_admin || uRole === 'super admin')) return false;
                         if (accountSearch.trim()) {
                           const q = accountSearch.toLowerCase();
                           const matchName = (user.username || '').toLowerCase().includes(q);
-                          const matchRole = (user.role || '').toLowerCase().includes(q);
+                          const matchRole = uRole.includes(q);
                           return matchName || matchRole;
                         }
                         return true;
@@ -2188,6 +2210,13 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                       badge: 'Full Access',
                       badgeColor: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
                       desc: 'Unrestricted system authority, administrator management, and platform configuration.'
+                    },
+                    {
+                      id: 'Tournament Admin',
+                      name: 'Tournament Administrator',
+                      badge: 'Admin Access',
+                      badgeColor: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30',
+                      desc: 'Full administrative access to tournaments, system parameters, formulas, and rulebooks.'
                     },
                     {
                       id: 'Tournament Mod',

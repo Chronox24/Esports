@@ -40,6 +40,43 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
+export const getCurrentUser = () => {
+  try {
+    const userStr = localStorage.getItem('user');
+    if (userStr) return JSON.parse(userStr);
+  } catch (e) {}
+  try {
+    const sessionStr = localStorage.getItem('supabase.auth.token');
+    if (sessionStr) {
+      const session = JSON.parse(sessionStr);
+      if (session?.user) return session.user;
+    }
+  } catch (e) {}
+  return null;
+};
+
+export const getUserRole = () => {
+  const user = getCurrentUser();
+  if (!user) return '';
+  return user.role || user.user_metadata?.role || '';
+};
+
+export const isTournamentAdminUser = () => {
+  const user = getCurrentUser();
+  if (!user) return false;
+  if (user.is_super_admin) return true;
+  const role = (user.role || user.user_metadata?.role || '').toLowerCase().trim();
+  // Tournament mod and observer explicitly do not have admin access
+  if (role.includes('mod') || role.includes('observer')) {
+    return false;
+  }
+  // Tournament Admin, Super Admin, Standard Admin, or general admin
+  if (role.includes('admin')) {
+    return true;
+  }
+  return false;
+};
+
 export const getUserAccount = () => {
   try {
     const directIgn = localStorage.getItem('user_ign') || localStorage.getItem('username');

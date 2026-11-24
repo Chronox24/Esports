@@ -439,24 +439,7 @@ const Settings = ({ globalGame, themeBg, setThemeBg, themeAccent, setThemeAccent
           {}
           <div className="w-full flex flex-col" style={{ gap: "32px" }}>
             <Card 
-              title={
-                <span className="inline-flex items-center gap-2.5">
-                  <span>Appearance & Themes</span>
-                  <a
-                    href="https://youtu.be/zYFGMocKLzA?si=8qCC67n_unLUZkbX"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
-                    title="Watch video"
-                  >
-                    <img
-                      src="/assets/appearance_easter_egg.png"
-                      alt="Thumbnail"
-                      className="w-5 h-5 rounded object-cover cursor-pointer hover:opacity-90 transition-all border border-white/10 hover:border-cyan-400 shadow-sm"
-                    />
-                  </a>
-                </span>
-              } 
+              title="Appearance & Themes" 
               className="w-full"
             >
               <div className="flex flex-col" style={{ gap: "36px" }}>

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
-import { apiFetch } from "../../utils/api.js";
+import { apiFetch, isTournamentAdminUser } from "../../utils/api.js";
 import { ErrorBoundary } from "../../ErrorBoundary.jsx";
 import Dashboard from "./Dashboard.jsx";
 import TournamentHistory from "./TournamentHistory.jsx";
@@ -59,6 +59,44 @@ const MainUIScreen = ({ onLogout }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => (typeof window !== 'undefined' ? window.innerWidth >= 1024 : true));
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [folderToDelete, setFolderToDelete] = useState(null);
+  const [currentUserRole, setCurrentUserRole] = useState(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('user') || '{}');
+      return u.role || u.user_metadata?.role || '';
+    } catch (_) {
+      return '';
+    }
+  });
+
+  // Verify and sync current user permissions & role from /api/me on mount
+  useEffect(() => {
+    const fetchMe = async () => {
+      try {
+        const res = await apiFetch('/api/me');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && (data.role || data.is_super_admin !== undefined)) {
+            setCurrentUserRole(data.role || '');
+            const savedUser = JSON.parse(localStorage.getItem('user') || '{}');
+            localStorage.setItem('user', JSON.stringify({ ...savedUser, ...data }));
+          }
+        }
+      } catch (_) {}
+    };
+    fetchMe();
+  }, []);
+
+  const hasAdminAccess = useCallback(() => {
+    return isTournamentAdminUser();
+  }, [currentUserRole]);
+
+  // Guard against non-admin role remaining on Admin tab
+  useEffect(() => {
+    if (activeTab === 'Admin' && !hasAdminAccess()) {
+      setActiveTab('Dashboard');
+      localStorage.setItem('activeMainTab', 'Dashboard');
+    }
+  }, [activeTab, hasAdminAccess]);
 
   // Sync navigation states to localStorage to persist across page refresh
   useEffect(() => {
@@ -262,7 +300,7 @@ const MainUIScreen = ({ onLogout }) => {
     {
       category: 'System',
       links: [
-        { name: 'Admin' },
+        ...(hasAdminAccess() ? [{ name: 'Admin' }] : []),
         { name: 'Audit Logs' },
         { name: 'Settings' }
       ]
@@ -289,7 +327,29 @@ const MainUIScreen = ({ onLogout }) => {
       case 'Player Stats': return <Tournament globalGame={globalGame} setGlobalGame={setGlobalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="player-stats" />;
       case 'Raw Records': return <Tournament globalGame={globalGame} setGlobalGame={setGlobalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="TOURNAMENT HUB" initialHubSubTab="raw-records" />;
       case 'Bracket': return <Tournament globalGame={globalGame} setGlobalGame={setGlobalGame} globalTournament={currentTournObj} setGlobalTournament={setGlobalTournament} initialTab="BRACKET MANAGEMENT" />;
-      case 'Admin': return <Admin globalGame={globalGame} globalTournament={globalTournament} onLogout={() => setShowLogoutModal(true)} />;
+      case 'Admin': 
+        if (!hasAdminAccess()) {
+          return (
+            <div className="h-full flex flex-col items-center justify-center p-10 bg-bg-100">
+              <div className="border border-red-500/30 bg-slate-900/60 rounded-2xl p-10 text-center animate-fade-in shadow-2xl backdrop-blur-sm max-w-md w-full">
+                <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400">
+                  <ShieldCheck size={28} />
+                </div>
+                <h2 className="text-xl font-black text-theme-text-base mb-2 uppercase tracking-[0.16em]">Access Restricted</h2>
+                <p className="text-xs text-theme-text-muted leading-relaxed mb-6">
+                  This system module is restricted to Tournament Administrators only. Tournament moderators and observers do not have access.
+                </p>
+                <button
+                  onClick={() => setActiveTab('Dashboard')}
+                  className="px-5 py-2.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/40 text-cyan-300 font-tactical text-xs uppercase tracking-wider font-bold transition-all cursor-pointer"
+                >
+                  Return to Dashboard
+                </button>
+              </div>
+            </div>
+          );
+        }
+        return <Admin globalGame={globalGame} globalTournament={globalTournament} onLogout={() => setShowLogoutModal(true)} />;
       case 'Audit Logs': return <AuditLogs globalGame={globalGame} globalTournament={globalTournament} />;
       case 'Settings': return <Settings globalGame={globalGame} globalTournament={globalTournament} themeBg={themeBg} setThemeBg={setThemeBg} themeAccent={themeAccent} setThemeAccent={setThemeAccent} />;
       default: return (<div className="h-full flex flex-col items-center justify-center p-10 bg-bg-100">            <div className="border border-slate-800 bg-slate-900/40 rounded-[2rem] p-12 text-center animate-fade-in shadow-2xl backdrop-blur-sm max-w-lg w-full">              <h2 className="text-2xl font-black text-theme-text-base mb-3 uppercase tracking-[0.2em]">{activeTab}</h2>              <p className="text-sm font-medium text-theme-text-muted tracking-wider">This module is currently under active development.</p>            </div>          </div>);

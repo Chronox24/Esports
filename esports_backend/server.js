@@ -332,6 +332,20 @@ const canManageFolders = (req, res, next) => {
   return res.status(403).json({ error: 'Access denied. You do not have permission to manage folders.' });
 };
 
+const isTournamentAdmin = (req, res, next) => {
+  if (!req.adminUser) {
+    return res.status(401).json({ error: 'Unauthorized.' });
+  }
+  const roleStr = String(req.adminUser.role || req.user?.user_metadata?.role || '').toLowerCase();
+  if (roleStr.includes('mod') || roleStr.includes('observer')) {
+    return res.status(403).json({ error: 'Access denied. Tournament administrators only.' });
+  }
+  if (req.adminUser.is_super_admin || roleStr.includes('admin')) {
+    return next();
+  }
+  return res.status(403).json({ error: 'Access denied. Tournament administrators only.' });
+};
+
 app.get('/api/streams/live', cacheMiddleware, async (req, res) => {
   const { game } = req.query;
   const channelId = game === 'crossfire' ? '@CrossfirePhilippines' : '@ValorantEsports';
@@ -372,7 +386,7 @@ app.get('/api/audit-logs', authenticateToken, isAdmin, cacheMiddleware, async (r
     res.status(500).json({ error: err.message });
   }
 });
-app.get('/api/users', authenticateToken, isAdmin, cacheMiddleware, async (req, res) => {
+app.get('/api/users', authenticateToken, isAdmin, isTournamentAdmin, cacheMiddleware, async (req, res) => {
   if (!supabase) {
     return res.status(500).json({ error: 'Supabase client not initialized. Check your .env file.' });
   }
@@ -1106,10 +1120,13 @@ app.post('/api/admin/create-user', authenticateToken, isAdmin, async (req, res) 
           username: username, 
           password: password, 
           role: role, 
-          is_super_admin: role === 'Super Admin', 
-          permissions: role === 'Super Admin' 
+          is_super_admin: role === 'Super Admin' || role === 'Tournament Admin', 
+          permissions: (role === 'Super Admin' || role === 'Tournament Admin')
             ? { view: true, edit: true, full: true, manage_folders: true } 
-            : { view: true, edit: false, full: false, manage_folders: false } 
+            : (role === 'Tournament Mod'
+                ? { view: true, edit: true, full: false, manage_folders: false }
+                : { view: true, edit: false, full: false, manage_folders: false }
+              ) 
         }
       ]);
     if (dbError) {

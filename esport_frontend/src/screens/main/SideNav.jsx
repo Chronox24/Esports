@@ -1,4 +1,5 @@
 import React from 'react';
+import { isTournamentAdminUser } from '../../utils/api';
 import { 
   LayoutDashboard, Trophy, GitMerge, LineChart, 
   Map, FileEdit, Users, BarChart2, 
@@ -41,7 +42,7 @@ const SideNav = ({ activePage, setActivePage, onLogout }) => {
     {
       title: 'SYSTEM',
       items: [
-        { name: 'Admin', icon: ShieldCheck },
+        ...(isTournamentAdminUser() ? [{ name: 'Admin', icon: ShieldCheck }] : []),
         { name: 'Audit Logs', icon: ScrollText },
         { name: 'Settings', icon: Settings },
       ]
