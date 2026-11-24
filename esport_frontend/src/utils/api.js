@@ -77,6 +77,38 @@ export const isTournamentAdminUser = () => {
   return false;
 };
 
+export const getUserPermissions = () => {
+  const user = getCurrentUser();
+  if (!user) return { view: false, edit: false, full: false, manage_folders: false };
+  if (user.is_super_admin || user.role === 'Super Admin') {
+    return { view: true, edit: true, full: true, manage_folders: true };
+  }
+  const p = user.permissions || {};
+  const isFull = Boolean(p.full);
+  return {
+    view: isFull || Boolean(p.view),
+    edit: isFull || Boolean(p.edit),
+    full: isFull,
+    manage_folders: isFull || Boolean(p.manage_folders),
+  };
+};
+
+export const canUserEdit = () => {
+  return getUserPermissions().edit;
+};
+
+export const canUserManageFolders = () => {
+  return getUserPermissions().manage_folders;
+};
+
+export const canUserFullAccess = () => {
+  return getUserPermissions().full;
+};
+
+export const canUserView = () => {
+  return getUserPermissions().view;
+};
+
 export const getUserAccount = () => {
   try {
     const directIgn = localStorage.getItem('user_ign') || localStorage.getItem('username');

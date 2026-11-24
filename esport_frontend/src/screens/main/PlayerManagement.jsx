@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { apiFetch } from '../../utils/api';
+import { apiFetch, canUserEdit } from '../../utils/api';
 import {
   Shield,
   Users,
@@ -94,7 +94,8 @@ const getTeamGradient = (name) => {
   return gradients[Math.abs(hash) % gradients.length];
 };
 
-const PlayerManagement = ({ globalGame, globalTournament }) => {
+const PlayerManagement = ({ globalGame, globalTournament, isReadOnly }) => {
+  const effectiveReadOnly = isReadOnly !== undefined ? isReadOnly : !canUserEdit();
   const [teams, setTeams] = useState([]);
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -228,6 +229,10 @@ const PlayerManagement = ({ globalGame, globalTournament }) => {
   // Add Team
   const handleAddTeam = async (e) => {
     e.preventDefault();
+    if (effectiveReadOnly) {
+      showToast("Permission Denied: Edit permission required to register teams.", "error");
+      return;
+    }
     const cleanName = newTeamName.trim();
     if (!cleanName) {
       showToast('Please enter a team name', 'error');
@@ -279,6 +284,10 @@ const PlayerManagement = ({ globalGame, globalTournament }) => {
   // Add Single Player
   const handleAddPlayer = async (e) => {
     e.preventDefault();
+    if (effectiveReadOnly) {
+      showToast("Permission Denied: Edit permission required to register players.", "error");
+      return;
+    }
     const cleanIGN = newPlayerName.trim();
     if (!newPlayerTeamId) {
       showToast('Please select a team for this player', 'error');
@@ -323,6 +332,10 @@ const PlayerManagement = ({ globalGame, globalTournament }) => {
   // Add Bulk Roster (6 Slots)
   const handleAddBulkRoster = async (e) => {
     e.preventDefault();
+    if (effectiveReadOnly) {
+      showToast("Permission Denied: Edit permission required to import rosters.", "error");
+      return;
+    }
     if (!bulkTeamId) {
       showToast('Please select a team for the roster', 'error');
       return;
@@ -379,6 +392,10 @@ const PlayerManagement = ({ globalGame, globalTournament }) => {
 
   // Open Delete Modal
   const promptDeleteTeam = (team) => {
+    if (effectiveReadOnly) {
+      showToast("Permission Denied: Edit permission required to delete teams.", "error");
+      return;
+    }
     const teamPlayerCount = players.filter(p => String(p.team_id) === String(team.team_id)).length;
     setDeleteModal({
       isOpen: true,
@@ -392,6 +409,10 @@ const PlayerManagement = ({ globalGame, globalTournament }) => {
   };
 
   const promptDeletePlayer = (player) => {
+    if (effectiveReadOnly) {
+      showToast("Permission Denied: Edit permission required to remove players.", "error");
+      return;
+    }
     setDeleteModal({
       isOpen: true,
       type: 'player',
@@ -403,6 +424,10 @@ const PlayerManagement = ({ globalGame, globalTournament }) => {
 
   // Confirm Delete Action
   const handleConfirmDelete = async () => {
+    if (effectiveReadOnly) {
+      showToast("Permission Denied: Edit permission required to delete teams or players.", "error");
+      return;
+    }
     if (!deleteModal.id) return;
     setIsDeleting(true);
     try {
@@ -946,7 +971,21 @@ const PlayerManagement = ({ globalGame, globalTournament }) => {
 
           {/* Studio Tab Forms Scrollable Area */}
           <div className="flex-1 overflow-y-auto custom-scrollbar p-5 lg:p-7">
-            {/* TAB 1: ADD TEAM */}
+            {effectiveReadOnly ? (
+              <div className="hud-chamfer-sm p-8 text-center flex flex-col items-center justify-center h-full bg-slate-900/40 border border-slate-800">
+                <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-4 shadow-[0_0_20px_rgba(245,158,11,0.2)]">
+                  <Shield className="w-7 h-7" />
+                </div>
+                <h3 className="font-tactical text-sm font-extrabold uppercase tracking-[0.16em] text-white mb-2">
+                  Management Studio Locked
+                </h3>
+                <p className="text-xs text-slate-400 max-w-xs leading-relaxed">
+                  You are currently in read-only mode. Edit permission is required to register teams, players, or modify rosters.
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* TAB 1: ADD TEAM */}
             {studioTab === 'team' && (
               <form onSubmit={handleAddTeam} className="space-y-6 animate-fade-in">
                 <div>
@@ -1335,6 +1374,8 @@ const PlayerManagement = ({ globalGame, globalTournament }) => {
                   )}
                 </button>
               </form>
+            )}
+              </>
             )}
           </div>
         </section>

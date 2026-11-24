@@ -346,6 +346,20 @@ const isTournamentAdmin = (req, res, next) => {
   return res.status(403).json({ error: 'Access denied. Tournament administrators only.' });
 };
 
+const hasFullAccess = (req, res, next) => {
+  if (!req.adminUser) {
+    return res.status(401).json({ error: 'Unauthorized.' });
+  }
+  if (
+    req.adminUser.is_super_admin ||
+    req.adminUser.role === 'Super Admin' ||
+    req.adminUser.permissions?.full
+  ) {
+    return next();
+  }
+  return res.status(403).json({ error: 'Access denied. Full access permission required.' });
+};
+
 app.get('/api/streams/live', cacheMiddleware, async (req, res) => {
   const { game } = req.query;
   const channelId = game === 'crossfire' ? '@CrossfirePhilippines' : '@ValorantEsports';
@@ -386,7 +400,7 @@ app.get('/api/audit-logs', authenticateToken, isAdmin, cacheMiddleware, async (r
     res.status(500).json({ error: err.message });
   }
 });
-app.get('/api/users', authenticateToken, isAdmin, isTournamentAdmin, cacheMiddleware, async (req, res) => {
+app.get('/api/users', authenticateToken, isAdmin, isTournamentAdmin, hasFullAccess, cacheMiddleware, async (req, res) => {
   if (!supabase) {
     return res.status(500).json({ error: 'Supabase client not initialized. Check your .env file.' });
   }
@@ -953,9 +967,9 @@ app.post('/api/refresh', async (req, res) => {
 // ----------------------------------------------------
 // ADMIN EMAIL VERIFICATION (SEND CODE)
 // ----------------------------------------------------
-app.post('/api/admin/send-email-verification', authenticateToken, isAdmin, async (req, res) => {
-  if (!req.adminUser.is_super_admin) {
-    return res.status(403).json({ error: 'Access denied. Only Super Admins can verify & create admin accounts.' });
+app.post('/api/admin/send-email-verification', authenticateToken, isAdmin, isTournamentAdmin, hasFullAccess, async (req, res) => {
+  if (!req.adminUser.is_super_admin && !req.adminUser.permissions?.full && req.adminUser.role !== 'Super Admin') {
+    return res.status(403).json({ error: 'Access denied. Administrator with Full Access required.' });
   }
   if (!supabase) {
     return res.status(500).json({ error: 'Supabase client not initialized.' });
@@ -1054,7 +1068,7 @@ app.post('/api/admin/send-email-verification', authenticateToken, isAdmin, async
 // ----------------------------------------------------
 // ADMIN EMAIL VERIFICATION (CONFIRM CODE)
 // ----------------------------------------------------
-app.post('/api/admin/verify-email-code', authenticateToken, isAdmin, async (req, res) => {
+app.post('/api/admin/verify-email-code', authenticateToken, isAdmin, isTournamentAdmin, hasFullAccess, async (req, res) => {
   const { email, code } = req.body;
   if (!email || !code) {
     return res.status(400).json({ error: 'Email and verification code are required.' });
@@ -1083,9 +1097,9 @@ app.post('/api/admin/verify-email-code', authenticateToken, isAdmin, async (req,
   });
 });
 
-app.post('/api/admin/create-user', authenticateToken, isAdmin, async (req, res) => {
-  if (!req.adminUser.is_super_admin) {
-    return res.status(403).json({ error: 'Access denied. Only Super Admins can create new accounts.' });
+app.post('/api/admin/create-user', authenticateToken, isAdmin, isTournamentAdmin, hasFullAccess, async (req, res) => {
+  if (!req.adminUser.is_super_admin && !req.adminUser.permissions?.full && req.adminUser.role !== 'Super Admin') {
+    return res.status(403).json({ error: 'Access denied. Administrator with Full Access required to create accounts.' });
   }
   if (!supabase) {
     return res.status(500).json({ error: 'Supabase client not initialized.' });
@@ -1141,10 +1155,10 @@ app.post('/api/admin/create-user', authenticateToken, isAdmin, async (req, res) 
     res.status(500).json({ error: 'Internal server error during user creation.' });
   }
 });
-app.put('/api/admin/user/:id/permissions', authenticateToken, isAdmin, async (req, res) => {
+app.put('/api/admin/user/:id/permissions', authenticateToken, isAdmin, isTournamentAdmin, hasFullAccess, async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
-  if (!req.adminUser?.is_super_admin && req.adminUser?.role !== 'Super Admin') {
-    return res.status(403).json({ error: 'Access denied. Only Super Admins can alter user permissions.' });
+  if (!req.adminUser?.is_super_admin && req.adminUser?.role !== 'Super Admin' && !req.adminUser?.permissions?.full) {
+    return res.status(403).json({ error: 'Access denied. Only administrators with Full Access can alter user permissions.' });
   }
   const { id } = req.params;
   const { permissions } = req.body;
@@ -1177,12 +1191,12 @@ app.put('/api/admin/user/:id/permissions', authenticateToken, isAdmin, async (re
   }
 });
 
-app.delete('/api/admin/user/:id', authenticateToken, isAdmin, async (req, res) => {
+app.delete('/api/admin/user/:id', authenticateToken, isAdmin, isTournamentAdmin, hasFullAccess, async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   
-  const isSuper = Boolean(req.adminUser?.is_super_admin || req.adminUser?.role === 'Super Admin');
+  const isSuper = Boolean(req.adminUser?.is_super_admin || req.adminUser?.role === 'Super Admin' || req.adminUser?.permissions?.full);
   if (!isSuper) {
-    return res.status(403).json({ error: 'Access denied. Only Super Admins can delete accounts.' });
+    return res.status(403).json({ error: 'Access denied. Administrator with Full Access required to delete accounts.' });
   }
 
   const { id } = req.params;
@@ -1246,7 +1260,7 @@ app.delete('/api/admin/user/:id', authenticateToken, isAdmin, async (req, res) =
     res.status(500).json({ error: err.message || 'Failed to delete account.' });
   }
 });
-app.post('/api/admin/transfer-ownership', authenticateToken, isAdmin, async (req, res) => {
+app.post('/api/admin/transfer-ownership', authenticateToken, isAdmin, isTournamentAdmin, hasFullAccess, async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   const { currentOwnerId, newOwnerId } = req.body;
   if (!currentOwnerId || !newOwnerId) {
@@ -2741,7 +2755,7 @@ app.get('/api/map-pool', async (req, res) => {
   }
 });
 
-app.post('/api/map-pool', async (req, res) => {
+app.post('/api/map-pool', authenticateToken, isAdmin, canEdit, async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   try {
     const { tournament_name, game_title, maps } = req.body;
@@ -2843,7 +2857,7 @@ app.get('/api/veto-settings', async (req, res) => {
   }
 });
 
-app.post('/api/veto-settings', async (req, res) => {
+app.post('/api/veto-settings', authenticateToken, isAdmin, canEdit, async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   try {
     const { tournament_name, game_title, veto_format } = req.body;
@@ -3190,7 +3204,7 @@ app.get('/api/settings/formula', async (req, res) => {
   }
 });
 
-app.put('/api/settings/formula/:id', authenticateToken, isAdmin, canEdit, async (req, res) => {
+app.put('/api/settings/formula/:id', authenticateToken, isAdmin, hasFullAccess, async (req, res) => {
   try {
     const { id } = req.params;
     const { kill_weight, death_weight, assist_weight, acs_weight, econ_weight, first_kill_weight, plants_weight, defuse_weight, ace_weight, excel_formula, acs_formula, kda_formula, base_multiplier, base_rating } = req.body;

@@ -12,7 +12,7 @@ import PlayerRankings from "./PlayerRankings.jsx";
 import PlayerStatsTab from "./PlayerStatsTab.jsx";
 import RawRecords from "./RawRecords.jsx";
 import { ErrorBoundary } from "../../ErrorBoundary.jsx";
-import { apiFetch } from "../../utils/api";
+import { apiFetch, canUserEdit, canUserManageFolders, getUserPermissions } from "../../utils/api";
 import {
   Calendar,
   Clock,
@@ -3047,7 +3047,7 @@ const ManageScheduleTab = ({
                 )}
               </div>
 
-              {onOpenCreateModal && (
+              {onOpenCreateModal && canUserManageFolders() && (
                 <button 
                   onClick={onOpenCreateModal}
                   style={{ padding: '11px 20px' }}
@@ -4078,6 +4078,10 @@ const TournamentRulebookTab = ({ globalGame, globalTournament }) => {
   }, [loadRulebook]);
 
   const handleRulebookUpload = async (e) => {
+    if (!canUserEdit()) {
+      showNotification("Permission Denied: Edit permission required to upload or replace rulebooks.", "error");
+      return;
+    }
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -4158,23 +4162,25 @@ const TournamentRulebookTab = ({ globalGame, globalTournament }) => {
           </button>
 
           {/* Change / Upload Rulebook Button */}
-          <label className="hud-chamfer-sm px-4 py-2.5 bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/45 hover:border-cyan-400 text-cyan-300 hover:text-white font-tactical font-extrabold text-xs uppercase tracking-[0.14em] flex items-center gap-2 cursor-pointer transition-all shadow-[0_0_12px_rgba(6,182,212,0.15)]">
-            <svg className={`w-4 h-4 shrink-0 ${isUploading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              {isUploading ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              )}
-            </svg>
-            <span>{isUploading ? 'Uploading to DB...' : resolvedUrl ? 'Change Rulebook' : 'Upload Rulebook'}</span>
-            <input
-              type="file"
-              className="hidden"
-              accept="application/pdf,image/*"
-              onChange={handleRulebookUpload}
-              disabled={isUploading}
-            />
-          </label>
+          {canUserEdit() && (
+            <label className="hud-chamfer-sm px-4 py-2.5 bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/45 hover:border-cyan-400 text-cyan-300 hover:text-white font-tactical font-extrabold text-xs uppercase tracking-[0.14em] flex items-center gap-2 cursor-pointer transition-all shadow-[0_0_12px_rgba(6,182,212,0.15)]">
+              <svg className={`w-4 h-4 shrink-0 ${isUploading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                {isUploading ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                )}
+              </svg>
+              <span>{isUploading ? 'Uploading to DB...' : resolvedUrl ? 'Change Rulebook' : 'Upload Rulebook'}</span>
+              <input
+                type="file"
+                className="hidden"
+                accept="application/pdf,image/*"
+                onChange={handleRulebookUpload}
+                disabled={isUploading}
+              />
+            </label>
+          )}
 
           {resolvedUrl && (
             <>
@@ -4252,19 +4258,21 @@ const TournamentRulebookTab = ({ globalGame, globalTournament }) => {
             <p className="text-xs text-slate-400 mt-1 max-w-md">
               The tournament administrator has not yet published an official rulebook for {tourneyName || 'this tournament'}.
             </p>
-            <label className="hud-btn-primary font-tactical text-xs font-extrabold uppercase tracking-[0.14em] cursor-pointer inline-flex items-center gap-2 px-6 py-2.5 mt-5 shadow-lg">
-              <svg className={`w-4 h-4 shrink-0 ${isUploading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
-              <span>{isUploading ? 'Uploading to DB...' : 'Upload Official Rulebook'}</span>
-              <input
-                type="file"
-                className="hidden"
-                accept="application/pdf,image/*"
-                onChange={handleRulebookUpload}
-                disabled={isUploading}
-              />
-            </label>
+            {canUserEdit() && (
+              <label className="hud-btn-primary font-tactical text-xs font-extrabold uppercase tracking-[0.14em] cursor-pointer inline-flex items-center gap-2 px-6 py-2.5 mt-5 shadow-lg">
+                <svg className={`w-4 h-4 shrink-0 ${isUploading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                <span>{isUploading ? 'Uploading to DB...' : 'Upload Official Rulebook'}</span>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="application/pdf,image/*"
+                  onChange={handleRulebookUpload}
+                  disabled={isUploading}
+                />
+              </label>
+            )}
           </div>
         </div>
       )}
@@ -4384,13 +4392,13 @@ const TournamentHubTab = ({
       case "predictions":
         return <Predictions globalGame={game} globalTournament={tournamentName} />;
       case "mapping":
-        return <Mapping key={`hub-mapping-${tournamentName}-${game}`} globalGame={game} globalTournament={tournamentName} />;
+        return <Mapping key={`hub-mapping-${tournamentName}-${game}`} globalGame={game} globalTournament={tournamentName} isReadOnly={!canUserEdit()} />;
       case "data-entry":
-        return <DataEntry key={`hub-de-${tournamentName}-${game}`} globalGame={game} globalTournament={tournamentName} />;
+        return <DataEntry key={`hub-de-${tournamentName}-${game}`} globalGame={game} globalTournament={tournamentName} isReadOnly={!canUserEdit()} />;
       case "prs-entry":
-        return <PRSEntry key={`hub-prs-${tournamentName}-${game}`} globalGame={game} globalTournament={tournamentName} />;
+        return <PRSEntry key={`hub-prs-${tournamentName}-${game}`} globalGame={game} globalTournament={tournamentName} isReadOnly={!canUserEdit()} />;
       case "player-management":
-        return <PlayerManagement globalGame={game} globalTournament={tournamentName} />;
+        return <PlayerManagement globalGame={game} globalTournament={tournamentName} isReadOnly={!canUserEdit()} />;
       case "leaderboards":
         return <Leaderboards globalGame={game} globalTournament={tournamentName} />;
       case "analytics":
@@ -4794,7 +4802,7 @@ const Tournament = ({ globalGame, setGlobalGame, globalTournament, setGlobalTour
       ),
       label: "RULEBOOK"
     },
-    {
+    ...(canUserManageFolders() ? [{
       key: "CREATE TOURNAMENT",
       icon: <Plus size={14} strokeWidth={2.5} className="shrink-0" />,
       label: (
@@ -4802,10 +4810,14 @@ const Tournament = ({ globalGame, setGlobalGame, globalTournament, setGlobalTour
           CREATE<span className="hidden xl:inline"> TOURNAMENT</span>
         </span>
       )
-    },
+    }] : []),
   ];
 
   const handleOpenCreateModal = () => {
+    if (!canUserManageFolders()) {
+      alert("Permission Denied: You do not have 'Manage Folders' permission to create a tournament.");
+      return;
+    }
     setStep(1);
     setTournData({
       name: "",
@@ -4855,6 +4867,7 @@ const Tournament = ({ globalGame, setGlobalGame, globalTournament, setGlobalTour
       case "SCHEDULE":
         return (
           <ScheduleTab
+            readOnly={!canUserEdit()}
             game={activeGame}
             globalTournament={globalTournament}
             setGlobalTournament={setGlobalTournament}
@@ -4866,8 +4879,16 @@ const Tournament = ({ globalGame, setGlobalGame, globalTournament, setGlobalTour
           <TournamentRulebookTab globalGame={activeGame} globalTournament={globalTournament} />
         );
       case "CREATE TOURNAMENT":
+        if (!canUserManageFolders()) {
+          return (
+            <div className="hud-card flex flex-col items-center justify-center p-16 text-slate-400 font-tactical font-bold uppercase tracking-widest text-sm text-center">
+              Permission Denied: You do not have &apos;Manage Folders&apos; permission to create tournaments.
+            </div>
+          );
+        }
         return (
           <ManageScheduleTab
+            readOnly={!canUserEdit()}
             globalGame={globalGame}
             globalTournament={globalTournament}
             onOpenCreateModal={handleOpenCreateModal}
@@ -4886,7 +4907,7 @@ const Tournament = ({ globalGame, setGlobalGame, globalTournament, setGlobalTour
         }
         return (
           <div className="w-full hud-card overflow-hidden shadow-2xl mt-2 hud-enter min-h-[580px] flex flex-col">
-            <Bracket globalGame={activeGame} globalTournament={globalTournament} isReadOnly={false} />
+            <Bracket globalGame={activeGame} globalTournament={globalTournament} isReadOnly={!canUserEdit()} />
           </div>
         );
 
@@ -5307,6 +5328,10 @@ const Tournament = ({ globalGame, setGlobalGame, globalTournament, setGlobalTour
                   type="button"
                   onClick={async () => {
                     if (step === 1 && !isCreated) {
+                      if (!canUserManageFolders()) {
+                        alert("Permission Denied: You do not have 'Manage Folders' permission to create a tournament.");
+                        return;
+                      }
                       if (!tournData.name.trim()) {
                         alert("Tournament Name is required");
                         return;

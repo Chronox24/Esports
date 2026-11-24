@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { apiFetch, getUserAccount, resolveLogoUrl } from "../../utils/api";
+import { apiFetch, getUserAccount, resolveLogoUrl, canUserEdit } from "../../utils/api";
 import { io } from "socket.io-client";
 import { AgentBadge, getAgentImagePath } from "../../utils/agentHelper";
 
@@ -185,7 +185,8 @@ function useStickyState(defaultValue, key) {
 
   return [value, setValue];
 }
-const DataEntry = ({ globalGame, globalTournament }) => {
+const DataEntry = ({ globalGame, globalTournament, isReadOnly }) => {
+  const effectiveReadOnly = isReadOnly !== undefined ? isReadOnly : !canUserEdit();
   window.currentDataEntryRoom = `DataEntry_${globalTournament || "Default"}`;
 
   useEffect(() => {
@@ -724,6 +725,10 @@ const DataEntry = ({ globalGame, globalTournament }) => {
     "Sunset",
   ];
   const handleSubmit = async () => {
+    if (effectiveReadOnly) {
+      alert("Permission Denied: You do not have 'Edit' permission to submit match data.");
+      return;
+    }
     const matchHeader = { league, week, day, match, setNum, mapName };
     if (game === "Crossfire") {
       setIsSubmitting(true);
@@ -1168,6 +1173,18 @@ const DataEntry = ({ globalGame, globalTournament }) => {
       `}</style>
       {/* ── Content ── */}
       <div className="w-full flex flex-col items-center">
+        {effectiveReadOnly && (
+          <div className="w-full max-w-[1400px] px-4 pt-4">
+            <div className="hud-chamfer-sm bg-amber-500/10 border border-amber-500/30 px-5 py-3 flex items-center justify-between gap-3 text-amber-300 text-xs font-tactical tracking-wider uppercase shadow-lg">
+              <div className="flex items-center gap-2.5">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                <span className="font-bold">Read-Only Mode Active</span>
+                <span className="text-amber-400/70 font-normal">// Edit permission required to enter or submit tournament match records</span>
+              </div>
+              <span className="px-2.5 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-[10px] font-black">LOCKED</span>
+            </div>
+          </div>
+        )}
         <div className="w-full max-w-[1720px] flex flex-col py-2 px-0 gap-6">
           {/* ── Top Bar: Broadcast Toggle ── */}
           <div className="flex items-center justify-end gap-3 flex-wrap">
@@ -2879,13 +2896,15 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                   <button
                     type="button"
                     onClick={handleSubmit}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || effectiveReadOnly}
                     className={`w-full sm:w-auto flex-1 flex items-center justify-center gap-2.5 px-7 py-3.5 font-tactical text-sm font-extrabold uppercase tracking-[0.18em] transition-all cursor-pointer ${
-                      submitSuccess
-                        ? "hud-chamfer bg-emerald-500 text-slate-950 shadow-[0_0_25px_rgba(16,185,129,0.5)] success-flash"
-                        : isSubmitting
-                          ? "hud-btn-primary opacity-70 cursor-wait"
-                          : "hud-btn-primary"
+                      effectiveReadOnly
+                        ? "hud-chamfer bg-slate-900 border border-slate-700 text-slate-500 cursor-not-allowed opacity-50"
+                        : submitSuccess
+                          ? "hud-chamfer bg-emerald-500 text-slate-950 shadow-[0_0_25px_rgba(16,185,129,0.5)] success-flash"
+                          : isSubmitting
+                            ? "hud-btn-primary opacity-70 cursor-wait"
+                            : "hud-btn-primary"
                     }`}
                   >
                     {isSubmitting ? (
@@ -2912,11 +2931,13 @@ const DataEntry = ({ globalGame, globalTournament }) => {
                       <IconSave />
                     )}
                     <span>
-                      {submitSuccess
-                        ? "Submitted!"
-                        : isSubmitting
-                          ? "Submitting..."
-                          : "Submit Data"}
+                      {effectiveReadOnly
+                        ? "Read-Only (No Edit Permission)"
+                        : submitSuccess
+                          ? "Submitted!"
+                          : isSubmitting
+                            ? "Submitting..."
+                            : "Submit Data"}
                     </span>
                   </button>
                   <button

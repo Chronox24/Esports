@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { io } from "socket.io-client";
-import { getUserAccount } from "../../utils/api";
+import { getUserAccount, canUserEdit } from "../../utils/api";
 
 const SOCKET_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:5000' : undefined);
 const socket = io(SOCKET_URL);
@@ -69,7 +69,8 @@ const SectionHeader = ({ icon, label, sub, accent = "#00ffcc" }) => (
   </div>
 );
 
-const PRSEntry = ({ globalGame, globalTournament }) => {
+const PRSEntry = ({ globalGame, globalTournament, isReadOnly }) => {
+  const effectiveReadOnly = isReadOnly !== undefined ? isReadOnly : !canUserEdit();
   const setScope = `${globalTournament}_${globalGame}`;
   const [playersA, setPlayersA] = useStickyState([], `${setScope}_de_playersA`);
   const [playersB, setPlayersB] = useStickyState([], `${setScope}_de_playersB`);
@@ -90,6 +91,7 @@ const PRSEntry = ({ globalGame, globalTournament }) => {
   }
 
   const handleInputChange = (team, pIdx, roundNum, statKey, val) => {
+    if (effectiveReadOnly) return;
     const numericVal = val === "" ? "" : Number(val);
     if (team === 'A') {
       const newP = [...playersA];

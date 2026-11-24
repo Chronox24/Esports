@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { apiFetch, isTournamentAdminUser } from '../../utils/api';
+import { apiFetch, isTournamentAdminUser, canUserFullAccess, canUserEdit, canUserManageFolders } from '../../utils/api';
 const UsersIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -411,6 +411,11 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
   const [activeTab, setActiveTab] = React.useState(() => localStorage.getItem('admin_activeTab') || "League Quick Stats");
 
   React.useEffect(() => {
+    if (activeTab === 'Admin Accounts & User Directory' && !canUserFullAccess()) {
+      setActiveTab('League Quick Stats');
+      localStorage.setItem('admin_activeTab', 'League Quick Stats');
+      return;
+    }
     if (activeTab) {
       localStorage.setItem('admin_activeTab', activeTab);
     }
@@ -458,6 +463,7 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
   };
 
   const saveFormula = async () => {
+    if (!canUserFullAccess()) return showToast('Permission Denied: Full access permission required to save formulas.', 'warning');
     if (!activeFormula.id) return showToast('Cannot save default formula directly. Ensure database is seeded.', 'warning');
     try {
       const res = await apiFetch(`/api/settings/formula/${activeFormula.id}`, {
@@ -819,6 +825,10 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
   const [editPermissions, setEditPermissions] = useState({ view: false, edit: false, full: false, manage_folders: false });
   const [isUpdatingPermissions, setIsUpdatingPermissions] = useState(false);
   const handleOpenEdit = (user) => {
+    if (!canUserFullAccess()) {
+      showToast("Permission Denied: Full access permission required to alter permissions.", "warning");
+      return;
+    }
     if (user.is_super_admin) {
       showToast("Cannot manually alter permissions for the Super Admin.", "warning");
       return;
@@ -834,6 +844,10 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
     });
   };
   const handleUpdatePermissions = async () => {
+    if (!canUserFullAccess()) {
+      showToast("Permission Denied: Full access permission required to alter permissions.", "warning");
+      return;
+    }
     if (!editingUser) return;
     setIsUpdatingPermissions(true);
     try {
@@ -1187,7 +1201,7 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                     </svg>
                   )
                 },
-                {
+                ...(canUserFullAccess() ? [{
                   id: 'Admin Accounts & User Directory',
                   label: 'Admin Accounts & User Directory',
                   icon: (
@@ -1195,7 +1209,7 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>
                   )
-                },
+                }] : []),
                 {
                   id: 'Rulebook Viewer',
                   label: 'Rulebook Viewer',

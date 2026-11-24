@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { apiFetch } from "../../utils/api";
+import { apiFetch, canUserEdit } from "../../utils/api";
 import MapBpResults from "./MapBpResults";
 const SearchIcon = () => (
   <svg
@@ -132,7 +132,8 @@ const applyMapPoolConfig = (baseMaps, savedConfig) => {
   });
 };
 
-const Mapping = ({ globalGame, globalTournament }) => {
+const Mapping = ({ globalGame, globalTournament, isReadOnly }) => {
+  const effectiveReadOnly = isReadOnly !== undefined ? isReadOnly : !canUserEdit();
   const currentTournamentName = (
     typeof globalTournament === 'string'
       ? globalTournament
@@ -335,6 +336,10 @@ const Mapping = ({ globalGame, globalTournament }) => {
 
   // Persist veto format for this specific folder both locally and to Supabase
   const handleSaveVetoFormat = async (formatToSave = vetoFormat) => {
+    if (effectiveReadOnly) {
+      showToast("Permission Denied: Edit permission required to change veto format.");
+      return false;
+    }
     if (!currentTournamentName || currentTournamentName === "Default") {
       showToast("Please select a tournament folder first!");
       return false;
@@ -380,6 +385,10 @@ const Mapping = ({ globalGame, globalTournament }) => {
 
   // Persist map pool for this specific folder both locally and to Supabase
   const persistMapPool = async (mapsToSave) => {
+    if (effectiveReadOnly) {
+      showToast("Permission Denied: Edit permission required to alter map pool.");
+      return false;
+    }
     if (!currentTournamentName || currentTournamentName === "Default") {
       return false;
     }
@@ -532,6 +541,10 @@ const Mapping = ({ globalGame, globalTournament }) => {
     }
   };
   const handleMapClick = (mapId) => {
+    if (effectiveReadOnly) {
+      showToast("Permission Denied: Edit permission required to pick/ban maps.");
+      return;
+    }
     if (!vetoActive || !currentPhase || currentPhase.action === "side") return;
     const map = currentMaps.find((m) => m.id === mapId);
     if (map.status !== "none" || !map.enabled) return;
@@ -607,6 +620,10 @@ const Mapping = ({ globalGame, globalTournament }) => {
     showToast("Reversed last veto action.");
   };
   const submitVetoResult = async (finalMaps) => {
+    if (effectiveReadOnly) {
+      showToast("Permission Denied: Edit permission required to submit veto results.");
+      return;
+    }
     try {
       const bans = finalMaps.filter((m) => m.status === "banned");
       const picks = finalMaps.filter(
@@ -1449,6 +1466,18 @@ const Mapping = ({ globalGame, globalTournament }) => {
             __html: `        @keyframes pulse-red {          0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }          50% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }        }        .timer-pulse {          animation: pulse-red 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;        }        .veto-card-enter {          animation: fadeInScale 0.4s ease-out forwards;        }        @keyframes fadeInScale {          from { opacity: 0; transform: scale(0.95); }          to { opacity: 1; transform: scale(1); }        }        @keyframes revealMap {          0% { opacity: 0; transform: scale(1.05) translateY(10px); box-shadow: 0 0 0 rgba(0,0,0,0); }          100% { opacity: 1; transform: scale(1) translateY(0); box-shadow: 0 10px 40px rgba(0,0,0,0.8); }        }        @keyframes slideUpFade {          0% { opacity: 0; transform: translateY(15px); }          100% { opacity: 1; transform: translateY(0); }        }        .animate-reveal-map {          animation: revealMap 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;        }        .animate-slide-up-fade {          opacity: 0;          animation: slideUpFade 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 0.6s forwards;        }      `,
           }}
         />
+        {/* Read-Only Status Banner */}
+        {effectiveReadOnly && (
+          <div className="hud-chamfer-sm bg-amber-500/10 border border-amber-500/30 px-5 py-3 flex items-center justify-between gap-3 text-amber-300 text-xs font-tactical tracking-wider uppercase mb-5">
+            <div className="flex items-center gap-2.5">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+              <span className="font-bold">Read-Only Mode Active</span>
+              <span className="text-amber-400/70 font-normal">// Edit permission required to configure map pool or submit veto actions</span>
+            </div>
+            <span className="px-2.5 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-[10px] font-black">LOCKED</span>
+          </div>
+        )}
+
         {/* Sub-Navigation Bar */}
         <div className="hud-card mapping-tab-nav flex flex-wrap justify-between items-center p-2 gap-2 mb-6 w-full">
           {tabs.map((tab) => (

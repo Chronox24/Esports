@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
-import { apiFetch, isTournamentAdminUser } from "../../utils/api.js";
+import { apiFetch, isTournamentAdminUser, canUserManageFolders } from "../../utils/api.js";
 import { ErrorBoundary } from "../../ErrorBoundary.jsx";
 import Dashboard from "./Dashboard.jsx";
 import TournamentHistory from "./TournamentHistory.jsx";
@@ -243,6 +243,10 @@ const MainUIScreen = ({ onLogout }) => {
   }, [loadTournaments]);
 
   const handleDeleteFolder = async () => {
+    if (!canUserManageFolders()) {
+      alert("Permission Denied: You do not have 'Manage Folders' permission to delete tournament folders.");
+      return;
+    }
     if (!folderToDelete) return;
     setIsDeletingFolder(true);
     try {
