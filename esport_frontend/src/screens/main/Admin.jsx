@@ -486,7 +486,9 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [newRole, setNewRole] = useState('Super Admin');
   const [isCreating, setIsCreating] = useState(false);
   const [emailVerificationStatus, setEmailVerificationStatus] = useState('idle'); // 'idle' | 'sending' | 'sent' | 'verifying' | 'verified'
@@ -508,7 +510,9 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
     setShowCreateModal(false);
     setNewEmail('');
     setNewPassword('');
+    setConfirmPassword('');
     setShowPassword(false);
+    setShowConfirmPassword(false);
     setNewRole('Super Admin');
     setEmailVerificationStatus('idle');
     setVerificationCode('');
@@ -539,8 +543,10 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
       pass += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     setNewPassword(pass);
+    setConfirmPassword(pass);
     setShowPassword(true);
-    setModalFeedback({ type: 'info', message: 'Strong security key generated! Be sure to copy and save it.' });
+    setShowConfirmPassword(true);
+    setModalFeedback({ type: 'info', message: 'Strong security key generated and matched in confirm password! Be sure to copy and save it.' });
   };
 
   const handleSendVerification = async () => {
@@ -619,6 +625,14 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
     }
     if (!newPassword || newPassword.length < 6) {
       setModalFeedback({ type: 'error', message: 'Password must be at least 6 characters long.' });
+      return;
+    }
+    if (!confirmPassword) {
+      setModalFeedback({ type: 'error', message: 'Please confirm your password.' });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setModalFeedback({ type: 'error', message: 'Passwords do not match. Please ensure both fields are identical.' });
       return;
     }
 
@@ -2210,6 +2224,56 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                 )}
               </div>
 
+              {/* Confirm Password Section */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-semibold text-slate-200">
+                    Confirm Password <span className="text-red-400">*</span>
+                  </label>
+                  {confirmPassword && (
+                    <span className={`text-xs font-semibold flex items-center gap-1 ${
+                      newPassword === confirmPassword ? 'text-emerald-400' : 'text-red-400'
+                    }`}>
+                      {newPassword === confirmPassword ? (
+                        <>
+                          <CheckCircleIcon className="w-3.5 h-3.5" />
+                          <span>Passwords match</span>
+                        </>
+                      ) : (
+                        <span>Passwords do not match</span>
+                      )}
+                    </span>
+                  )}
+                </div>
+
+                <div className="relative">
+                  <input 
+                    type={showConfirmPassword ? "text" : "password"} 
+                    name="admin_new_invite_confirm_pwd"
+                    id="admin_new_invite_confirm_pwd"
+                    autoComplete="new-password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    style={{
+                      backgroundColor: '#0b111a',
+                      color: '#f8fafc',
+                      borderColor: confirmPassword ? (newPassword === confirmPassword ? '#10b981' : '#ef4444') : '#26354a',
+                      borderRadius: '10px'
+                    }}
+                    className="formal-admin-input w-full border text-sm px-4 py-3 pr-12 focus:outline-none focus:border-blue-500 transition-colors font-mono placeholder:text-slate-500 shadow-inner"
+                    placeholder="Re-enter password to confirm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 hover:text-slate-200 transition-colors"
+                    title={showConfirmPassword ? "Hide password" : "Show password"}
+                  >
+                    {showConfirmPassword ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+
               {/* Role Picker Section */}
               <div className="flex flex-col gap-2.5">
                 <label className="text-sm font-semibold text-slate-200">
@@ -2318,9 +2382,9 @@ const Admin = ({ globalGame, globalTournament, onLogout }) => {
                 <button
                   type="button"
                   onClick={handleCreateUser}
-                  disabled={isCreating || emailVerificationStatus !== 'verified' || !newPassword}
+                  disabled={isCreating || emailVerificationStatus !== 'verified' || !newPassword || !confirmPassword || newPassword !== confirmPassword}
                   className="hud-btn-primary px-6 py-2.5 text-xs font-tactical font-extrabold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                  title={emailVerificationStatus !== 'verified' ? "Please verify email first" : ""}
+                  title={emailVerificationStatus !== 'verified' ? "Please verify email first" : (!confirmPassword ? "Please confirm password" : (newPassword !== confirmPassword ? "Passwords do not match" : ""))}
                 >
                   {isCreating ? (
                     <>
