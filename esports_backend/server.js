@@ -1415,7 +1415,52 @@ app.put('/api/tournaments', authenticateToken, isAdmin, canManageFolders, async 
   await logAudit('TOURNAMENT_UPDATED', `Updated tournament game for ${name} to ${game}`, { name, game }, game, req);
   res.json({ message: 'Tournament updated successfully', data: data[0] });
 });
-app.delete('/api/tournaments/:id', authenticateToken, isAdmin, canManageFolders, async (req, res) => {
+app.delete('/api/tournaments/:id', authenticateToken, isAdmin, async (req, res) => {
+  const isSuper = Boolean(req.adminUser?.is_super_admin || req.adminUser?.role === 'Super Admin');
+  if (!isSuper) {
+    return res.status(403).json({ error: 'Access denied. Only Super Administrators can delete tournaments or folders.' });
+  }
+
+  const { password } = req.body || {};
+  if (!password || !String(password).trim()) {
+    return res.status(400).json({ error: 'Administrator password is required to delete a tournament folder.' });
+  }
+
+  const cleanPassword = String(password).trim();
+  let passwordValid = false;
+
+  // 1. Check in public.users table
+  const userId = req.user?.id || req.adminUser?.user_id;
+  const userEmail = req.user?.email;
+  let userDb = null;
+  if (userId) {
+    const { data } = await supabase.from('users').select('password, email').eq('user_id', userId).maybeSingle();
+    userDb = data;
+  }
+  if (!userDb && userEmail) {
+    const { data } = await supabase.from('users').select('password, email').eq('email', userEmail).maybeSingle();
+    userDb = data;
+  }
+  if (userDb?.password && userDb.password !== 'auto_recovery_placeholder' && userDb.password === cleanPassword) {
+    passwordValid = true;
+  } else if (userEmail || userDb?.email) {
+    // 2. Check via Supabase Auth
+    try {
+      const authClient = createClient(supabaseUrl, supabaseKey, {
+        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+      });
+      const { error: authErr } = await authClient.auth.signInWithPassword({
+        email: userEmail || userDb.email,
+        password: cleanPassword
+      });
+      if (!authErr) passwordValid = true;
+    } catch (_) {}
+  }
+
+  if (!passwordValid) {
+    return res.status(401).json({ error: 'Incorrect administrator password. Deletion cancelled.' });
+  }
+
   const { id } = req.params;
   try {
     let query = supabase.from('tournaments').select('*');
@@ -1431,8 +1476,9 @@ app.delete('/api/tournaments/:id', authenticateToken, isAdmin, canManageFolders,
     }
     const tourneyName = tourney.name;
 
-    // Clean up associated bracket results
+    // Clean up associated bracket results and states
     await supabase.from('bracket_results').delete().eq('tournament_name', tourneyName);
+    await supabase.from('bracket_states').delete().eq('tournament_name', tourneyName);
 
     // Delete tournament record
     const { error: delErr } = await supabase.from('tournaments').delete().eq('id', tourney.id);
@@ -1440,7 +1486,7 @@ app.delete('/api/tournaments/:id', authenticateToken, isAdmin, canManageFolders,
       return res.status(500).json({ error: delErr.message });
     }
 
-    await logAudit('FOLDER_DELETED', `Deleted folder/tournament: ${tourneyName}`, { id: tourney.id, name: tourneyName }, tourney.game || null, req);
+    await logAudit('FOLDER_DELETED', `Deleted tournament folder "${tourneyName}" by Super Admin ${req.adminUser.username}`, { id: tourney.id, name: tourneyName }, tourney.game || null, req);
     res.json({ message: `Tournament "${tourneyName}" deleted successfully.` });
   } catch (err) {
     console.error('Error deleting tournament folder:', err);

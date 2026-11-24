@@ -61,6 +61,14 @@ export const getUserRole = () => {
   return user.role || user.user_metadata?.role || '';
 };
 
+export const isSuperAdminUser = () => {
+  const user = getCurrentUser();
+  if (!user) return false;
+  if (user.is_super_admin) return true;
+  const role = (user.role || user.user_metadata?.role || '').toLowerCase().trim();
+  return role === 'super admin' || role === 'superadmin';
+};
+
 export const isTournamentAdminUser = () => {
   const user = getCurrentUser();
   if (!user) return false;
