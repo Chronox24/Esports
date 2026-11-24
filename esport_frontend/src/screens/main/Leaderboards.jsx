@@ -826,6 +826,83 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
     return 'text-rose-400 bg-rose-500/10 border-rose-500/30';
   };
 
+  const handleExportCSV = () => {
+    if (!matchRecords || matchRecords.length === 0) {
+      alert("No match records found to download for this tournament.");
+      return;
+    }
+
+    const headers = [
+      'Tournament',
+      'Game',
+      'Week',
+      'Day',
+      'Match',
+      'Set',
+      'Map',
+      'Team',
+      'Player IGN',
+      'Agent',
+      'Result',
+      'Kills',
+      'Deaths',
+      'Assists',
+      'K/D Ratio',
+      'Headshots',
+      'Plants',
+      'Defuses',
+      'Aces',
+      'Rounds',
+      'Date'
+    ];
+
+    const rows = matchRecords.map(r => {
+      const kills = Number(r.kills) || 0;
+      const deaths = Number(r.deaths) || 0;
+      const kd = deaths > 0 ? (kills / deaths).toFixed(2) : kills > 0 ? kills.toFixed(2) : '0.00';
+      const isWin = String(r.win).toLowerCase() === 'true' || r.win === 1 || r.win === 'WIN';
+
+      return [
+        r.tournament_name || currentTournamentName || 'Tournament',
+        r.game || activeGame || 'VALORANT',
+        r.week ?? '',
+        r.day ?? '',
+        r.match ?? '',
+        r.set_num ?? '',
+        r.map ?? '',
+        r.team_name ?? '',
+        r.ign ?? '',
+        r.agent ?? '',
+        isWin ? 'WIN' : 'LOSS',
+        kills,
+        deaths,
+        r.assists ?? 0,
+        kd,
+        r.headshots ?? 0,
+        r.plants ?? 0,
+        r.defuse ?? r.defuses ?? 0,
+        r.aces ?? 0,
+        r.rounds ?? 0,
+        r.created_at ? new Date(r.created_at).toISOString() : ''
+      ];
+    });
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const tourneySlug = (currentTournamentName || 'tournament').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+    link.setAttribute('download', `${tourneySlug}_match_records_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   if (isLoading) {
     return (
       <div className="flex-1 bg-bg-100 text-theme-text-base flex flex-col items-center justify-center p-12 min-h-[500px] animate-fade-in">
@@ -871,10 +948,10 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
       <div className="flex-1 px-4 sm:px-6 lg:px-10 py-6 w-full max-w-[1780px] mx-auto flex flex-col gap-6">
 
         {/* ════════ VIEW SWITCHER / CONTROL BAR ════════ */}
-        {isValorant && (
-          <div className="flex justify-center items-center w-full">
+        <div className="flex flex-wrap items-center justify-between gap-4 w-full">
+          {isValorant ? (
             <div 
-              className="flex items-center bg-slate-950/80 rounded-2xl border border-slate-800/80 shadow-2xl backdrop-blur-md"
+              className="flex items-center bg-slate-950/80 rounded-2xl border border-slate-800/80 shadow-2xl backdrop-blur-md mx-auto md:mx-0"
               style={{ padding: "6px 8px", gap: "10px" }}
             >
               {[
@@ -911,7 +988,7 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center rounded-xl text-xs sm:text-sm font-black uppercase tracking-wider transition-all duration-200 active:scale-95 ${
+                    className={`flex items-center rounded-xl text-xs sm:text-sm font-black uppercase tracking-wider transition-all duration-200 active:scale-95 cursor-pointer ${
                       isActive
                         ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-[0_0_20px_rgba(6,182,212,0.4)] border border-cyan-400/40'
                         : 'text-slate-400 hover:text-white hover:bg-slate-800/60 border border-transparent'
@@ -926,8 +1003,26 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
                 );
               })}
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-black uppercase tracking-widest text-white">Crossfire Standings &amp; Match Records</span>
+            </div>
+          )}
+
+          {/* Download Records CSV Button */}
+          <button
+            onClick={handleExportCSV}
+            disabled={isLoading || matchRecords.length === 0}
+            className="flex items-center bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 hover:text-emerald-200 text-xs font-bold tracking-widest uppercase rounded-xl transition-all shadow-md active:scale-95 cursor-pointer ml-auto disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ padding: "12px 24px", gap: "8px" }}
+            title="Download tournament records as CSV file"
+          >
+            <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            <span>Download Records CSV</span>
+          </button>
+        </div>
 
         {/* ═══════════════════════════════════════════════════════════════ */}
         {/* VALORANT SPECIFIC LAYOUT                                      */}

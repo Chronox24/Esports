@@ -181,6 +181,85 @@ const RawRecords = ({ globalTournament }) => {
     return { total, valCount, cfCount, teamsCount, playersCount };
   }, [records]);
 
+  const handleExportCSV = () => {
+    const dataToExport = filteredRecords.length > 0 ? filteredRecords : records;
+    if (!dataToExport || dataToExport.length === 0) {
+      alert("No match records found to download.");
+      return;
+    }
+
+    const headers = [
+      'Tournament',
+      'Game',
+      'Week',
+      'Day',
+      'Match',
+      'Set',
+      'Map',
+      'Team',
+      'Player IGN',
+      'Agent',
+      'Result',
+      'Kills',
+      'Deaths',
+      'Assists',
+      'K/D Ratio',
+      'Headshots',
+      'Plants',
+      'Defuses',
+      'Aces',
+      'Rounds',
+      'Date'
+    ];
+
+    const rows = dataToExport.map(r => {
+      const kills = Number(r.kills) || 0;
+      const deaths = Number(r.deaths) || 0;
+      const kd = deaths > 0 ? (kills / deaths).toFixed(2) : kills > 0 ? kills.toFixed(2) : '0.00';
+      const isWin = String(r.win).toLowerCase() === 'true' || r.win === 1 || r.win === 'WIN';
+
+      return [
+        r.tournament_name || 'Regular',
+        r.game || 'VALORANT',
+        r.week ?? '',
+        r.day ?? '',
+        r.match ?? '',
+        r.set_num ?? '',
+        r.map ?? '',
+        r.team_name ?? '',
+        r.ign ?? '',
+        r.agent ?? '',
+        isWin ? 'WIN' : 'LOSS',
+        kills,
+        deaths,
+        r.assists ?? 0,
+        kd,
+        r.headshots ?? 0,
+        r.plants ?? 0,
+        r.defuse ?? r.defuses ?? 0,
+        r.aces ?? 0,
+        r.rounds ?? 0,
+        r.created_at ? new Date(r.created_at).toISOString() : ''
+      ];
+    });
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const tourneySlug = (selectedTournament && selectedTournament !== 'All' ? selectedTournament : 'all_tournaments')
+      .toLowerCase().replace(/[^a-z0-9]+/g, '_');
+    link.setAttribute('download', `match_records_${tourneySlug}_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="flex-1 bg-bg-base text-theme-text-base overflow-y-auto flex flex-col h-full relative font-sans custom-scrollbar">
       <style>{`
@@ -252,6 +331,18 @@ const RawRecords = ({ globalTournament }) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
               <span>Refresh</span>
+            </button>
+            <button 
+              onClick={handleExportCSV}
+              disabled={loading || records.length === 0}
+              className="flex items-center bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 hover:text-emerald-200 text-xs font-bold tracking-widest uppercase rounded-xl transition-all shadow-md active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ padding: "8px 18px", gap: "8px" }}
+              title="Download all records as CSV file"
+            >
+              <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              <span>Download CSV</span>
             </button>
           </div>
         </div>
