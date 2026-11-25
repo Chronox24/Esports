@@ -229,6 +229,11 @@ const MainUIScreen = ({ onLogout }) => {
     btn.appendChild(ripple);
     setTimeout(() => ripple.remove(), 600);
   }, []);
+  const globalGameRef = useRef(globalGame);
+  useEffect(() => {
+    globalGameRef.current = globalGame;
+  }, [globalGame]);
+
   const loadTournaments = useCallback(async () => {
     try {
       const res = await apiFetch('/api/tournaments');
@@ -236,28 +241,33 @@ const MainUIScreen = ({ onLogout }) => {
         const data = await res.json();
         if (Array.isArray(data)) {
           setTournaments(data);
-          if (data.length > 0) {
-            setGlobalTournament(prev => {
-              if (prev) {
-                const prevName = typeof prev === 'string' ? prev : prev.name;
-                const matchFound = data.find(t => t.name.toLowerCase() === prevName.toLowerCase());
-                if (matchFound) return matchFound.name;
-              }
-              const saved = localStorage.getItem('globalTournament');
-              if (saved && data.some(t => t.name.toLowerCase() === saved.toLowerCase())) {
-                return saved;
-              }
-              const currentUpperGame = (globalGame || 'VALORANT').toUpperCase();
-              const match = data.find(t => (t.game || 'VALORANT').toUpperCase() === currentUpperGame);
-              return match ? match.name : data[0].name;
-            });
-          }
+          setGlobalTournament(prev => {
+            const currentUpperGame = (globalGameRef.current || 'VALORANT').toUpperCase();
+            if (prev) {
+              const prevName = typeof prev === 'string' ? prev : prev.name;
+              const matchFound = data.find(
+                t => t.name.toLowerCase() === prevName.toLowerCase() &&
+                  (t.game || 'VALORANT').toUpperCase() === currentUpperGame
+              );
+              if (matchFound) return matchFound.name;
+            }
+            const saved = localStorage.getItem('globalTournament');
+            if (saved) {
+              const savedMatch = data.find(
+                t => t.name.toLowerCase() === saved.toLowerCase() &&
+                  (t.game || 'VALORANT').toUpperCase() === currentUpperGame
+              );
+              if (savedMatch) return savedMatch.name;
+            }
+            const match = data.find(t => (t.game || 'VALORANT').toUpperCase() === currentUpperGame);
+            return match ? match.name : '';
+          });
         }
       }
     } catch (err) {
       console.error('Failed to fetch tournaments:', err);
     }
-  }, [globalGame]);
+  }, []);
   useEffect(() => {
     loadTournaments();
   }, [loadTournaments]);
@@ -304,6 +314,18 @@ const MainUIScreen = ({ onLogout }) => {
       setIsDeletingFolder(false);
     }
   };
+  const handleSwitchDiscipline = useCallback((targetGame) => {
+    const upper = (targetGame || 'VALORANT').toUpperCase();
+    setGlobalGame(upper);
+    const matching = tournaments.filter(t => (t.game || 'VALORANT').toUpperCase() === upper);
+    if (matching.length > 0) {
+      setGlobalTournament(matching[0].name);
+    } else {
+      setGlobalTournament('');
+      localStorage.removeItem('globalTournament');
+    }
+  }, [tournaments]);
+
   useEffect(() => {
     const rawName = typeof globalTournament === 'string' 
       ? globalTournament 
@@ -312,19 +334,15 @@ const MainUIScreen = ({ onLogout }) => {
 
     if (directGame) {
       const upper = directGame.toUpperCase();
-      if ((globalGame || '').toUpperCase() !== upper) {
-        setGlobalGame(upper);
-      }
+      setGlobalGame(upper);
     } else if (rawName && tournaments.length > 0) {
       const selected = tournaments.find(t => typeof t?.name === 'string' && t.name.toLowerCase() === rawName.toLowerCase());
       if (selected && selected.game) {
         const upper = selected.game.toUpperCase();
-        if ((globalGame || '').toUpperCase() !== upper) {
-          setGlobalGame(upper);
-        }
+        setGlobalGame(upper);
       }
     }
-  }, [globalTournament, tournaments, globalGame]);
+  }, [globalTournament, tournaments]);
   const sidebarData = [
     {
       category: 'Main',
@@ -605,46 +623,35 @@ const MainUIScreen = ({ onLogout }) => {
           {/* Global Game Discipline Switcher (Dashboard only) */}
           {activeTab === 'Dashboard' && (
             <div className="inline-flex items-center p-0.5 bg-slate-950/80 border border-slate-700/80 rounded-xl shadow-inner gap-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setGlobalGame('VALORANT');
-                  const matching = tournaments.filter(t => (t.game || 'VALORANT').toUpperCase() === 'VALORANT');
-                  if (matching.length > 0) setGlobalTournament(matching[0].name);
-                }}
-                className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-lg font-tactical text-[10px] sm:text-xs font-black tracking-wider transition-all duration-200 cursor-pointer ${
-                  (globalGame || 'VALORANT').toUpperCase() === 'VALORANT'
-                    ? 'bg-rose-500/25 text-rose-300 border border-rose-500/60 shadow-[0_0_12px_rgba(244,63,94,0.4)]'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent'
-                }`}
-              >
-                <span className={`w-2 h-2 rounded-full ${
-                  (globalGame || 'VALORANT').toUpperCase() === 'VALORANT'
-                    ? 'bg-rose-400 shadow-[0_0_8px_#f43f5e]'
-                    : 'bg-slate-600'
-                }`} />
-                VALORANT
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setGlobalGame('CROSSFIRE');
-                  const matching = tournaments.filter(t => (t.game || 'VALORANT').toUpperCase() === 'CROSSFIRE');
-                  if (matching.length > 0) setGlobalTournament(matching[0].name);
-                }}
-                className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-lg font-tactical text-[10px] sm:text-xs font-black tracking-wider transition-all duration-200 cursor-pointer ${
-                  (globalGame || 'VALORANT').toUpperCase() === 'CROSSFIRE'
-                    ? 'bg-cyan-500/25 text-cyan-300 border border-cyan-500/60 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent'
-                }`}
-              >
-                <span className={`w-2 h-2 rounded-full ${
-                  (globalGame || 'VALORANT').toUpperCase() === 'CROSSFIRE'
-                    ? 'bg-cyan-400 shadow-[0_0_8px_#06b6d4]'
-                    : 'bg-slate-600'
-                }`} />
-                CROSSFIRE
-              </button>
+              {[
+                {
+                  id: 'VALORANT',
+                  activeBtn: 'bg-rose-500/25 text-rose-300 border border-rose-500/60 shadow-[0_0_12px_rgba(244,63,94,0.4)]',
+                  activeDot: 'bg-rose-400 shadow-[0_0_8px_#f43f5e]',
+                },
+                {
+                  id: 'CROSSFIRE',
+                  activeBtn: 'bg-cyan-500/25 text-cyan-300 border border-cyan-500/60 shadow-[0_0_12px_rgba(6,182,212,0.4)]',
+                  activeDot: 'bg-cyan-400 shadow-[0_0_8px_#06b6d4]',
+                },
+              ].map((disc) => {
+                const isSelected = (globalGame || 'VALORANT').toUpperCase() === disc.id;
+                return (
+                  <button
+                    key={disc.id}
+                    type="button"
+                    onClick={() => handleSwitchDiscipline(disc.id)}
+                    className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-lg font-tactical text-[10px] sm:text-xs font-black tracking-wider transition-all duration-200 cursor-pointer ${
+                      isSelected
+                        ? disc.activeBtn
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent'
+                    }`}
+                  >
+                    <span className={`w-2 h-2 rounded-full ${isSelected ? disc.activeDot : 'bg-slate-600'}`} />
+                    {disc.id}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>

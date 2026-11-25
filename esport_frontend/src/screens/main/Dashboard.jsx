@@ -462,7 +462,10 @@ const Dashboard = ({ globalGame, globalTournament }) => {
   }, [activeGame]);
 
   useEffect(() => {
-    if (!globalTournament) return;
+    if (!globalTournament) {
+      setDbMatches([]);
+      return;
+    }
 
     const fetchMatches = () => {
       apiFetch(`/api/matches?tournament=${encodeURIComponent(globalTournament)}`)
@@ -603,6 +606,7 @@ const Dashboard = ({ globalGame, globalTournament }) => {
         setPlayerStats(formattedStats);
       } catch (err) {
         console.error('Error fetching player stats:', err);
+        setPlayerStats([]);
       }
     };
     fetchStats();
