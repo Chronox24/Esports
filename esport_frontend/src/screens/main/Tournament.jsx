@@ -883,9 +883,9 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
       ]);
 
       const completedSet = new Set([
-        ...(Array.isArray(brRes) ? brRes.map(b => b.tournament_name) : []),
-        ...(Array.isArray(dashRes) ? dashRes.filter(d => d.status === 'COMPLETE').map(d => d.name) : [])
-      ]);
+        ...(Array.isArray(brRes) ? brRes.map(b => (b.tournament_name || '').trim().toLowerCase()) : []),
+        ...(Array.isArray(dashRes) ? dashRes.filter(d => d.status === 'COMPLETE').map(d => (d.name || '').trim().toLowerCase()) : [])
+      ].filter(Boolean));
 
       const allTourns = Array.isArray(tRes) ? tRes : [];
       const currentSelectedGame = (game || 'VALORANT').toUpperCase();
@@ -898,7 +898,8 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
       const finished = [];
 
       gameTourns.forEach(t => {
-        const isFinished = t.is_finished || completedSet.has(t.name) || t.status === 'COMPLETE';
+        const key = (t.name || '').trim().toLowerCase();
+        const isFinished = Boolean(t.is_finished || completedSet.has(key) || t.status === 'COMPLETE');
         if (isFinished) {
           finished.push({ ...t, is_finished: true });
         } else {
@@ -906,48 +907,27 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
         }
       });
 
-      // Include any completed tournaments from dashboard/results for this game that might not be in tournaments table
-      if (Array.isArray(dashRes)) {
-        dashRes.forEach(d => {
-          if (d.status === 'COMPLETE' && (d.game_title || 'VALORANT').toUpperCase() === currentSelectedGame) {
-            if (!finished.some(f => f.name === d.name)) {
-              finished.push({
-                id: d.id,
-                name: d.name,
-                game: d.game_title || currentSelectedGame,
-                is_finished: true
-              });
-            }
-          }
-        });
-      }
-
-      // Check current active tournament
+      // Check current active tournament against live database folders (ignore deleted stale names)
       if (currentTournamentName && typeof currentTournamentName === 'string' && currentTournamentName.trim()) {
         const trimmedCurrent = currentTournamentName.trim();
-        const inAll = allTourns.find(t => typeof t?.name === 'string' && t.name.toLowerCase() === trimmedCurrent.toLowerCase());
-        const tournGame = (inAll?.game || (typeof globalTournament === 'object' && globalTournament?.game) || currentSelectedGame).toUpperCase();
+        const inAll = allTourns.find(t => typeof t?.name === 'string' && t.name.trim().toLowerCase() === trimmedCurrent.toLowerCase());
 
-        if (tournGame === currentSelectedGame) {
-          const existingLiveIdx = live.findIndex(t => typeof t?.name === 'string' && t.name.toLowerCase() === trimmedCurrent.toLowerCase());
-          const existingFinishedIdx = finished.findIndex(t => typeof t?.name === 'string' && t.name.toLowerCase() === trimmedCurrent.toLowerCase());
+        if (!inAll) {
+          if (typeof localStorage !== 'undefined' && (localStorage.getItem('globalTournament') || '').trim().toLowerCase() === trimmedCurrent.toLowerCase()) {
+            localStorage.removeItem('globalTournament');
+          }
+        } else {
+          const tournGame = (inAll.game || currentSelectedGame).toUpperCase();
+          if (tournGame === currentSelectedGame) {
+            const existingLiveIdx = live.findIndex(t => typeof t?.name === 'string' && t.name.trim().toLowerCase() === trimmedCurrent.toLowerCase());
+            const existingFinishedIdx = finished.findIndex(t => typeof t?.name === 'string' && t.name.trim().toLowerCase() === trimmedCurrent.toLowerCase());
 
-          if (existingLiveIdx > -1) {
-            // If in live, move to index 0 so it's the very first card visible
-            const [curr] = live.splice(existingLiveIdx, 1);
-            live.unshift({ ...curr, is_current: true });
-          } else if (existingFinishedIdx > -1) {
-            // If it is in finished tournaments, mark is_current in finished, do NOT move back to live
-            finished[existingFinishedIdx].is_current = true;
-          } else {
-            // Not in either list yet
-            live.unshift({
-              id: inAll?.id || ('curr-' + trimmedCurrent),
-              name: trimmedCurrent,
-              game: currentSelectedGame,
-              is_current: true,
-              is_finished: false
-            });
+            if (existingLiveIdx > -1) {
+              const [curr] = live.splice(existingLiveIdx, 1);
+              live.unshift({ ...curr, is_current: true });
+            } else if (existingFinishedIdx > -1) {
+              finished[existingFinishedIdx].is_current = true;
+            }
           }
         }
       }

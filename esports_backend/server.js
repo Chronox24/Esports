@@ -1364,14 +1364,22 @@ app.get('/api/tournaments', async (req, res) => {
   if (error) return res.status(500).json({ error: error.message });
   try {
     const { data: results } = await supabase.from('bracket_results').select('tournament_name');
-    const completedSet = new Set((results || []).map(r => r.tournament_name));
-    const enriched = (data || []).map(t => ({
-      ...t,
-      is_finished: completedSet.has(t.name),
-      status: completedSet.has(t.name) ? 'COMPLETE' : 'ACTIVE'
-    }));
+    const completedSet = new Set(
+      (results || [])
+        .map(r => (r.tournament_name || '').trim().toLowerCase())
+        .filter(Boolean)
+    );
+    const enriched = (data || []).map(t => {
+      const key = (t.name || '').trim().toLowerCase();
+      const isFinished = Boolean(t.is_finished || t.status === 'COMPLETE' || completedSet.has(key));
+      return {
+        ...t,
+        is_finished: isFinished,
+        status: isFinished ? 'COMPLETE' : 'ACTIVE'
+      };
+    });
     return res.json(enriched);
-  } catch(e) {
+  } catch (e) {
     res.json(data || []);
   }
 });
@@ -1511,38 +1519,121 @@ app.delete('/api/tournaments/:id', authenticateToken, isAdmin, async (req, res) 
   }
 
   const { id } = req.params;
+  const rawIdentifier = decodeURIComponent(id || '').trim();
+  const cleanId = rawIdentifier.startsWith('t-') ? rawIdentifier.slice(2) : rawIdentifier;
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanId);
+
   try {
-    let query = supabase.from('tournaments').select('*');
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    let tourney = null;
     if (isUuid) {
-      query = query.eq('id', id);
-    } else {
-      query = query.eq('name', decodeURIComponent(id));
+      const { data } = await supabase.from('tournaments').select('*').eq('id', cleanId).maybeSingle();
+      tourney = data;
     }
-    const { data: tourney, error: fetchErr } = await query.single();
-    if (fetchErr || !tourney) {
+    if (!tourney && rawIdentifier) {
+      const { data } = await supabase.from('tournaments').select('*').ilike('name', rawIdentifier).limit(1);
+      if (data && data.length > 0) tourney = data[0];
+    }
+
+    let tourneyName = tourney?.name || null;
+    let tourneyGame = tourney?.game || null;
+
+    // Fallback for orphaned bracket_states entries passed by bracket_states.id or name
+    if (!tourney && isUuid) {
+      const { data: stateRow } = await supabase.from('bracket_states').select('*').eq('id', cleanId).maybeSingle();
+      if (stateRow?.tournament_name) {
+        tourneyName = stateRow.tournament_name;
+        tourneyGame = stateRow.game_title || null;
+        const { data: parentTourney } = await supabase
+          .from('tournaments')
+          .select('*')
+          .ilike('name', tourneyName.trim())
+          .limit(1);
+        if (parentTourney && parentTourney.length > 0) {
+          tourney = parentTourney[0];
+          tourneyName = tourney.name;
+          tourneyGame = tourney.game || tourneyGame;
+        }
+      }
+    }
+
+    if (!tourney && !tourneyName) {
       return res.status(404).json({ error: 'Tournament folder not found.' });
     }
-    const tourneyName = tourney.name;
 
-    // Clean up associated bracket results and states
-    await supabase.from('bracket_results').delete().eq('tournament_name', tourneyName);
-    await supabase.from('bracket_states').delete().eq('tournament_name', tourneyName);
+    const cleanName = tourneyName.trim();
+    const cleanLower = cleanName.toLowerCase();
 
-    // Delete tournament record
-    const { error: delErr } = await supabase.from('tournaments').delete().eq('id', tourney.id);
-    if (delErr) {
-      return res.status(500).json({ error: delErr.message });
+    const deleteTournamentRows = async (tableName) => {
+      const { data: rows } = await supabase.from(tableName).select('tournament_name');
+      const matchedNames = [...new Set(
+        (rows || [])
+          .map((r) => r.tournament_name)
+          .filter((n) => typeof n === 'string' && n.trim().toLowerCase() === cleanLower)
+      )];
+      for (const exactName of matchedNames) {
+        await supabase.from(tableName).delete().eq('tournament_name', exactName);
+      }
+    };
+
+    // Clean up associated records case-insensitively across tournament tables
+    const { data: allTeamRows } = await supabase.from('teams').select('team_id, tournament_name');
+    const matchedTeamRows = (allTeamRows || []).filter(
+      (t) => typeof t.tournament_name === 'string' && t.tournament_name.trim().toLowerCase() === cleanLower
+    );
+    const teamIds = matchedTeamRows.map((t) => t.team_id).filter(Boolean);
+
+    const dependentTables = [
+      'bracket_results',
+      'bracket_states',
+      'matches',
+      'match_records',
+      'rulebooks',
+      'valorant_player_stats',
+      'crossfire_player_stats',
+      'valorant_agent_stats'
+    ];
+    for (const tbl of dependentTables) {
+      await deleteTournamentRows(tbl);
+    }
+
+    if (teamIds.length > 0) {
+      await supabase.from('players').delete().in('team_id', teamIds);
+    }
+    await deleteTournamentRows('teams');
+
+    // Delete tournament record if present (plus any case-matching rows)
+    if (tourney?.id) {
+      const { error: delErr } = await supabase.from('tournaments').delete().eq('id', tourney.id);
+      if (delErr) {
+        return res.status(500).json({ error: delErr.message });
+      }
+    } else {
+      await supabase.from('tournaments').delete().ilike('name', cleanName);
     }
 
     apiCache.keys().forEach((k) => {
-      if (k.includes('/api/tournaments') || k.includes('/api/bracket-results') || k.includes('/api/admin/quick-stats')) {
+      if (
+        k.includes('/api/tournaments') ||
+        k.includes('/api/bracket') ||
+        k.includes('/api/matches') ||
+        k.includes('/api/teams') ||
+        k.includes('/api/players') ||
+        k.includes('/api/stats') ||
+        k.includes('/api/match-records') ||
+        k.includes('/api/admin/')
+      ) {
         apiCache.del(k);
       }
     });
 
-    await logAudit('FOLDER_DELETED', `Deleted tournament folder "${tourneyName}" by Super Admin ${req.adminUser.username}`, { id: tourney.id, name: tourneyName }, tourney.game || null, req);
-    res.json({ message: `Tournament "${tourneyName}" deleted successfully.` });
+    await logAudit(
+      'FOLDER_DELETED',
+      `Deleted tournament folder "${cleanName}" by Super Admin ${req.adminUser.username}`,
+      { id: tourney?.id || cleanId, name: cleanName },
+      tourneyGame || null,
+      req
+    );
+    res.json({ message: `Tournament "${cleanName}" deleted successfully.` });
   } catch (err) {
     console.error('Error deleting tournament folder:', err);
     res.status(500).json({ error: 'Internal server error while deleting tournament folder.' });
@@ -2685,48 +2776,68 @@ app.get('/api/tournaments-dashboard', async (req, res) => {
     const { data: results, error: e3 } = await supabase.from('bracket_results').select('tournament_name');
     if (e3) throw e3;
 
-    const completedSet = new Set(results.map(r => r.tournament_name));
-    const dashboardList = [];
-    const processedStates = new Set();
+    const validTournsByKey = new Map();
+    (tourns || []).forEach(t => {
+      const key = (t.name || '').trim().toLowerCase();
+      if (key && !validTournsByKey.has(key)) {
+        validTournsByKey.set(key, t);
+      }
+    });
+
+    const completedSet = new Set(
+      (results || [])
+        .map(r => (r.tournament_name || '').trim().toLowerCase())
+        .filter(Boolean)
+    );
+
+    const VALID_BRACKET_FORMATS = new Set(['single elimination', 'double elimination', 'round robin']);
+    const latestStateByKey = new Map();
 
     if (states) {
       states.forEach(s => {
-        let status = 'IN PROGRESS';
-        if (completedSet.has(s.tournament_name)) status = 'COMPLETE';
-
-        let pCount = 0;
-        if (s.team_pool && Array.isArray(s.team_pool)) pCount = s.team_pool.length;
-
-        dashboardList.push({
-          id: s.id,
-          name: s.tournament_name,
-          game_title: s.game_title,
-          format: s.format,
-          status: status,
-          participant_count: pCount,
-          date: s.updated_at || s.created_at
-        });
-        processedStates.add(s.tournament_name);
-      });
-    }
-
-    if (tourns) {
-      tourns.forEach(t => {
-        if (!processedStates.has(t.name)) {
-          let status = 'PENDING';
-          if (completedSet.has(t.name)) status = 'COMPLETE';
-          dashboardList.push({
-            id: 't-' + t.id,
-            name: t.name,
-            game_title: t.game || t.game_title || 'VALORANT',
-            format: 'Unspecified Format',
-            status: status,
-            participant_count: 0,
-            date: t.created_at
-          });
+        const key = (s.tournament_name || '').trim().toLowerCase();
+        const fmt = (s.format || '').trim().toLowerCase();
+        // Exclude deleted tournaments (not in public.tournaments) and non-bracket config rows (map_veto, map_pool, veto_settings)
+        if (!key || !validTournsByKey.has(key) || !VALID_BRACKET_FORMATS.has(fmt)) {
+          return;
+        }
+        const existing = latestStateByKey.get(key);
+        const sTime = new Date(s.updated_at || s.created_at || 0).getTime();
+        const eTime = existing ? new Date(existing.updated_at || existing.created_at || 0).getTime() : -1;
+        if (!existing || sTime >= eTime) {
+          latestStateByKey.set(key, s);
         }
       });
     }
+
+    const dashboardList = [];
+    validTournsByKey.forEach((t, key) => {
+      const state = latestStateByKey.get(key);
+      const isComplete = Boolean(t.is_finished || t.status === 'COMPLETE' || completedSet.has(key));
+      if (state) {
+        const pCount = Array.isArray(state.team_pool) ? state.team_pool.length : 0;
+        dashboardList.push({
+          id: t.id,
+          bracket_state_id: state.id,
+          name: t.name,
+          game_title: state.game_title || t.game || t.game_title || 'VALORANT',
+          format: state.format,
+          status: isComplete ? 'COMPLETE' : 'IN PROGRESS',
+          participant_count: pCount,
+          date: state.updated_at || state.created_at || t.created_at
+        });
+      } else {
+        dashboardList.push({
+          id: t.id,
+          name: t.name,
+          game_title: t.game || t.game_title || 'VALORANT',
+          format: 'Unspecified Format',
+          status: isComplete ? 'COMPLETE' : 'PENDING',
+          participant_count: 0,
+          date: t.created_at
+        });
+      }
+    });
 
     dashboardList.sort((a, b) => new Date(b.date) - new Date(a.date));
     res.json(dashboardList);
