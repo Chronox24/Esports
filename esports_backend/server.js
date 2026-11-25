@@ -252,6 +252,21 @@ const authenticateToken = async (req, res, next) => {
     return res.status(500).json({ error: 'Internal server error during authentication.' });
   }
 };
+const isSuperAdminRole = (roleVal) => {
+  const r = String(roleVal || '').toLowerCase().trim();
+  return r === 'super admin' || r === 'superadmin' || r === 'super administrator' || r === 'super_admin';
+};
+
+const isSuperAdminAccount = (profile, authUser = null) => {
+  if (profile?.is_super_admin === true || profile?.is_super_admin === 'true') return true;
+  if (isSuperAdminRole(profile?.role)) return true;
+  if (isSuperAdminRole(authUser?.user_metadata?.role)) return true;
+  const username = String(profile?.username || authUser?.user_metadata?.username || '').toLowerCase().trim();
+  const email = String(authUser?.email || '').toLowerCase().trim();
+  if (username === 'admin' || email === 'admin@esport.ph') return true;
+  return false;
+};
+
 const isAdmin = async (req, res, next) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   try {
@@ -279,9 +294,11 @@ const isAdmin = async (req, res, next) => {
     if (!data.username && req.user?.email) {
       data.username = req.user.email.split('@')[0];
     }
-    if (data.is_super_admin || data.role === 'Super Admin' || req.user.user_metadata?.role === 'Super Admin') {
+    if (isSuperAdminAccount(data, req.user)) {
       data.is_super_admin = true;
-      data.role = 'Super Admin';
+      if (!data.role || data.role.toLowerCase() === 'admin') {
+        data.role = 'Super Admin';
+      }
       data.permissions = { view: true, edit: true, full: true, manage_folders: true };
     }
     if (
@@ -442,7 +459,7 @@ app.post('/api/login', async (req, res) => {
       if (userProfile) profile = userProfile;
     } catch (_) {}
 
-    const isSuper = profile?.is_super_admin || profile?.role === 'Super Admin';
+    const isSuper = isSuperAdminAccount(profile, data.user);
     const permissions = isSuper
       ? { view: true, edit: true, full: true, manage_folders: true }
       : (profile?.permissions || { view: true, edit: false, full: false, manage_folders: false });
@@ -450,7 +467,9 @@ app.post('/api/login', async (req, res) => {
     const enrichedUser = {
       ...data.user,
       username: profile?.username || (data.user.email ? data.user.email.split('@')[0] : 'User'),
-      role: profile?.role || (isSuper ? 'Super Admin' : 'Standard Admin'),
+      role: (isSuper && (!profile?.role || profile.role.toLowerCase() === 'admin'))
+        ? 'Super Admin'
+        : (profile?.role || (isSuper ? 'Super Admin' : 'Standard Admin')),
       is_super_admin: Boolean(isSuper),
       permissions
     };
@@ -468,15 +487,41 @@ app.post('/api/login', async (req, res) => {
 app.get('/api/me', authenticateToken, async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   try {
-    const { data: profile, error } = await supabase
+    let { data: profile } = await supabase
       .from('users')
       .select('user_id, username, role, is_super_admin, permissions')
       .eq('user_id', req.user.id)
-      .single();
-    if (error || !profile) {
-      return res.status(404).json({ error: 'User profile not found' });
+      .maybeSingle();
+
+    if (!profile && req.user?.email) {
+      const emailPrefix = req.user.email.split('@')[0];
+      const { data: byUsername } = await supabase
+        .from('users')
+        .select('user_id, username, role, is_super_admin, permissions')
+        .eq('username', emailPrefix)
+        .maybeSingle();
+      if (byUsername) profile = byUsername;
     }
-    const isSuper = profile.is_super_admin || profile.role === 'Super Admin';
+
+    if (!profile) {
+      const fallbackRole = req.user.user_metadata?.role || (req.user.email === 'admin@esport.ph' ? 'Super Admin' : '');
+      const isSuperFallback = isSuperAdminAccount({ role: fallbackRole }, req.user);
+      if (!isSuperFallback && !fallbackRole) {
+        return res.status(404).json({ error: 'User profile not found' });
+      }
+      return res.json({
+        user_id: req.user.id,
+        email: req.user.email,
+        username: req.user.user_metadata?.username || (req.user.email ? req.user.email.split('@')[0] : 'User'),
+        role: isSuperFallback ? 'Super Admin' : fallbackRole,
+        is_super_admin: Boolean(isSuperFallback),
+        permissions: isSuperFallback
+          ? { view: true, edit: true, full: true, manage_folders: true }
+          : { view: true, edit: false, full: false, manage_folders: false }
+      });
+    }
+
+    const isSuper = isSuperAdminAccount(profile, req.user);
     const permissions = isSuper
       ? { view: true, edit: true, full: true, manage_folders: true }
       : (profile.permissions || { view: true, edit: false, full: false, manage_folders: false });
@@ -485,7 +530,9 @@ app.get('/api/me', authenticateToken, async (req, res) => {
       user_id: profile.user_id,
       email: req.user.email,
       username: profile.username || (req.user.email ? req.user.email.split('@')[0] : 'User'),
-      role: profile.role || (isSuper ? 'Super Admin' : 'Standard Admin'),
+      role: (isSuper && (!profile.role || profile.role.toLowerCase() === 'admin'))
+        ? 'Super Admin'
+        : (profile.role || (isSuper ? 'Super Admin' : 'Standard Admin')),
       is_super_admin: Boolean(isSuper),
       permissions
     });
@@ -1416,7 +1463,7 @@ app.put('/api/tournaments', authenticateToken, isAdmin, canManageFolders, async 
   res.json({ message: 'Tournament updated successfully', data: data[0] });
 });
 app.delete('/api/tournaments/:id', authenticateToken, isAdmin, async (req, res) => {
-  const isSuper = Boolean(req.adminUser?.is_super_admin || req.adminUser?.role === 'Super Admin');
+  const isSuper = isSuperAdminAccount(req.adminUser, req.user);
   if (!isSuper) {
     return res.status(403).json({ error: 'Access denied. Only Super Administrators can delete tournaments or folders.' });
   }
@@ -1434,23 +1481,25 @@ app.delete('/api/tournaments/:id', authenticateToken, isAdmin, async (req, res) 
   const userEmail = req.user?.email;
   let userDb = null;
   if (userId) {
-    const { data } = await supabase.from('users').select('password, email').eq('user_id', userId).maybeSingle();
+    const { data } = await supabase.from('users').select('password, username').eq('user_id', userId).maybeSingle();
     userDb = data;
   }
-  if (!userDb && userEmail) {
-    const { data } = await supabase.from('users').select('password, email').eq('email', userEmail).maybeSingle();
-    userDb = data;
-  }
-  if (userDb?.password && userDb.password !== 'auto_recovery_placeholder' && userDb.password === cleanPassword) {
+  const authEmail = userEmail || (userDb?.username?.toLowerCase() === 'admin' ? 'admin@esport.ph' : null);
+  if (
+    userDb?.password &&
+    userDb.password !== 'auto_recovery_placeholder' &&
+    userDb.password !== 'hashed_password_placeholder' &&
+    userDb.password === cleanPassword
+  ) {
     passwordValid = true;
-  } else if (userEmail || userDb?.email) {
+  } else if (authEmail) {
     // 2. Check via Supabase Auth
     try {
       const authClient = createClient(supabaseUrl, supabaseKey, {
         auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
       });
       const { error: authErr } = await authClient.auth.signInWithPassword({
-        email: userEmail || userDb.email,
+        email: authEmail,
         password: cleanPassword
       });
       if (!authErr) passwordValid = true;
@@ -1485,6 +1534,12 @@ app.delete('/api/tournaments/:id', authenticateToken, isAdmin, async (req, res) 
     if (delErr) {
       return res.status(500).json({ error: delErr.message });
     }
+
+    apiCache.keys().forEach((k) => {
+      if (k.includes('/api/tournaments') || k.includes('/api/bracket-results') || k.includes('/api/admin/quick-stats')) {
+        apiCache.del(k);
+      }
+    });
 
     await logAudit('FOLDER_DELETED', `Deleted tournament folder "${tourneyName}" by Super Admin ${req.adminUser.username}`, { id: tourney.id, name: tourneyName }, tourney.game || null, req);
     res.json({ message: `Tournament "${tourneyName}" deleted successfully.` });

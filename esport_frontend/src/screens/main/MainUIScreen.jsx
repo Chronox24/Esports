@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
-import { apiFetch, isTournamentAdminUser, canUserManageFolders } from "../../utils/api.js";
+import { apiFetch, isTournamentAdminUser, canUserManageFolders, notifyUserUpdated } from "../../utils/api.js";
 import { ErrorBoundary } from "../../ErrorBoundary.jsx";
 import Dashboard from "./Dashboard.jsx";
 import TournamentHistory from "./TournamentHistory.jsx";
@@ -67,28 +67,47 @@ const MainUIScreen = ({ onLogout }) => {
       return '';
     }
   });
+  const [userSyncVersion, setUserSyncVersion] = useState(0);
 
-  // Verify and sync current user permissions & role from /api/me on mount
+  // Verify and sync current user permissions & role from /api/me on mount (with retry for backend cold start)
   useEffect(() => {
-    const fetchMe = async () => {
+    let isCancelled = false;
+    let retryTimer = null;
+
+    const fetchMe = async (attempt = 0) => {
       try {
         const res = await apiFetch('/api/me');
         if (res.ok) {
           const data = await res.json();
-          if (data && (data.role || data.is_super_admin !== undefined)) {
+          if (!isCancelled && data && (data.role || data.is_super_admin !== undefined)) {
             setCurrentUserRole(data.role || '');
             const savedUser = JSON.parse(localStorage.getItem('user') || '{}');
             localStorage.setItem('user', JSON.stringify({ ...savedUser, ...data }));
+            setUserSyncVersion((v) => v + 1);
+            notifyUserUpdated();
           }
+          return;
         }
-      } catch (_) {}
+        if (res.status >= 500 && attempt < 3 && !isCancelled) {
+          retryTimer = setTimeout(() => fetchMe(attempt + 1), 2500 * (attempt + 1));
+        }
+      } catch (_) {
+        if (attempt < 3 && !isCancelled) {
+          retryTimer = setTimeout(() => fetchMe(attempt + 1), 2500 * (attempt + 1));
+        }
+      }
     };
-    fetchMe();
+    fetchMe(0);
+
+    return () => {
+      isCancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
+    };
   }, []);
 
   const hasAdminAccess = useCallback(() => {
     return isTournamentAdminUser();
-  }, [currentUserRole]);
+  }, [currentUserRole, userSyncVersion]);
 
   // Guard against non-admin role remaining on Admin tab
   useEffect(() => {
@@ -241,6 +260,19 @@ const MainUIScreen = ({ onLogout }) => {
   useEffect(() => {
     loadTournaments();
   }, [loadTournaments]);
+
+  useEffect(() => {
+    const handleDeleted = (e) => {
+      const deletedName = e?.detail?.name;
+      if (deletedName && (globalTournament === deletedName || globalTournament?.name === deletedName)) {
+        setGlobalTournament('');
+        localStorage.removeItem('globalTournament');
+      }
+      loadTournaments();
+    };
+    window.addEventListener('tournament-deleted', handleDeleted);
+    return () => window.removeEventListener('tournament-deleted', handleDeleted);
+  }, [globalTournament, loadTournaments]);
 
   const handleDeleteFolder = async () => {
     if (!canUserManageFolders()) {

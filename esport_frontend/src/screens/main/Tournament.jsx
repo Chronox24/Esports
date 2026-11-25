@@ -12,7 +12,9 @@ import PlayerRankings from "./PlayerRankings.jsx";
 import PlayerStatsTab from "./PlayerStatsTab.jsx";
 import RawRecords from "./RawRecords.jsx";
 import { ErrorBoundary } from "../../ErrorBoundary.jsx";
-import { apiFetch, canUserEdit, canUserManageFolders, getUserPermissions, isSuperAdminUser } from "../../utils/api";
+import { apiFetch, canUserEdit, canUserManageFolders, getUserPermissions } from "../../utils/api";
+import { useSuperAdmin } from "../../hooks/useSuperAdmin";
+import DeleteTournamentModal from "../../components/DeleteTournamentModal.jsx";
 import {
   Calendar,
   Clock,
@@ -23,9 +25,6 @@ import {
   Check,
   CheckCircle2,
   AlertCircle,
-  AlertTriangle,
-  Eye,
-  EyeOff,
   Trophy,
   Sparkles,
   Search,
@@ -830,7 +829,7 @@ const TournamentSkeletonRow = ({ color = 'cyan', label = 'Querying Tournaments..
   );
 };
 
-const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTournament, onOpenCreateModal, onNavigateToHub, onEditTournamentSchedule }) => {
+const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTournament, onOpenCreateModal, onNavigateToHub, onEditTournamentSchedule, onTournamentDeleted }) => {
   const currentTournamentName = typeof globalTournament === 'string'
     ? globalTournament
     : (globalTournament && typeof globalTournament.name === 'string'
@@ -853,52 +852,23 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
   const [showFinishedBracket, setShowFinishedBracket] = React.useState(false);
   const [isTogglingStatus, setIsTogglingStatus] = React.useState(false);
 
-  const isSuperAdmin = isSuperAdminUser();
+  const isSuperAdmin = useSuperAdmin();
   const [tournamentToDelete, setTournamentToDelete] = React.useState(null);
-  const [deletePassword, setDeletePassword] = React.useState('');
-  const [showDeletePassword, setShowDeletePassword] = React.useState(false);
-  const [isDeletingTournament, setIsDeletingTournament] = React.useState(false);
-  const [deleteError, setDeleteError] = React.useState('');
 
-  const handleConfirmDeleteTournament = async (e) => {
-    if (e) e.preventDefault();
-    if (!tournamentToDelete) return;
-    if (!deletePassword.trim()) {
-      setDeleteError('Administrator password is required.');
-      return;
+  const handleTournamentDeletedSuccess = async (deleted) => {
+    if (currentTournamentName === deleted?.name && setGlobalTournament) {
+      setGlobalTournament('');
     }
-    setIsDeletingTournament(true);
-    setDeleteError('');
-    try {
-      const targetIdentifier = tournamentToDelete.id || tournamentToDelete.name;
-      const res = await apiFetch(`/api/tournaments/${encodeURIComponent(targetIdentifier)}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: deletePassword.trim() })
-      });
-      if (res.ok) {
-        if (currentTournamentName === tournamentToDelete.name) {
-          if (setGlobalTournament) setGlobalTournament('');
-        }
-        if (expandedLiveTournament === tournamentToDelete.name) {
-          setExpandedLiveTournament(null);
-        }
-        if (expandedFinishedTournament === tournamentToDelete.name) {
-          setExpandedFinishedTournament(null);
-        }
-        setTournamentToDelete(null);
-        setDeletePassword('');
-        setDeleteError('');
-        await loadTournaments();
-      } else {
-        const errData = await res.json().catch(() => ({}));
-        setDeleteError(errData.error || 'Failed to delete tournament folder. Please check your password.');
-      }
-    } catch (err) {
-      setDeleteError('Network error while deleting tournament folder.');
-    } finally {
-      setIsDeletingTournament(false);
+    if (expandedLiveTournament === deleted?.name) {
+      setExpandedLiveTournament(null);
     }
+    if (expandedFinishedTournament === deleted?.name) {
+      setExpandedFinishedTournament(null);
+    }
+    if (onTournamentDeleted) {
+      onTournamentDeleted(deleted);
+    }
+    await loadTournaments();
   };
 
   const loadTournaments = React.useCallback(async () => {
@@ -1337,12 +1307,12 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
                   >
                     <div className="hud-sweep-overlay" />
                     <div style={{ padding: '22px 20px' }} className="flex-1 flex flex-col items-center justify-between p-5 text-center overflow-hidden relative z-10">
-                      <div className="h-6 w-full flex items-center justify-between relative px-1">
-                        <div className="w-5" />
+                      <div className="h-6 w-full flex items-center justify-between gap-1 relative px-1">
+                        <div className="flex-1" />
                         {isCurrent ? (
                           <div
                             style={{ padding: '4px 12px' }}
-                            className={`hud-chamfer-sm flex items-center gap-1.5 font-tactical text-[10px] font-extrabold uppercase tracking-[0.16em] ${
+                            className={`hud-chamfer-sm flex items-center gap-1.5 whitespace-nowrap shrink-0 font-tactical text-[10px] font-extrabold uppercase tracking-[0.16em] ${
                               isVal
                                 ? 'bg-rose-500 text-slate-950 shadow-[0_0_12px_rgba(244,63,94,0.5)]'
                                 : 'bg-cyan-400 text-slate-950 shadow-[0_0_12px_rgba(0,229,255,0.5)]'
@@ -1352,27 +1322,26 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
                             Active Folder
                           </div>
                         ) : (
-                          <span className={`font-mono text-[10px] uppercase tracking-widest ${
+                          <span className={`font-mono text-[10px] uppercase tracking-widest whitespace-nowrap shrink-0 ${
                             isVal ? 'text-rose-400/60' : 'text-cyan-400/60'
                           }`}>// LIVE STAGE</span>
                         )}
-                        {isSuperAdmin ? (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setTournamentToDelete(t);
-                              setDeletePassword('');
-                              setDeleteError('');
-                            }}
-                            className="w-6 h-6 flex items-center justify-center rounded bg-red-500/10 hover:bg-red-500/30 border border-red-500/30 text-red-400 hover:text-red-200 transition-colors cursor-pointer"
-                            title={`Delete ${t.name} (Super Admin only)`}
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        ) : (
-                          <div className="w-5" />
-                        )}
+                        <div className="flex-1 flex justify-end">
+                          {isSuperAdmin && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setTournamentToDelete(t);
+                              }}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-red-500/20 hover:bg-red-500/40 border border-red-500/50 text-red-300 hover:text-white font-tactical text-[9px] font-extrabold uppercase tracking-wider transition-colors cursor-pointer relative z-20 shrink-0 shadow-[0_0_8px_rgba(239,68,68,0.25)]"
+                              title={`Delete ${t.name} (Super Admin only)`}
+                            >
+                              <Trash2 size={11} />
+                              <span>DEL</span>
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       <div style={{ padding: '0 8px' }} className="flex flex-col items-center justify-center my-auto px-2">
@@ -1508,8 +1477,6 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
                         onClick={() => {
                           const tObj = liveTournaments.find(x => x.name === expandedLiveTournament) || { name: expandedLiveTournament };
                           setTournamentToDelete(tObj);
-                          setDeletePassword('');
-                          setDeleteError('');
                         }}
                         style={{ padding: '8px 16px' }}
                         className="hud-chamfer-sm flex items-center justify-center gap-2 border border-red-500/40 bg-red-500/15 hover:bg-red-500/25 text-red-400 hover:text-red-200 font-tactical font-extrabold uppercase tracking-[0.14em] text-xs transition-all cursor-pointer shadow-[0_0_12px_rgba(239,68,68,0.2)]"
@@ -1601,38 +1568,37 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
                   >
                     <div className="hud-sweep-overlay" />
                     <div style={{ padding: '22px 20px' }} className="flex-1 flex flex-col items-center justify-between p-5 text-center overflow-hidden relative z-10">
-                      <div className="h-6 w-full flex items-center justify-between relative px-1">
-                        <div className="w-5" />
+                      <div className="h-6 w-full flex items-center justify-between gap-1 relative px-1">
+                        <div className="flex-1" />
                         {isCurrent ? (
-                          <div style={{ padding: '4px 12px' }} className="hud-chamfer-sm flex items-center gap-1.5 bg-amber-400 text-slate-950 font-tactical text-[10px] font-extrabold uppercase tracking-[0.16em] shadow-[0_0_12px_rgba(245,158,11,0.4)]">
+                          <div style={{ padding: '4px 12px' }} className="hud-chamfer-sm flex items-center gap-1.5 whitespace-nowrap shrink-0 bg-amber-400 text-slate-950 font-tactical text-[10px] font-extrabold uppercase tracking-[0.16em] shadow-[0_0_12px_rgba(245,158,11,0.4)]">
                             <span className="w-1.5 h-1.5 rounded-full bg-slate-950"></span>
                             Active Folder
                           </div>
                         ) : (
-                          <div style={{ padding: '4px 12px' }} className="hud-chamfer-sm flex items-center gap-1 bg-amber-500/15 border border-amber-500/40 text-amber-300 font-tactical text-[10px] font-extrabold uppercase tracking-[0.16em]">
+                          <div style={{ padding: '4px 12px' }} className="hud-chamfer-sm flex items-center gap-1 whitespace-nowrap shrink-0 bg-amber-500/15 border border-amber-500/40 text-amber-300 font-tactical text-[10px] font-extrabold uppercase tracking-[0.16em]">
                             <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
                               <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                             </svg>
                             Concluded
                           </div>
                         )}
-                        {isSuperAdmin ? (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setTournamentToDelete(t);
-                              setDeletePassword('');
-                              setDeleteError('');
-                            }}
-                            className="w-6 h-6 flex items-center justify-center rounded bg-red-500/10 hover:bg-red-500/30 border border-red-500/30 text-red-400 hover:text-red-200 transition-colors cursor-pointer"
-                            title={`Delete ${t.name} (Super Admin only)`}
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        ) : (
-                          <div className="w-5" />
-                        )}
+                        <div className="flex-1 flex justify-end">
+                          {isSuperAdmin && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setTournamentToDelete(t);
+                              }}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-red-500/20 hover:bg-red-500/40 border border-red-500/50 text-red-300 hover:text-white font-tactical text-[9px] font-extrabold uppercase tracking-wider transition-colors cursor-pointer relative z-20 shrink-0 shadow-[0_0_8px_rgba(239,68,68,0.25)]"
+                              title={`Delete ${t.name} (Super Admin only)`}
+                            >
+                              <Trash2 size={11} />
+                              <span>DEL</span>
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       <div style={{ padding: '0 8px' }} className="flex flex-col items-center justify-center my-auto px-2">
@@ -1760,8 +1726,6 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
                         onClick={() => {
                           const tObj = finishedTournaments.find(x => x.name === expandedFinishedTournament) || { name: expandedFinishedTournament };
                           setTournamentToDelete(tObj);
-                          setDeletePassword('');
-                          setDeleteError('');
                         }}
                         style={{ padding: '8px 16px' }}
                         className="hud-chamfer-sm flex items-center justify-center gap-2 border border-red-500/40 bg-red-500/15 hover:bg-red-500/25 text-red-400 hover:text-red-200 font-tactical font-extrabold uppercase tracking-[0.14em] text-xs transition-all cursor-pointer shadow-[0_0_12px_rgba(239,68,68,0.2)]"
@@ -1821,131 +1785,11 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
         )}
       </div>
 
-      {/* Super Admin Tournament Deletion Modal */}
-      {tournamentToDelete && typeof document !== 'undefined' && createPortal(
-        <div 
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in"
-          onClick={() => {
-            if (!isDeletingTournament) {
-              setTournamentToDelete(null);
-              setDeletePassword('');
-              setDeleteError('');
-            }
-          }}
-        >
-          <div 
-            className="bg-bg-200 border border-red-500/50 rounded-2xl w-full max-w-lg overflow-hidden shadow-[0_0_50px_rgba(239,68,68,0.3)] flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="bg-red-950/40 border-b border-red-500/30 p-5 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400 shrink-0">
-                  <AlertTriangle size={20} />
-                </div>
-                <div>
-                  <h3 className="font-tactical text-base font-extrabold uppercase tracking-wider text-red-300">
-                    Confirm Tournament Deletion
-                  </h3>
-                  <span className="font-tactical text-[10px] text-red-400/80 font-bold uppercase tracking-widest">
-                    SUPER ADMINISTRATOR AUTHORIZATION
-                  </span>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!isDeletingTournament) {
-                    setTournamentToDelete(null);
-                    setDeletePassword('');
-                    setDeleteError('');
-                  }
-                }}
-                disabled={isDeletingTournament}
-                className="text-slate-400 hover:text-white transition-colors p-1"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Body / Form */}
-            <form onSubmit={handleConfirmDeleteTournament} className="p-6 flex flex-col gap-5">
-              <div className="bg-red-500/10 border border-red-500/25 rounded-xl p-4 text-xs text-red-200 leading-relaxed">
-                <p className="font-bold mb-1 text-red-300">
-                  ⚠️ Warning: This action is permanent and irreversible!
-                </p>
-                <p>
-                  You are about to delete the tournament folder <strong className="text-white font-mono uppercase underline">{tournamentToDelete.name}</strong>. All associated match records, brackets, and standings will be purged.
-                </p>
-              </div>
-
-              {deleteError && (
-                <div className="bg-red-900/40 border border-red-500/60 rounded-xl p-3 text-xs text-red-300 flex items-center gap-2">
-                  <AlertCircle size={16} className="shrink-0 text-red-400" />
-                  <span>{deleteError}</span>
-                </div>
-              )}
-
-              <div className="flex flex-col gap-2">
-                <label className="font-tactical text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
-                  <span>Enter Your Password To Confirm <span className="text-red-400">*</span></span>
-                  <span className="text-[10px] text-slate-500 lowercase font-mono">super admin credential</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type={showDeletePassword ? 'text' : 'password'}
-                    value={deletePassword}
-                    onChange={(e) => setDeletePassword(e.target.value)}
-                    placeholder="Enter your administrator password"
-                    autoFocus
-                    className="w-full bg-slate-950 border border-slate-700 focus:border-red-500 text-white font-mono text-sm rounded-xl px-4 py-3 pr-11 focus:outline-none transition-colors"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowDeletePassword(!showDeletePassword)}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 hover:text-slate-200 transition-colors"
-                  >
-                    {showDeletePassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTournamentToDelete(null);
-                    setDeletePassword('');
-                    setDeleteError('');
-                  }}
-                  disabled={isDeletingTournament}
-                  className="hud-btn-secondary px-5 py-2.5 text-xs font-tactical font-extrabold uppercase tracking-wider"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isDeletingTournament || !deletePassword.trim()}
-                  className="bg-red-600 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-xl font-tactical text-xs font-extrabold uppercase tracking-wider shadow-[0_0_20px_rgba(239,68,68,0.4)] transition-all flex items-center gap-2 cursor-pointer"
-                >
-                  {isDeletingTournament ? (
-                    <>
-                      <RefreshCw size={14} className="animate-spin" />
-                      <span>Verifying &amp; Deleting...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Trash2 size={14} />
-                      <span>Authorize &amp; Delete</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>,
-        document.body
-      )}
+      <DeleteTournamentModal
+        tournament={tournamentToDelete}
+        onClose={() => setTournamentToDelete(null)}
+        onDeleted={handleTournamentDeletedSuccess}
+      />
     </div>
   );
 };
@@ -4531,11 +4375,14 @@ const TournamentHubTab = ({
   globalTournament,
   setGlobalTournament,
   onBackToTournaments,
+  onTournamentDeleted,
   activeSubTab = "predictions",
   setActiveSubTab
 }) => {
   const [availableTournaments, setAvailableTournaments] = useState([]);
   const [isSubTabLoading, setIsSubTabLoading] = useState(true);
+  const isSuperAdmin = useSuperAdmin();
+  const [tournamentToDelete, setTournamentToDelete] = useState(null);
 
   useEffect(() => {
     apiFetch('/api/tournaments')
@@ -4700,27 +4547,43 @@ const TournamentHubTab = ({
           </div>
         </div>
 
-        {/* Quick Tournament Switcher */}
-        {availableTournaments.length > 0 && (
-          <div className="flex items-center gap-3 relative z-10 w-full lg:w-auto justify-end">
-            <span className="font-tactical text-xs font-extrabold text-slate-400 uppercase tracking-[0.14em] hidden sm:inline">
-              Switch:
-            </span>
-            <select
-              value={tournamentName}
-              onChange={(e) => setGlobalTournament && setGlobalTournament(e.target.value)}
-              className="hud-chamfer-sm bg-slate-900 border border-cyan-500/35 hover:border-cyan-400 text-white font-tactical text-xs font-extrabold uppercase tracking-[0.14em] px-4 py-2.5 outline-none transition-colors cursor-pointer w-full sm:w-auto"
+        {/* Quick Tournament Switcher + Super Admin Delete */}
+        <div className="flex flex-wrap items-center gap-3 relative z-10 w-full lg:w-auto justify-end">
+          {availableTournaments.length > 0 && (
+            <>
+              <span className="font-tactical text-xs font-extrabold text-slate-400 uppercase tracking-[0.14em] hidden sm:inline">
+                Switch:
+              </span>
+              <select
+                value={tournamentName}
+                onChange={(e) => setGlobalTournament && setGlobalTournament(e.target.value)}
+                className="hud-chamfer-sm bg-slate-900 border border-cyan-500/35 hover:border-cyan-400 text-white font-tactical text-xs font-extrabold uppercase tracking-[0.14em] px-4 py-2.5 outline-none transition-colors cursor-pointer w-full sm:w-auto"
+              >
+                {availableTournaments
+                  .filter(t => !game || (t.game || 'VALORANT').toUpperCase() === game.toUpperCase())
+                  .map(t => (
+                    <option key={t.id || t.name} value={t.name}>
+                      {t.name}
+                    </option>
+                  ))}
+              </select>
+            </>
+          )}
+          {isSuperAdmin && tournamentName && (
+            <button
+              type="button"
+              onClick={() => {
+                const matched = availableTournaments.find(t => t.name === tournamentName);
+                setTournamentToDelete(matched || { name: tournamentName });
+              }}
+              className="hud-chamfer-sm flex items-center justify-center gap-2 border border-red-500/45 bg-red-500/15 hover:bg-red-500/30 text-red-300 hover:text-white font-tactical font-extrabold uppercase tracking-[0.14em] text-xs px-4 py-2.5 transition-all cursor-pointer shadow-[0_0_14px_rgba(239,68,68,0.22)] shrink-0"
+              title="Delete this tournament folder (Super Admin only)"
             >
-              {availableTournaments
-                .filter(t => !game || (t.game || 'VALORANT').toUpperCase() === game.toUpperCase())
-                .map(t => (
-                  <option key={t.id || t.name} value={t.name}>
-                    {t.name}
-                  </option>
-                ))}
-            </select>
-          </div>
-        )}
+              <Trash2 size={14} />
+              <span>Delete Tournament</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── Sub-Navigation Ribbon (2 Layers, No Scroll) ── */}
@@ -4822,6 +4685,17 @@ const TournamentHubTab = ({
           </div>
         )}
       </div>
+
+      <DeleteTournamentModal
+        tournament={tournamentToDelete}
+        onClose={() => setTournamentToDelete(null)}
+        onDeleted={(deleted) => {
+          setAvailableTournaments((prev) => prev.filter((item) => item.name !== deleted?.name));
+          if (setGlobalTournament) setGlobalTournament('');
+          if (onTournamentDeleted) onTournamentDeleted(deleted);
+          if (onBackToTournaments) onBackToTournaments();
+        }}
+      />
     </div>
   );
 };
@@ -5091,6 +4965,11 @@ const Tournament = ({ globalGame, setGlobalGame, globalTournament, setGlobalTour
               setActiveTab("TOURNAMENT HUB");
             }}
             onEditTournamentSchedule={handleEditTournamentSchedule}
+            onTournamentDeleted={(deleted) => {
+              if (deleted?.name) {
+                setAvailableTournaments((prev) => prev.filter((item) => item.name !== deleted.name));
+              }
+            }}
           />
         );
       case "TOURNAMENT HUB":
@@ -5101,6 +4980,11 @@ const Tournament = ({ globalGame, setGlobalGame, globalTournament, setGlobalTour
             globalTournament={globalTournament}
             setGlobalTournament={setGlobalTournament}
             onBackToTournaments={() => setActiveTab("LIVE & UPCOMING")}
+            onTournamentDeleted={(deleted) => {
+              if (deleted?.name) {
+                setAvailableTournaments((prev) => prev.filter((item) => item.name !== deleted.name));
+              }
+            }}
             activeSubTab={hubSubTab}
             setActiveSubTab={setHubSubTab}
           />

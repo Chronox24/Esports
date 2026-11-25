@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './LoginScreen.css';
-import { apiFetch } from '../../utils/api';
+import { apiFetch, notifyUserUpdated } from '../../utils/api';
 
 const LoginScreen = ({ onClose, onLoginSuccess }) => {
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'forgot' | 'success'
@@ -121,9 +121,10 @@ const LoginScreen = ({ onClose, onLoginSuccess }) => {
       }
       if (data.user) {
         localStorage.setItem('user', JSON.stringify(data.user));
-        const username = data.user.user_metadata?.username || data.user.user_metadata?.ign || (data.user.email ? data.user.email.split('@')[0] : 'Admin');
+        const username = data.user.username || data.user.user_metadata?.username || data.user.user_metadata?.ign || (data.user.email ? data.user.email.split('@')[0] : 'Admin');
         localStorage.setItem('username', username);
         localStorage.setItem('user_ign', username);
+        notifyUserUpdated();
       }
       if (onLoginSuccess) {
         onLoginSuccess();
