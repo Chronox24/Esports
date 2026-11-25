@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { apiFetch, isTournamentAdminUser, canUserManageFolders, notifyUserUpdated } from "../../utils/api.js";
+import ReminderToastHost from "../../components/ReminderToastHost.jsx";
 import { ErrorBoundary } from "../../ErrorBoundary.jsx";
 import Dashboard from "./Dashboard.jsx";
 import TournamentHistory from "./TournamentHistory.jsx";
@@ -714,6 +715,15 @@ const MainUIScreen = ({ onLogout }) => {
         </button>
       </nav>
     </main>
+
+    <ReminderToastHost
+      onOpenTournament={(tournamentName, gameTitle) => {
+        if (gameTitle) setGlobalGame(gameTitle.toUpperCase());
+        if (tournamentName) setGlobalTournament(tournamentName);
+        localStorage.setItem('tournament_activeTab', 'LIVE & UPCOMING');
+        setActiveTab('Tournament');
+      }}
+    />
 
   </div>
   );

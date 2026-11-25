@@ -16,6 +16,15 @@ import { apiFetch, canUserEdit, canUserManageFolders, getUserPermissions } from 
 import { useSuperAdmin } from "../../hooks/useSuperAdmin";
 import DeleteTournamentModal from "../../components/DeleteTournamentModal.jsx";
 import {
+  getStoredReminders,
+  upsertStoredReminder,
+  removeStoredReminder,
+  parseMatchStartTimestamp,
+  evaluateTournamentStartState,
+  requestBrowserNotificationPermission,
+  triggerReminderNotification,
+} from "../../utils/reminders";
+import {
   Calendar,
   Clock,
   Swords,
@@ -3679,10 +3688,21 @@ const ScheduleTab = ({ game, globalTournament, setGlobalTournament, availableTou
     }
   }, [game]);
   const [filterByGame, setFilterByGame] = useState(true);
-  const [reminders, setReminders] = useState({});
+  const [reminders, setReminders] = useState(() => getStoredReminders());
   const [selectedDay, setSelectedDay] = useState(null);
 
   const [tournamentsList, setTournamentsList] = useState(availableTournaments || []);
+  const [dashboardList, setDashboardList] = useState([]);
+
+  useEffect(() => {
+    const syncReminders = () => setReminders(getStoredReminders());
+    window.addEventListener('tournament-reminders-updated', syncReminders);
+    window.addEventListener('storage', syncReminders);
+    return () => {
+      window.removeEventListener('tournament-reminders-updated', syncReminders);
+      window.removeEventListener('storage', syncReminders);
+    };
+  }, []);
 
   useEffect(() => {
     apiFetch('/api/tournaments')
@@ -3691,6 +3711,13 @@ const ScheduleTab = ({ game, globalTournament, setGlobalTournament, availableTou
         if (Array.isArray(data)) {
           setTournamentsList(data.filter((t) => t.name && t.name.toLowerCase() !== "default"));
         }
+      })
+      .catch(console.error);
+
+    apiFetch('/api/tournaments-dashboard')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setDashboardList(data);
       })
       .catch(console.error);
   }, []);
@@ -3748,7 +3775,8 @@ const ScheduleTab = ({ game, globalTournament, setGlobalTournament, availableTou
                   dayNum = parseInt(m.match_day, 10);
                 }
               }
-              return {
+              const statusLower = String(m.status || 'scheduled').trim().toLowerCase();
+              const item = {
                 id: m.match_id,
                 tournamentName: m.tournament_name || "Tournament",
                 gameTitle: (m.game_title || "VALORANT").toUpperCase(),
@@ -3757,15 +3785,19 @@ const ScheduleTab = ({ game, globalTournament, setGlobalTournament, availableTou
                 teamB: m.team_b?.team_name || "TBD",
                 teamBLogo: m.team_b?.logo_url,
                 score: `${m.score_a || 0}-${m.score_b || 0}`,
-                isLive: m.is_live,
+                status: statusLower,
+                isLive: Boolean(m.is_live || statusLower === 'in_progress' || statusLower === 'live'),
                 day: dayNum,
                 dateStr: m.match_day || "",
+                match_schedule: m.match_schedule || null,
                 time: m.match_time || "00:00",
                 timezone: m.match_timezone || "PST",
                 reminded: false,
                 stage: m.round || "Match",
                 map: m.map_info || "TBD",
               };
+              item.startTimestamp = parseMatchStartTimestamp(item);
+              return item;
             });
           setScheduleData(mapped);
         }
@@ -3798,8 +3830,60 @@ const ScheduleTab = ({ game, globalTournament, setGlobalTournament, availableTou
     return list.map((m) => m.day);
   }, [scheduleData, filterByGame, activeGame]);
 
-  const toggleReminder = (id) =>
-    setReminders((prev) => ({ ...prev, [id]: !prev[id] }));
+  const toggleReminder = (match) => {
+    if (!match || !match.id) return;
+    const isCurrentlyReminded = Boolean(reminders[match.id]);
+
+    if (isCurrentlyReminded) {
+      const updated = removeStoredReminder(match.id);
+      setReminders({ ...updated });
+      triggerReminderNotification({
+        matchId: match.id,
+        tournamentName: match.tournamentName,
+        gameTitle: match.gameTitle,
+        type: 'info',
+        title: 'Reminder Cancelled',
+        message: `Removed reminder for ${match.tournamentName} (${match.teamA} vs ${match.teamB}).`,
+        sendBrowserNotification: false,
+      });
+      return;
+    }
+
+    requestBrowserNotificationPermission();
+
+    const startState = evaluateTournamentStartState(match, {
+      tournamentsList,
+      dashboardList,
+      allMatches: scheduleData,
+    });
+
+    const updated = upsertStoredReminder(match.id, {
+      id: match.id,
+      tournamentName: match.tournamentName,
+      gameTitle: match.gameTitle,
+      teamA: match.teamA,
+      teamB: match.teamB,
+      day: match.day,
+      dateStr: match.dateStr,
+      time: match.time,
+      timezone: match.timezone,
+      startTimestamp: startState.startTimestamp,
+      remindedAt: Date.now(),
+      // Keep notified=false for tournament_active with a future match time so the specific match start still alerts
+      notified: startState.started && startState.kind !== 'tournament_active',
+    });
+    setReminders({ ...updated });
+
+    triggerReminderNotification({
+      matchId: match.id,
+      tournamentName: match.tournamentName,
+      gameTitle: match.gameTitle,
+      type: startState.alreadyConcluded ? 'warning' : startState.started ? 'started' : 'info',
+      title: startState.headline,
+      message: startState.detail,
+      sendBrowserNotification: startState.started,
+    });
+  };
 
   return (
     <div className="flex flex-col lg:flex-row gap-8 h-full w-full">
@@ -3982,8 +4066,12 @@ const ScheduleTab = ({ game, globalTournament, setGlobalTournament, availableTou
         {/* Matches List */}
         <div className="flex flex-col gap-3.5">
           {filteredSchedule.map((s) => {
-            const reminded =
-              reminders[s.id] !== undefined ? reminders[s.id] : s.reminded;
+            const reminded = Boolean(reminders[s.id]);
+            const startState = evaluateTournamentStartState(s, {
+              tournamentsList,
+              dashboardList,
+              allMatches: scheduleData,
+            });
             const abbrA = (s.teamA || "TB").substring(0, 2).toUpperCase();
             const abbrB = (s.teamB || "TB").substring(0, 2).toUpperCase();
 
@@ -4055,6 +4143,22 @@ const ScheduleTab = ({ game, globalTournament, setGlobalTournament, availableTou
                   </div>
                 </div>
 
+                {startState.started && (
+                  <span
+                    className={`hud-chamfer-sm px-2.5 py-1 font-tactical text-[9px] font-extrabold uppercase tracking-[0.16em] shrink-0 relative z-10 flex items-center gap-1.5 border ${
+                      startState.alreadyConcluded
+                        ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+                        : 'bg-rose-500/15 border-rose-500/45 text-rose-300'
+                    }`}
+                    title={startState.detail}
+                  >
+                    {!startState.alreadyConcluded && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping" />
+                    )}
+                    <span>{startState.badge}</span>
+                  </span>
+                )}
+
                 <div className="text-right shrink-0 hidden sm:block relative z-10 px-2">
                   <div className="font-tactical text-sm font-extrabold text-white tracking-wider">
                     {s.time}
@@ -4066,8 +4170,9 @@ const ScheduleTab = ({ game, globalTournament, setGlobalTournament, availableTou
 
                 <button
                   type="button"
-                  onClick={() => toggleReminder(s.id)}
+                  onClick={() => toggleReminder(s)}
                   style={{ padding: '8px 14px' }}
+                  title={startState.started ? startState.detail : 'Click to receive a notification when the tournament starts'}
                   className={`hud-chamfer-sm flex items-center gap-1.5 font-tactical text-[10px] font-extrabold tracking-[0.14em] uppercase transition-all active:scale-95 shrink-0 relative z-10 cursor-pointer ${reminded
                     ? "bg-cyan-500/20 border border-cyan-400/50 text-cyan-300 shadow-[0_0_12px_rgba(0,229,255,0.25)]"
                     : "bg-[#ff4655] text-white hover:bg-rose-500 shadow-[0_0_15px_rgba(255,70,85,0.35)] hover:shadow-[0_0_22px_rgba(255,70,85,0.55)]"
