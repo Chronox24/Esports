@@ -2592,16 +2592,21 @@ app.get('/api/predictions/matches', async (req, res) => {
   try {
     const tournamentName = req.query.tournament;
     const gameTitle = req.query.game;
+    const includeConcluded = req.query.includeConcluded === 'true' || req.query.status === 'all';
 
     let query = supabase
       .from('matches')
       .select(`
         match_id, match_schedule, match_day, match_time, match_timezone, status, tournament_name, game_title,
+        team_a_score, team_b_score, team1_score, team2_score,
         team_a:teams!matches_team_a_id_fkey(team_id, team_name, logo_url),
         team_b:teams!matches_team_b_id_fkey(team_id, team_name, logo_url)
       `)
-      .eq('status', 'scheduled')
       .order('match_schedule', { ascending: true, nullsFirst: false });
+
+    if (!includeConcluded) {
+      query = query.eq('status', 'scheduled');
+    }
 
     if (tournamentName && tournamentName.toLowerCase() !== 'all') {
       query = query.ilike('tournament_name', tournamentName.trim());
@@ -2613,13 +2618,84 @@ app.get('/api/predictions/matches', async (req, res) => {
     const { data, error } = await query;
     if (error) throw error;
 
-    const matchesWithPredictions = await Promise.all((data || []).map(async (match) => {
+    const rawMatches = data || [];
+    if (tournamentName && tournamentName.toLowerCase() !== 'all' && rawMatches.length > 0) {
+      await syncBracketScoresIntoFetchedMatches(tournamentName, rawMatches);
+    }
+
+    // Determine which tournaments are concluded so archived predictions stay visible on concluded tournaments
+    const [{ data: tournsData }, { data: resultsData }] = await Promise.all([
+      supabase.from('tournaments').select('name, is_finished, status'),
+      supabase.from('bracket_results').select('tournament_name')
+    ]);
+
+    const finishedTournamentsSet = new Set();
+    (tournsData || []).forEach((t) => {
+      if (t.is_finished || String(t.status || '').toUpperCase() === 'COMPLETE') {
+        finishedTournamentsSet.add((t.name || '').trim().toLowerCase());
+      }
+    });
+    (resultsData || []).forEach((r) => {
+      if (r.tournament_name) finishedTournamentsSet.add(r.tournament_name.trim().toLowerCase());
+    });
+
+    // Fetch community vote tallies for returned match IDs
+    const matchIds = rawMatches.map((m) => m.match_id).filter(Boolean);
+    const voteCountsByMatch = {};
+    if (matchIds.length > 0) {
+      const { data: predRows } = await supabase
+        .from('predictions')
+        .select('match_id, predicted_winner_team_id')
+        .in('match_id', matchIds);
+      (predRows || []).forEach((p) => {
+        if (!voteCountsByMatch[p.match_id]) voteCountsByMatch[p.match_id] = {};
+        const key = String(p.predicted_winner_team_id);
+        voteCountsByMatch[p.match_id][key] = (voteCountsByMatch[p.match_id][key] || 0) + 1;
+      });
+    }
+
+    const matchesWithPredictions = await Promise.all(rawMatches.map(async (match) => {
       let scheduleDate = match.match_schedule;
       if (!scheduleDate && match.match_day && match.match_time) {
         scheduleDate = `${match.match_day} ${match.match_time}`;
       }
       const system_prediction = await generatePrediction(supabase, match.team_a, match.team_b);
-      return { ...match, match_schedule: scheduleDate, system_prediction };
+      const scoreA = Number(match.team_a_score ?? match.team1_score ?? 0);
+      const scoreB = Number(match.team_b_score ?? match.team2_score ?? 0);
+      const statusLower = String(match.status || 'scheduled').trim().toLowerCase();
+      const tournFinished = finishedTournamentsSet.has(String(match.tournament_name || '').trim().toLowerCase());
+      const isConcluded = statusLower === 'finished' || statusLower === 'completed' || tournFinished;
+
+      let actual_winner_team_id = null;
+      let actual_winner_name = null;
+      if (isConcluded && scoreA !== scoreB) {
+        if (scoreA > scoreB && match.team_a) {
+          actual_winner_team_id = match.team_a.team_id;
+          actual_winner_name = match.team_a.team_name;
+        } else if (scoreB > scoreA && match.team_b) {
+          actual_winner_team_id = match.team_b.team_id;
+          actual_winner_name = match.team_b.team_name;
+        }
+      }
+
+      const votesMap = voteCountsByMatch[match.match_id] || {};
+      const votesA = match.team_a ? (votesMap[String(match.team_a.team_id)] || 0) : 0;
+      const votesB = match.team_b ? (votesMap[String(match.team_b.team_id)] || 0) : 0;
+
+      return {
+        ...match,
+        match_schedule: scheduleDate,
+        score_a: scoreA,
+        score_b: scoreB,
+        tournament_is_finished: tournFinished,
+        is_concluded: isConcluded,
+        actual_winner_team_id,
+        actual_winner_name,
+        votes_a: votesA,
+        votes_b: votesB,
+        total_votes: votesA + votesB,
+        system_prediction
+      };
     }));
     res.json(matchesWithPredictions);
   } catch (err) {

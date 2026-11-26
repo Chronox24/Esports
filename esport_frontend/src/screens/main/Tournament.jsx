@@ -12,9 +12,10 @@ import PlayerRankings from "./PlayerRankings.jsx";
 import PlayerStatsTab from "./PlayerStatsTab.jsx";
 import RawRecords from "./RawRecords.jsx";
 import { ErrorBoundary } from "../../ErrorBoundary.jsx";
-import { apiFetch, canUserEdit, canUserManageFolders, getUserPermissions } from "../../utils/api";
+import { apiFetch, canUserEdit, canUserManageFolders, getUserAccount, getUserPermissions } from "../../utils/api";
 import { useSuperAdmin } from "../../hooks/useSuperAdmin";
 import DeleteTournamentModal from "../../components/DeleteTournamentModal.jsx";
+import ConcludedPredictionCard from "../../components/ConcludedPredictionCard.jsx";
 import {
   getStoredReminders,
   upsertStoredReminder,
@@ -856,6 +857,8 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
 
   const [matchesByTournament, setMatchesByTournament] = React.useState({});
   const [standingsByTournament, setStandingsByTournament] = React.useState({});
+  const [predictionsByTournament, setPredictionsByTournament] = React.useState({});
+  const [userPredictionsByTournament, setUserPredictionsByTournament] = React.useState({});
 
   const [showLiveBracket, setShowLiveBracket] = React.useState(false);
   const [showFinishedBracket, setShowFinishedBracket] = React.useState(false);
@@ -1031,6 +1034,32 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
         }
       } catch (e) {
         console.error(e);
+      }
+    }
+
+    if (!predictionsByTournament[tName] || force) {
+      try {
+        const predictionUsername = getUserAccount() || 'Player1';
+        const [predRes, userPredRes] = await Promise.all([
+          apiFetch(`/api/predictions/matches?tournament=${encodeURIComponent(tName)}&game=all&includeConcluded=true`),
+          apiFetch(`/api/predictions/user/${encodeURIComponent(predictionUsername)}?tournament=${encodeURIComponent(tName)}`)
+        ]);
+
+        if (predRes.ok) {
+          const predData = await predRes.json();
+          if (Array.isArray(predData)) {
+            setPredictionsByTournament(prev => ({ ...prev, [tName]: predData }));
+          }
+        }
+
+        if (userPredRes.ok) {
+          const userPredData = await userPredRes.json();
+          if (Array.isArray(userPredData)) {
+            setUserPredictionsByTournament(prev => ({ ...prev, [tName]: userPredData }));
+          }
+        }
+      } catch (e) {
+        console.error('Failed to fetch concluded tournament predictions:', e);
       }
     }
   };
@@ -1753,6 +1782,46 @@ const LiveUpcomingTab = ({ game, onGameChange, globalTournament, setGlobalTourna
                     </div>
                   )}
                 </div>
+
+                {/* Concluded Team Predictions Section */}
+                {(() => {
+                  const predMatches = predictionsByTournament[expandedFinishedTournament] || [];
+                  const userPreds = userPredictionsByTournament[expandedFinishedTournament] || [];
+                  const findUserPred = (matchId) =>
+                    userPreds.find((p) => String(p.match_id) === String(matchId)) || null;
+
+                  return (
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <h4 className="font-tactical text-xs font-extrabold uppercase text-slate-300 tracking-[0.18em] flex items-center gap-2">
+                          <Sparkles size={14} className="text-cyan-400" /> Concluded Team Predictions
+                        </h4>
+                        {predMatches.length > 0 && (
+                          <span className="hud-chamfer-sm px-2.5 py-0.5 bg-cyan-500/10 border border-cyan-500/30 text-[10px] font-tactical font-bold uppercase tracking-wider text-cyan-300">
+                            {predMatches.length} {predMatches.length === 1 ? 'Matchup' : 'Matchups'}
+                          </span>
+                        )}
+                      </div>
+
+                      {predMatches.length === 0 ? (
+                        <div className="hud-chamfer-sm text-center py-8 font-tactical text-slate-400 text-xs font-bold tracking-[0.16em] uppercase bg-slate-900/40 border border-slate-800">
+                          No pre-match team predictions available for this concluded tournament
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 gap-4">
+                          {predMatches.map((match) => (
+                            <ConcludedPredictionCard
+                              key={match.match_id}
+                              match={match}
+                              userPrediction={findUserPred(match.match_id)}
+                              compact={true}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Read-Only Interactive Bracket */}
                 {showFinishedBracket && (() => {

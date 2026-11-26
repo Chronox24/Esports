@@ -15,9 +15,11 @@ import {
   Zap,
   Clock,
   Shield,
-  Layers
+  Layers,
+  Lock
 } from 'lucide-react';
-import { apiFetch } from '../../utils/api';
+import { apiFetch, getUserAccount } from '../../utils/api';
+import ConcludedPredictionCard from '../../components/ConcludedPredictionCard.jsx';
 
 const DEFAULT_VALORANT_MATCHES = [
   {
@@ -181,6 +183,8 @@ const Predictions = ({ globalGame, globalTournament }) => {
 
   // Silently resolve username from auth or fallback
   const [username] = useState(() => {
+    const account = getUserAccount();
+    if (account && typeof account === 'string') return account;
     try {
       const sessionStr = localStorage.getItem('supabase.auth.token');
       if (sessionStr) {
@@ -251,7 +255,7 @@ const Predictions = ({ globalGame, globalTournament }) => {
       const tourneyParam = encodeURIComponent(globalTournament.trim());
       const gameParam = encodeURIComponent(activeGame);
       const res = await apiFetch(
-        `/api/predictions/matches?tournament=${tourneyParam}&game=${gameParam}`
+        `/api/predictions/matches?tournament=${tourneyParam}&game=${gameParam}&includeConcluded=true`
       );
       if (res.ok) {
         const data = await res.json();
@@ -277,6 +281,11 @@ const Predictions = ({ globalGame, globalTournament }) => {
   };
 
   const handlePredict = async (match, team) => {
+    if (match?.is_concluded || String(match?.status || '').toLowerCase() === 'finished' || String(match?.status || '').toLowerCase() === 'completed') {
+      showToast('This match has concluded — predictions are locked.');
+      return;
+    }
+
     const matchId = match.match_id;
     const teamId = team.team_id;
     const teamName = team.team_name;
@@ -319,31 +328,53 @@ const Predictions = ({ globalGame, globalTournament }) => {
   };
 
   const getPredictionForMatch = (matchId) => {
-    return myPredictions.find(p => p.match_id === matchId);
+    return myPredictions.find(p => String(p.match_id) === String(matchId));
   };
 
-  // Filtered matches
-  const filteredMatches = useMemo(() => {
-    return matches.filter(match => {
+  const matchesSearchQuery = (match) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    const a = match.team_a?.team_name?.toLowerCase() || '';
+    const b = match.team_b?.team_name?.toLowerCase() || '';
+    const stage = (match.stage || match.tournament_name || '').toLowerCase();
+    return a.includes(q) || b.includes(q) || stage.includes(q);
+  };
+
+  const activeMatches = useMemo(() => matches.filter(m => !m.is_concluded), [matches]);
+  const concludedMatches = useMemo(() => matches.filter(m => Boolean(m.is_concluded)), [matches]);
+
+  // Filtered active (votable) matches
+  const filteredActiveMatches = useMemo(() => {
+    if (filterMode === 'concluded') return [];
+    return activeMatches.filter(match => {
       const prediction = getPredictionForMatch(match.match_id);
       const hasPredicted = Boolean(prediction);
 
       if (filterMode === 'unpredicted' && hasPredicted) return false;
       if (filterMode === 'predicted' && !hasPredicted) return false;
 
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const a = match.team_a?.team_name?.toLowerCase() || '';
-        const b = match.team_b?.team_name?.toLowerCase() || '';
-        const stage = (match.stage || '').toLowerCase();
-        return a.includes(q) || b.includes(q) || stage.includes(q);
-      }
-      return true;
+      return matchesSearchQuery(match);
     });
-  }, [matches, myPredictions, filterMode, searchQuery]);
+  }, [activeMatches, myPredictions, filterMode, searchQuery]);
+
+  // Filtered concluded (read-only) matches
+  const filteredConcludedMatches = useMemo(() => {
+    if (filterMode === 'unpredicted') return [];
+    return concludedMatches.filter(match => {
+      const prediction = getPredictionForMatch(match.match_id);
+      const hasPredicted = Boolean(prediction);
+
+      if (filterMode === 'predicted' && !hasPredicted) return false;
+
+      return matchesSearchQuery(match);
+    });
+  }, [concludedMatches, myPredictions, filterMode, searchQuery]);
 
   // Statistics
   const totalMatchesCount = matches.length;
+  const activeMatchesCount = activeMatches.length;
+  const pickedActiveCount = activeMatches.filter(m => getPredictionForMatch(m.match_id)).length;
+  const unpredictedActiveCount = Math.max(0, activeMatchesCount - pickedActiveCount);
   const pickedMatchesCount = matches.filter(m => getPredictionForMatch(m.match_id)).length;
   const completionPercentage = totalMatchesCount > 0 ? Math.round((pickedMatchesCount / totalMatchesCount) * 100) : 0;
 
@@ -424,11 +455,16 @@ const Predictions = ({ globalGame, globalTournament }) => {
             {/* Total Matches */}
             <div className="hud-chamfer-sm bg-slate-950/75 border border-cyan-500/25 p-4 flex flex-col justify-between">
               <div className="flex items-center justify-between text-slate-400 mb-2">
-                <span className="font-tactical text-[10px] font-extrabold uppercase tracking-[0.16em]">Upcoming Matches</span>
+                <span className="font-tactical text-[10px] font-extrabold uppercase tracking-[0.16em]">
+                  {activeMatchesCount === 0 && concludedMatches.length > 0 ? 'Concluded Matches' : 'Upcoming Matches'}
+                </span>
                 <Clock size={15} className="text-cyan-400/70" />
               </div>
               <div className="font-tactical text-2xl font-black text-white">
-                {totalMatchesCount} <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Scheduled</span>
+                {activeMatchesCount === 0 && concludedMatches.length > 0 ? concludedMatches.length : activeMatchesCount}{' '}
+                <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">
+                  {activeMatchesCount === 0 && concludedMatches.length > 0 ? 'Concluded' : 'Scheduled'}
+                </span>
               </div>
             </div>
 
@@ -502,7 +538,7 @@ const Predictions = ({ globalGame, globalTournament }) => {
               }`}
             >
               <AlertCircle size={13} />
-              <span>Needs Pick ({matches.length - pickedMatchesCount})</span>
+              <span>Needs Pick ({unpredictedActiveCount})</span>
             </button>
             <button
               type="button"
@@ -515,6 +551,18 @@ const Predictions = ({ globalGame, globalTournament }) => {
             >
               <CheckCircle2 size={13} />
               <span>Picks Locked ({pickedMatchesCount})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterMode('concluded')}
+              className={`hud-chamfer-sm flex items-center gap-2 px-4 py-2.5 font-tactical text-xs font-extrabold uppercase tracking-[0.12em] transition-all cursor-pointer border ${
+                filterMode === 'concluded'
+                  ? 'bg-slate-200 text-slate-950 border-slate-200 shadow-[0_0_16px_rgba(148,163,184,0.35)]'
+                  : 'bg-slate-950/80 border-slate-800 text-slate-400 hover:text-white hover:border-slate-500/50'
+              }`}
+            >
+              <Lock size={13} />
+              <span>Concluded ({concludedMatches.length})</span>
             </button>
           </div>
 
@@ -539,7 +587,7 @@ const Predictions = ({ globalGame, globalTournament }) => {
               Calculating Showdown Analytics & Odds...
             </div>
           </div>
-        ) : filteredMatches.length === 0 ? (
+        ) : filteredActiveMatches.length === 0 && filteredConcludedMatches.length === 0 ? (
           <div className="hud-card p-16 flex flex-col items-center justify-center text-center">
             <div className="hud-chamfer-sm w-16 h-16 bg-slate-900 border border-cyan-500/30 flex items-center justify-center text-cyan-400/70 mb-4">
               <CalendarX size={30} />
@@ -548,7 +596,7 @@ const Predictions = ({ globalGame, globalTournament }) => {
             <p className="text-xs text-slate-400 max-w-sm mt-1 mb-5">
               {searchQuery || filterMode !== 'all'
                 ? 'No matches match your current search or filter criteria.'
-                : `There are no upcoming matches scheduled for "${globalTournament || 'this tournament'}".`}
+                : `There are no upcoming or concluded matches recorded for "${globalTournament || 'this tournament'}".`}
             </p>
             {(searchQuery || filterMode !== 'all') && (
               <button
@@ -564,8 +612,10 @@ const Predictions = ({ globalGame, globalTournament }) => {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6">
-            {filteredMatches.map((match) => {
+          <div className="flex flex-col gap-8">
+            {filteredActiveMatches.length > 0 && (
+              <div className="grid grid-cols-1 gap-6">
+                {filteredActiveMatches.map((match) => {
               const userPrediction = getPredictionForMatch(match.match_id);
               const predictedTeamId = userPrediction?.predicted_winner_team_id;
 
@@ -860,6 +910,42 @@ const Predictions = ({ globalGame, globalTournament }) => {
                 </div>
               );
             })}
+              </div>
+            )}
+
+            {/* ── Concluded Tournament / Match Predictions Section ── */}
+            {filteredConcludedMatches.length > 0 && (
+              <section id="concluded-predictions-section" className="flex flex-col gap-4">
+                <div className="hud-card px-5 py-4 border border-amber-500/25 bg-slate-950/85 flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="hud-chamfer-sm w-10 h-10 bg-amber-500/10 border border-amber-500/35 flex items-center justify-center text-amber-400 shrink-0">
+                      <Lock size={18} />
+                    </div>
+                    <div>
+                      <h2 className="font-tactical text-sm sm:text-base font-extrabold uppercase tracking-[0.16em] text-white">
+                        Concluded Predictions
+                      </h2>
+                      <p className="text-xs text-slate-400">
+                        Read-only team predictions, AI win probabilities, and locked user picks from concluded matches.
+                      </p>
+                    </div>
+                  </div>
+                  <span className="hud-chamfer-sm px-3 py-1 bg-amber-500/10 border border-amber-500/35 font-tactical text-[10px] font-extrabold uppercase tracking-[0.14em] text-amber-300">
+                    {filteredConcludedMatches.length} Concluded
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 gap-5">
+                  {filteredConcludedMatches.map((match) => (
+                    <ConcludedPredictionCard
+                      key={match.match_id}
+                      match={match}
+                      userPrediction={getPredictionForMatch(match.match_id)}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
         )}
       </div>
