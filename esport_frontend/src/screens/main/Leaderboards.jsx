@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { apiFetch } from '../../utils/api';
 import { AgentBadge, getAgentRoleStyle, getAgentImagePath } from '../../utils/agentHelper';
+import CrossTournamentAnalysis from '../../components/CrossTournamentAnalysis.jsx';
+import {
+  buildLeaderboardHistoricalAnalysis,
+  buildPlayerCrossTournamentComparison,
+} from '../../utils/crossTournamentAnalysis';
 
 // Modal for team details
 const TeamModal = ({ team, onClose, activeGame }) => {
@@ -47,7 +52,7 @@ const TeamModal = ({ team, onClose, activeGame }) => {
 };
 
 // Modal for player details
-const PlayerModal = ({ player, onClose, activeGame }) => {
+const PlayerModal = ({ player, onClose, activeGame, historicalComparison = null }) => {
   if (!player) return null;
   const isVal = activeGame === 'VALORANT';
   const accent = isVal ? '#00d0eb' : '#4c7fd6';
@@ -89,6 +94,52 @@ const PlayerModal = ({ player, onClose, activeGame }) => {
             </div>
           </div>
         </div>
+        {historicalComparison?.previous && (
+          <div className="px-6 pb-6 -mt-2">
+            <div className="rounded-xl bg-indigo-950/20 border border-indigo-500/30 p-3.5 text-xs flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span className="text-[10px] font-black uppercase tracking-widest text-indigo-300">
+                  Cross-Tournament History (Previous vs Current)
+                </span>
+                <span className="text-[10px] text-slate-400 truncate max-w-[260px]">
+                  Prev: {historicalComparison.previous_tournaments?.join(', ')}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-bg-300 border border-slate-800 rounded-lg p-2.5">
+                  <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Previous Record</div>
+                  <div className="font-mono font-black text-sm text-slate-200 mt-0.5">
+                    {historicalComparison.previous.kd} K/D • {historicalComparison.previous.win_rate}% WR
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">
+                    {historicalComparison.previous.wins}W / {historicalComparison.previous.maps} Map(s)
+                    {historicalComparison.previous.avg_acs > 0 ? ` • ${historicalComparison.previous.avg_acs} ACS` : ''}
+                  </div>
+                </div>
+                <div className="bg-bg-300 border border-slate-800 rounded-lg p-2.5">
+                  <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Current Record</div>
+                  {historicalComparison.current ? (
+                    <>
+                      <div className="font-mono font-black text-sm text-white mt-0.5">
+                        {historicalComparison.current.kd} K/D • {historicalComparison.current.win_rate}% WR
+                      </div>
+                      <div className="text-[10px] mt-0.5 flex items-center gap-2 font-mono">
+                        <span className={historicalComparison.kd_delta >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
+                          {historicalComparison.kd_delta > 0 ? `+${historicalComparison.kd_delta}` : historicalComparison.kd_delta} K/D
+                        </span>
+                        <span className={historicalComparison.win_rate_delta >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
+                          {historicalComparison.win_rate_delta > 0 ? `+${historicalComparison.win_rate_delta}%` : `${historicalComparison.win_rate_delta}%`} WR
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-[11px] text-slate-500 mt-1">No current tournament maps yet</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -139,6 +190,7 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
 
   // Live tournament records from backend
   const [matchRecords, setMatchRecords] = useState([]);
+  const [allMatchRecords, setAllMatchRecords] = useState([]);
   const [dbTeams, setDbTeams] = useState([]);
   const [dbPlayers, setDbPlayers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -150,10 +202,12 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
 
     Promise.all([
       apiFetch(`/api/match-records${tourneyQuery}`).then(res => res.ok ? res.json() : []).catch(() => []),
+      apiFetch(`/api/match-records`).then(res => res.ok ? res.json() : []).catch(() => []),
       apiFetch(`/api/teams${tourneyQuery}`).then(res => res.ok ? res.json() : []).catch(() => []),
       apiFetch(`/api/players${tourneyQuery}`).then(res => res.ok ? res.json() : []).catch(() => [])
-    ]).then(([recs, teams, players]) => {
+    ]).then(([recs, allRecs, teams, players]) => {
       setMatchRecords(Array.isArray(recs) ? recs : []);
+      setAllMatchRecords(Array.isArray(allRecs) ? allRecs : []);
       setDbTeams(Array.isArray(teams) ? teams : []);
       setDbPlayers(Array.isArray(players) ? players : []);
       setIsLoading(false);
@@ -770,6 +824,38 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
       ]
     };
   }, [playerStats, bestPlayerLeft, bestPlayerRight, cfLeftTeam, cfRightTeam]);
+
+  const keyPlayerHistoricalAnalysis = useMemo(() => {
+    return buildLeaderboardHistoricalAnalysis(
+      allMatchRecords,
+      currentTournamentName,
+      resolvedKeyPlayer1?.ign,
+      team1Name,
+      resolvedKeyPlayer2?.ign,
+      team2Name
+    );
+  }, [allMatchRecords, currentTournamentName, resolvedKeyPlayer1?.ign, team1Name, resolvedKeyPlayer2?.ign, team2Name]);
+
+  const cfPlayerHistoricalAnalysis = useMemo(() => {
+    return buildLeaderboardHistoricalAnalysis(
+      allMatchRecords,
+      currentTournamentName,
+      crossfirePlayerMatchup?.playerLeft,
+      cfLeftTeam,
+      crossfirePlayerMatchup?.playerRight,
+      cfRightTeam
+    );
+  }, [allMatchRecords, currentTournamentName, crossfirePlayerMatchup?.playerLeft, cfLeftTeam, crossfirePlayerMatchup?.playerRight, cfRightTeam]);
+
+  const modalPlayerHistoricalComparison = useMemo(() => {
+    if (!selectedPlayerModal?.ign) return null;
+    return buildPlayerCrossTournamentComparison(
+      allMatchRecords,
+      selectedPlayerModal.ign,
+      currentTournamentName,
+      selectedPlayerModal.team
+    );
+  }, [selectedPlayerModal, allMatchRecords, currentTournamentName]);
 
   // Rank badge component
   const RankBadge = ({ rank }) => {
@@ -1612,6 +1698,17 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
                       </div>
                     </div>
 
+                    {keyPlayerHistoricalAnalysis && (
+                      <div className="px-6 pb-6">
+                        <CrossTournamentAnalysis
+                          analysis={keyPlayerHistoricalAnalysis}
+                          teamAName={team1Name || 'Team 1'}
+                          teamBName={team2Name || 'Team 2'}
+                          compact={true}
+                        />
+                      </div>
+                    )}
+
                   </div>
 
                   {/* ════════ SECTION 2: TEAM ROSTERS SIDE-BY-SIDE ════════ */}
@@ -2210,6 +2307,16 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
                     </div>
                   ))}
                 </div>
+                {cfPlayerHistoricalAnalysis && (
+                  <div className="p-4 border-t border-slate-800/80">
+                    <CrossTournamentAnalysis
+                      analysis={cfPlayerHistoricalAnalysis}
+                      teamAName={cfLeftTeam || 'Left Team'}
+                      teamBName={cfRightTeam || 'Right Team'}
+                      compact={true}
+                    />
+                  </div>
+                )}
               </div>
 
             </div>
@@ -2221,7 +2328,12 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
 
       {/* Modals for inspecting Team and Player */}
       <TeamModal team={selectedTeamModal} onClose={() => setSelectedTeamModal(null)} activeGame={activeGame} />
-      <PlayerModal player={selectedPlayerModal} onClose={() => setSelectedPlayerModal(null)} activeGame={activeGame} />
+      <PlayerModal
+        player={selectedPlayerModal}
+        onClose={() => setSelectedPlayerModal(null)}
+        activeGame={activeGame}
+        historicalComparison={modalPlayerHistoricalComparison}
+      />
     </div>
   );
 };

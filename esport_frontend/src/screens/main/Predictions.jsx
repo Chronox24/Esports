@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { apiFetch, getUserAccount } from '../../utils/api';
 import ConcludedPredictionCard from '../../components/ConcludedPredictionCard.jsx';
+import CrossTournamentAnalysis from '../../components/CrossTournamentAnalysis.jsx';
 
 const DEFAULT_VALORANT_MATCHES = [
   {
@@ -912,6 +913,19 @@ const Predictions = ({ globalGame, globalTournament }) => {
                     </div>
 
                   </div>
+
+                  {/* ── Cross-Tournament Player & Rematch History ── */}
+                  {match.system_prediction?.historical_analysis &&
+                    (match.system_prediction.historical_analysis.has_previous_records ||
+                      match.system_prediction.historical_analysis.rematch_detected) && (
+                      <div className="px-6 pb-5">
+                        <CrossTournamentAnalysis
+                          analysis={match.system_prediction.historical_analysis}
+                          teamAName={teamA.team_name}
+                          teamBName={teamB.team_name}
+                        />
+                      </div>
+                    )}
 
                   {/* ── Match Card Footer Hint ── */}
                   <div className="px-6 py-3 bg-slate-950/70 border-t border-cyan-500/15 flex items-center justify-between text-[11px] text-slate-400">

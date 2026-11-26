@@ -10,6 +10,7 @@ import {
   Lock,
   Clock,
 } from 'lucide-react';
+import CrossTournamentAnalysis from './CrossTournamentAnalysis.jsx';
 
 /**
  * Read-only HUD card displaying pre-match AI predictions, community votes,
@@ -304,6 +305,16 @@ const ConcludedPredictionCard = ({ match, userPrediction = null, compact = false
           <Cpu size={13} className="text-slate-600 shrink-0" />
           Pre-match AI prediction data unavailable for this matchup.
         </div>
+      )}
+
+      {/* Cross-Tournament Returning Players & Rematch History */}
+      {aiPred?.historical_analysis && (
+        <CrossTournamentAnalysis
+          analysis={aiPred.historical_analysis}
+          teamAName={teamAName}
+          teamBName={teamBName}
+          compact={compact}
+        />
       )}
 
       {/* Footer: User Pick + Community Picks */}

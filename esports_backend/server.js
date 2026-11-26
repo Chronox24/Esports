@@ -2661,7 +2661,7 @@ app.get('/api/predictions/matches', async (req, res) => {
         scheduleDate = `${match.match_day} ${match.match_time}`;
       }
       const system_prediction = predictorContext
-        ? generatePredictionFromContext(predictorContext, match.team_a, match.team_b)
+        ? generatePredictionFromContext(predictorContext, match.team_a, match.team_b, match.tournament_name)
         : null;
       const scoreA = Number(match.team_a_score ?? match.team1_score ?? 0);
       const scoreB = Number(match.team_b_score ?? match.team2_score ?? 0);
