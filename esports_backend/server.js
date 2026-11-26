@@ -11,7 +11,7 @@ const NodeCache = require('node-cache');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const { createClient } = require('@supabase/supabase-js');
-const { generatePrediction } = require('./utils/predictor');
+const { generatePrediction, buildPredictorContext, generatePredictionFromContext } = require('./utils/predictor');
 const stats = require('./utils/statsCalculator');
 const { getLiveStreamId, getAllGameHighlights, getLatestChannelVideos } = require('./utils/youtubeScraper');
 const app = express();
@@ -2624,9 +2624,10 @@ app.get('/api/predictions/matches', async (req, res) => {
     }
 
     // Determine which tournaments are concluded so archived predictions stay visible on concluded tournaments
-    const [{ data: tournsData }, { data: resultsData }] = await Promise.all([
-      supabase.from('tournaments').select('name, is_finished, status'),
-      supabase.from('bracket_results').select('tournament_name')
+    const [{ data: tournsData }, { data: resultsData }, predictorContext] = await Promise.all([
+      supabase.from('tournaments').select('*'),
+      supabase.from('bracket_results').select('tournament_name'),
+      buildPredictorContext(supabase)
     ]);
 
     const finishedTournamentsSet = new Set();
@@ -2654,12 +2655,14 @@ app.get('/api/predictions/matches', async (req, res) => {
       });
     }
 
-    const matchesWithPredictions = await Promise.all(rawMatches.map(async (match) => {
+    const matchesWithPredictions = rawMatches.map((match) => {
       let scheduleDate = match.match_schedule;
       if (!scheduleDate && match.match_day && match.match_time) {
         scheduleDate = `${match.match_day} ${match.match_time}`;
       }
-      const system_prediction = await generatePrediction(supabase, match.team_a, match.team_b);
+      const system_prediction = predictorContext
+        ? generatePredictionFromContext(predictorContext, match.team_a, match.team_b)
+        : null;
       const scoreA = Number(match.team_a_score ?? match.team1_score ?? 0);
       const scoreB = Number(match.team_b_score ?? match.team2_score ?? 0);
       const statusLower = String(match.status || 'scheduled').trim().toLowerCase();
@@ -2696,7 +2699,7 @@ app.get('/api/predictions/matches', async (req, res) => {
         total_votes: votesA + votesB,
         system_prediction
       };
-    }));
+    });
     res.json(matchesWithPredictions);
   } catch (err) {
     res.status(500).json({ error: err.message });

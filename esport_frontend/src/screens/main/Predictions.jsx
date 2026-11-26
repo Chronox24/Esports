@@ -196,6 +196,10 @@ const Predictions = ({ globalGame, globalTournament }) => {
     return localStorage.getItem('username') || 'Player1';
   });
 
+  const tournamentName = typeof globalTournament === 'string'
+    ? globalTournament.trim()
+    : (globalTournament?.name || '').trim();
+
   const activeGame = (globalGame || 'VALORANT').toLowerCase();
   const isValorant = activeGame === 'valorant';
   const accent = isValorant ? '#06b6d4' : '#f59e0b';
@@ -204,7 +208,7 @@ const Predictions = ({ globalGame, globalTournament }) => {
   useEffect(() => {
     fetchMatches();
     loadUserPredictions();
-  }, [activeGame, username, globalTournament]);
+  }, [activeGame, username, tournamentName]);
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -214,7 +218,7 @@ const Predictions = ({ globalGame, globalTournament }) => {
   };
 
   const loadUserPredictions = async () => {
-    const storageKey = `predictions_${username}_${globalTournament || 'default'}`;
+    const storageKey = `predictions_${username}_${tournamentName || 'default'}`;
     let cached = [];
     try {
       const local = localStorage.getItem(storageKey);
@@ -224,10 +228,10 @@ const Predictions = ({ globalGame, globalTournament }) => {
     }
     setMyPredictions(cached);
 
-    if (!globalTournament) return;
+    if (!tournamentName) return;
 
     try {
-      const tourneyParam = encodeURIComponent(globalTournament.trim());
+      const tourneyParam = encodeURIComponent(tournamentName);
       const res = await apiFetch(`/api/predictions/user/${encodeURIComponent(username)}?tournament=${tourneyParam}`);
       if (res.ok) {
         const data = await res.json();
@@ -245,14 +249,14 @@ const Predictions = ({ globalGame, globalTournament }) => {
 
   const fetchMatches = async () => {
     setLoading(true);
-    if (!globalTournament) {
+    if (!tournamentName) {
       setMatches([]);
       setLoading(false);
       return;
     }
 
     try {
-      const tourneyParam = encodeURIComponent(globalTournament.trim());
+      const tourneyParam = encodeURIComponent(tournamentName);
       const gameParam = encodeURIComponent(activeGame);
       const res = await apiFetch(
         `/api/predictions/matches?tournament=${tourneyParam}&game=${gameParam}&includeConcluded=true`
@@ -289,7 +293,7 @@ const Predictions = ({ globalGame, globalTournament }) => {
     const matchId = match.match_id;
     const teamId = team.team_id;
     const teamName = team.team_name;
-    const storageKey = `predictions_${username}_${globalTournament || 'default'}`;
+    const storageKey = `predictions_${username}_${tournamentName || 'default'}`;
 
     // Optimistic UI state update
     const newPrediction = {
@@ -421,17 +425,17 @@ const Predictions = ({ globalGame, globalTournament }) => {
                 <div className="flex items-center gap-2.5 mb-1.5 flex-wrap">
                   <span className="hud-chamfer-sm flex items-center gap-1.5 px-2.5 py-0.5 font-tactical text-[10px] font-extrabold tracking-[0.18em] uppercase bg-cyan-500/15 text-cyan-300 border border-cyan-400/40">
                     <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
-                    AI Prediction Engine
+                    Decision Tree Prediction Engine
                   </span>
                   <span className="font-tactical text-[10px] font-bold text-slate-400 uppercase tracking-[0.18em]">
-                    // {globalTournament || 'All Tournament Brackets'}
+                    // {tournamentName || 'All Tournament Brackets'}
                   </span>
                 </div>
                 <h1 className="font-tactical text-2xl sm:text-3xl font-extrabold tracking-[0.14em] uppercase text-white">
                   Match Predictions
                 </h1>
                 <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-xl">
-                  Cast your winner votes before matches begin. AI analytics continuously evaluate player kill ratios, map performance, and win probability.
+                  Cast your winner votes before matches begin. A CART Decision Tree continuously evaluates kill rates, first-kill pressure, objectives, and historical win paths.
                 </p>
               </div>
             </div>
@@ -505,7 +509,7 @@ const Predictions = ({ globalGame, globalTournament }) => {
               <div className="font-tactical text-2xl font-black text-white flex items-center gap-2">
                 <span>{avgConfidence}%</span>
                 <span className="hud-chamfer-sm text-[9px] uppercase font-tactical font-extrabold text-emerald-400 bg-emerald-500/15 px-2 py-0.5 border border-emerald-500/35">
-                  Calibrated
+                  Decision Tree
                 </span>
               </div>
             </div>
@@ -596,7 +600,7 @@ const Predictions = ({ globalGame, globalTournament }) => {
             <p className="text-xs text-slate-400 max-w-sm mt-1 mb-5">
               {searchQuery || filterMode !== 'all'
                 ? 'No matches match your current search or filter criteria.'
-                : `There are no upcoming or concluded matches recorded for "${globalTournament || 'this tournament'}".`}
+                : `There are no upcoming or concluded matches recorded for "${tournamentName || 'this tournament'}".`}
             </p>
             {(searchQuery || filterMode !== 'all') && (
               <button
@@ -802,10 +806,10 @@ const Predictions = ({ globalGame, globalTournament }) => {
                       {/* AI Intel Callout Pill */}
                       {match.system_prediction && (
                         <div className="hud-chamfer-sm w-full bg-slate-950/75 border border-cyan-500/25 p-3 flex flex-col gap-1.5 text-center">
-                          <div className="flex items-center justify-center gap-1.5 font-tactical text-[10px] font-extrabold text-amber-400 uppercase tracking-wider">
+                          <div className="flex items-center justify-center gap-1.5 font-tactical text-[10px] font-extrabold text-amber-400 uppercase tracking-wider flex-wrap">
                             <Sparkles size={13} className="text-amber-400 animate-pulse" />
                             <span>
-                              AI Model Favors:{' '}
+                              {match.system_prediction.model_type || 'Decision Tree'} Favors:{' '}
                               <strong className="text-white underline decoration-amber-400/60">
                                 {match.system_prediction.predicted_winner_name}
                               </strong>
@@ -815,6 +819,18 @@ const Predictions = ({ globalGame, globalTournament }) => {
                             <p className="text-[11px] text-slate-400 font-normal leading-relaxed line-clamp-2 italic">
                               "{match.system_prediction.reasoning}"
                             </p>
+                          )}
+                          {Array.isArray(match.system_prediction.decision_path) && match.system_prediction.decision_path.length > 0 && (
+                            <div className="flex flex-wrap items-center justify-center gap-1 pt-0.5">
+                              {match.system_prediction.decision_path.map((step, idx) => (
+                                <span
+                                  key={`${step.feature || 'step'}-${idx}`}
+                                  className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700/80 text-[9px] font-mono text-cyan-300"
+                                >
+                                  {step.label} {step.operator} {step.threshold > 0 ? `+${step.threshold}` : step.threshold}
+                                </span>
+                              ))}
+                            </div>
                           )}
                         </div>
                       )}

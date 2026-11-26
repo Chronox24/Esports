@@ -218,9 +218,14 @@ const ConcludedPredictionCard = ({ match, userPrediction = null, compact = false
       {aiPred ? (
         <div className="rounded-lg bg-slate-900/70 border border-cyan-500/20 p-3 flex flex-col gap-2">
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <div className="flex items-center gap-1.5 text-[10px] font-tactical font-extrabold uppercase tracking-[0.16em] text-cyan-300">
-              <Cpu size={13} className="text-cyan-400" />
-              Pre-Match AI Prediction
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 text-[10px] font-tactical font-extrabold uppercase tracking-[0.16em] text-cyan-300">
+                <Cpu size={13} className="text-cyan-400" />
+                Decision Tree Prediction
+              </div>
+              <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30 text-[9px] font-bold uppercase tracking-wider text-cyan-300">
+                {aiPred.model_type || 'CART Decision Tree'}
+              </span>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               {aiFavoredName && (
@@ -267,6 +272,31 @@ const ConcludedPredictionCard = ({ match, userPrediction = null, compact = false
 
           {aiPred.reasoning && (
             <p className="text-[11px] text-slate-400 leading-relaxed">{aiPred.reasoning}</p>
+          )}
+
+          {Array.isArray(aiPred.decision_path) && aiPred.decision_path.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              {aiPred.decision_path.map((step, idx) => {
+                const valFormatted = step.value > 0 ? `+${step.value}` : `${step.value}`;
+                const thrFormatted = step.threshold > 0 ? `+${step.threshold}` : `${step.threshold}`;
+                return (
+                  <span
+                    key={`${step.feature || 'rule'}-${idx}`}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-950/90 border border-slate-700/80 text-[10px] text-slate-300 font-mono"
+                  >
+                    <span className="text-cyan-300 font-semibold">{step.label}:</span>
+                    <span>{valFormatted}</span>
+                    <span className="text-amber-300">{step.operator}</span>
+                    <span>{thrFormatted}</span>
+                  </span>
+                );
+              })}
+              {aiPred.tree_stats && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-[10px] text-emerald-300 font-semibold">
+                  Depth {aiPred.tree_stats.depth} • {aiPred.tree_stats.leaf_samples} leaf sample{aiPred.tree_stats.leaf_samples === 1 ? '' : 's'}
+                </span>
+              )}
+            </div>
           )}
         </div>
       ) : (
