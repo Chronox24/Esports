@@ -12,6 +12,7 @@ const FEATURE_SPECS = [
 
 const DEFAULT_BASELINE_PROFILE = {
   kd: 1.0,
+  kda: 1.3,
   kpr: 3.4,
   dpr: 3.4,
   survival: 0.0,
@@ -23,6 +24,12 @@ const DEFAULT_BASELINE_PROFILE = {
   avg_acs: 0,
   maps_played: 0,
   wins: 0,
+  kills: 0,
+  deaths: 0,
+  assists: 0,
+  first_kills: 0,
+  objectives: 0,
+  rounds: 0,
 };
 
 const roundNum = (val, decimals = 2) => {
@@ -123,6 +130,9 @@ const summarizeRowsIntoProfile = (rows, fallbackMaps = 1) => {
     kills: totalKills,
     deaths: totalDeaths,
     assists: totalAssists,
+    first_kills: totalFk,
+    objectives: totalObj,
+    rounds: totalRounds,
   };
 };
 
@@ -146,6 +156,12 @@ const blendProfiles = (primary, secondary, weightPrimary = 0.6) => {
     avg_acs: mix('avg_acs'),
     maps_played: (primary.maps_played || 0) + (secondary.maps_played || 0),
     wins: (primary.wins || 0) + (secondary.wins || 0),
+    kills: (primary.kills || 0) + (secondary.kills || 0),
+    deaths: (primary.deaths || 0) + (secondary.deaths || 0),
+    assists: (primary.assists || 0) + (secondary.assists || 0),
+    first_kills: (primary.first_kills || 0) + (secondary.first_kills || 0),
+    objectives: (primary.objectives || 0) + (secondary.objectives || 0),
+    rounds: (primary.rounds || 0) + (secondary.rounds || 0),
   };
 };
 
@@ -188,6 +204,12 @@ const buildBaselineFromProfiles = (teamProfiles) => {
     avg_acs: med('avg_acs') * 0.85,
     maps_played: 0,
     wins: 0,
+    kills: 0,
+    deaths: 0,
+    assists: 0,
+    first_kills: 0,
+    objectives: 0,
+    rounds: 0,
   };
 };
 
@@ -262,11 +284,18 @@ const computeDeltas = (prevBlock, currBlock) => {
 };
 
 /**
- * Fetches match_records, players, and tournaments, builds team & player indices,
- * and trains a CART Decision Tree classifier once per batch request.
+ * Fetches match_records, players, tournaments, teams, matches, and bracket_results,
+ * builds cross-tournament team & player indices, and trains a CART Decision Tree classifier.
  */
 const buildPredictorContext = async (supabase) => {
-  const [{ data: rawRecords, error }, { data: rawPlayers }, { data: rawTourns }] = await Promise.all([
+  const [
+    { data: rawRecords, error },
+    { data: rawPlayers },
+    { data: rawTourns },
+    { data: rawTeams },
+    { data: rawMatches },
+    { data: rawBracketResults },
+  ] = await Promise.all([
     supabase
       .from('match_records')
       .select(
@@ -275,6 +304,9 @@ const buildPredictorContext = async (supabase) => {
       .order('created_at', { ascending: true }),
     supabase.from('players').select('player_id, team_id, player_name'),
     supabase.from('tournaments').select('id, name'),
+    supabase.from('teams').select('team_id, team_name, tournament_name'),
+    supabase.from('matches').select('match_id, tournament_name, status, team_a_id, team_b_id, team_a_score, team_b_score, team1_score, team2_score'),
+    supabase.from('bracket_results').select('tournament_name, team_name, placement_rank'),
   ]);
 
   if (error) {
@@ -283,8 +315,6 @@ const buildPredictorContext = async (supabase) => {
   }
 
   const records = rawRecords || [];
-  if (records.length === 0) return null;
-
   const tournamentMetaMap = new Map();
   (rawTourns || []).forEach((t) => {
     if (!t?.name) return;
@@ -293,6 +323,77 @@ const buildPredictorContext = async (supabase) => {
     const meta = { key, label };
     tournamentMetaMap.set(key, meta);
     if (t.id) tournamentMetaMap.set(String(t.id).trim().toLowerCase(), meta);
+  });
+
+  // Map team_id <-> team_name and track all tournaments where teams are registered
+  const teamNameById = new Map();
+  const registeredTournsByTeam = new Map();
+  (rawTeams || []).forEach((tm) => {
+    const tName = (tm?.team_name || '').trim();
+    if (!tName) return;
+    const tKey = tName.toLowerCase();
+    if (tm.team_id) teamNameById.set(String(tm.team_id), tName);
+
+    const tournMeta = resolveTournamentMeta(tournamentMetaMap, tm.tournament_name);
+    if (tournMeta.key && tournMeta.key !== 'default') {
+      if (!registeredTournsByTeam.has(tKey)) registeredTournsByTeam.set(tKey, new Map());
+      registeredTournsByTeam.get(tKey).set(tournMeta.key, tournMeta.label);
+    }
+  });
+
+  // Track matches W/L across all tournaments per team_name
+  const matchStatsByTeamTourn = new Map();
+  (rawMatches || []).forEach((m) => {
+    const tournMeta = resolveTournamentMeta(tournamentMetaMap, m.tournament_name);
+    if (!tournMeta.key) return;
+
+    const statusLower = String(m.status || '').trim().toLowerCase();
+    const isFinished = statusLower === 'finished' || statusLower === 'completed';
+    const scoreA = Number(m.team_a_score ?? m.team1_score ?? 0);
+    const scoreB = Number(m.team_b_score ?? m.team2_score ?? 0);
+
+    const addMatchForSide = (teamId, won, played) => {
+      const name = teamId ? teamNameById.get(String(teamId)) : null;
+      if (!name) return;
+      const tKey = name.toLowerCase();
+      if (!matchStatsByTeamTourn.has(tKey)) matchStatsByTeamTourn.set(tKey, new Map());
+      const byTourn = matchStatsByTeamTourn.get(tKey);
+      if (!byTourn.has(tournMeta.key)) {
+        byTourn.set(tournMeta.key, { label: tournMeta.label, matches_played: 0, matches_won: 0 });
+      }
+      const bucket = byTourn.get(tournMeta.key);
+      if (played) {
+        bucket.matches_played += 1;
+        if (won) bucket.matches_won += 1;
+      }
+    };
+
+    if (isFinished && scoreA !== scoreB) {
+      addMatchForSide(m.team_a_id, scoreA > scoreB, true);
+      addMatchForSide(m.team_b_id, scoreB > scoreA, true);
+    } else {
+      addMatchForSide(m.team_a_id, false, false);
+      addMatchForSide(m.team_b_id, false, false);
+    }
+  });
+
+  // Track official podium placements from bracket_results across all tournaments
+  const placementsByTeamTourn = new Map();
+  (rawBracketResults || []).forEach((br) => {
+    const tName = (br?.team_name || '').trim();
+    if (!tName || !br?.tournament_name) return;
+    const tournMeta = resolveTournamentMeta(tournamentMetaMap, br.tournament_name);
+    if (!tournMeta.key) return;
+    const tKey = tName.toLowerCase();
+    if (!placementsByTeamTourn.has(tKey)) placementsByTeamTourn.set(tKey, new Map());
+    const existingRank = placementsByTeamTourn.get(tKey).get(tournMeta.key)?.rank;
+    const rankNum = Number(br.placement_rank) || null;
+    if (!existingRank || (rankNum && rankNum < existingRank)) {
+      placementsByTeamTourn.get(tKey).set(tournMeta.key, {
+        label: tournMeta.label,
+        rank: rankNum,
+      });
+    }
   });
 
   const playersByTeamId = new Map();
@@ -357,7 +458,6 @@ const buildPredictorContext = async (supabase) => {
 
   const baselineProfile = buildBaselineFromProfiles(teamProfiles);
 
-  // Build unbiased paired training set & encounter index for cross-tournament rematch lookup
   const trainingData = [];
   rowsByMatchMap.forEach((group) => {
     const entries = [];
@@ -441,7 +541,98 @@ const buildPredictorContext = async (supabase) => {
     rowsByIgn,
     ignDisplay,
     matchEncounters,
+    registeredTournsByTeam,
+    matchStatsByTeamTourn,
+    placementsByTeamTourn,
   };
+};
+
+/**
+ * Collects per-tournament breakdown across match_records, matches, bracket_results,
+ * registered team folders, and returning players' other tournaments.
+ */
+const buildAllTournamentBreakdownForSide = (context, teamKey, combinedRows, currentTournMeta) => {
+  const byTournKey = new Map();
+  const ensureTournBucket = (tKey, label) => {
+    if (!tKey) return null;
+    if (!byTournKey.has(tKey)) {
+      byTournKey.set(tKey, {
+        tournament_name: label,
+        is_current: Boolean(currentTournMeta.key && tKey === currentTournMeta.key),
+        rows: [],
+        matches_played: 0,
+        matches_won: 0,
+        placement_rank: null,
+      });
+    }
+    return byTournKey.get(tKey);
+  };
+
+  combinedRows.forEach((r) => {
+    const meta = resolveTournamentMeta(context.tournamentMetaMap, r.tournament_name);
+    const bucket = ensureTournBucket(meta.key, meta.label);
+    if (bucket) bucket.rows.push(r);
+  });
+
+  const regTourns = context.registeredTournsByTeam.get(teamKey);
+  if (regTourns) {
+    regTourns.forEach((label, tKey) => {
+      ensureTournBucket(tKey, label);
+    });
+  }
+
+  const matchTourns = context.matchStatsByTeamTourn.get(teamKey);
+  if (matchTourns) {
+    matchTourns.forEach((info, tKey) => {
+      const bucket = ensureTournBucket(tKey, info.label);
+      if (bucket) {
+        bucket.matches_played = info.matches_played;
+        bucket.matches_won = info.matches_won;
+      }
+    });
+  }
+
+  const placementTourns = context.placementsByTeamTourn.get(teamKey);
+  if (placementTourns) {
+    placementTourns.forEach((info, tKey) => {
+      const bucket = ensureTournBucket(tKey, info.label);
+      if (bucket) bucket.placement_rank = info.rank;
+    });
+  }
+
+  const list = [];
+  byTournKey.forEach((b) => {
+    const prof = b.rows.length > 0 ? summarizeRowsIntoProfile(b.rows) : null;
+    const mapsPlayed = prof ? prof.maps_played : 0;
+    const mapsWon = prof ? prof.wins : 0;
+    const winRate = mapsPlayed > 0
+      ? Math.round(prof.win_rate * 100)
+      : b.matches_played > 0
+      ? Math.round((b.matches_won / b.matches_played) * 100)
+      : null;
+
+    list.push({
+      tournament_name: b.tournament_name,
+      is_current: b.is_current,
+      maps_played: mapsPlayed,
+      maps_won: mapsWon,
+      matches_played: b.matches_played,
+      matches_won: b.matches_won,
+      win_rate: winRate,
+      kd: prof ? roundNum(prof.kd, 2) : null,
+      kda: prof ? roundNum(prof.kda, 2) : null,
+      kpr: prof ? roundNum(prof.kpr, 2) : null,
+      fk_rate: prof ? roundNum(prof.fk_rate, 2) : null,
+      obj_rate: prof ? roundNum(prof.obj_rate, 2) : null,
+      placement_rank: b.placement_rank,
+    });
+  });
+
+  // Sort current tournament first, then tournaments with map/match stats
+  return list.sort((a, b) => {
+    if (a.is_current !== b.is_current) return a.is_current ? -1 : 1;
+    return (b.maps_played + b.matches_played) - (a.maps_played + a.matches_played);
+  });
 };
 
 const analyzeTeamHistory = (context, team, currentTournMeta) => {
@@ -452,7 +643,6 @@ const analyzeTeamHistory = (context, team, currentTournMeta) => {
   const rosterSet = new Set();
   const rosterLabels = new Map();
 
-  // Include registered players from players table
   if (teamIdStr && context.playersByTeamId.has(teamIdStr)) {
     for (const pName of context.playersByTeamId.get(teamIdStr)) {
       const k = pName.toLowerCase();
@@ -461,7 +651,6 @@ const analyzeTeamHistory = (context, team, currentTournMeta) => {
     }
   }
 
-  // Include players who played under this team in match_records
   const directTeamRows = context.rowsByTeam.get(teamKey) || [];
   for (const r of directTeamRows) {
     const ign = (r.ign || '').trim();
@@ -472,13 +661,14 @@ const analyzeTeamHistory = (context, team, currentTournMeta) => {
     }
   }
 
-  // Gather all records associated with either this team OR any player on its roster across all tournaments
   const playerHistoryRows = [];
   rosterSet.forEach((ignKey) => {
     const pRows = context.rowsByIgn.get(ignKey) || [];
     playerHistoryRows.push(...pRows);
   });
   const combinedRows = dedupeRecords([...directTeamRows, ...playerHistoryRows]);
+  const careerProfile = summarizeRowsIntoProfile(combinedRows);
+  const allTournaments = buildAllTournamentBreakdownForSide(context, teamKey, combinedRows, currentTournMeta);
 
   const partitionByTournament = (rows) => {
     const currRows = [];
@@ -497,7 +687,6 @@ const analyzeTeamHistory = (context, team, currentTournMeta) => {
       }
     }
 
-    // If no explicit tournament context passed, split earliest tournaments (prev) vs latest tournament (curr)
     if (!currentTournMeta.key && rows.length > 0) {
       const seenKeys = [];
       for (const r of rows) {
@@ -526,7 +715,6 @@ const analyzeTeamHistory = (context, team, currentTournMeta) => {
     return { currRows, prevRows, currTournNames, prevTournNames };
   };
 
-  // Prioritize team's direct records for current tournament when available, falling back to roster records
   const directSplit = partitionByTournament(directTeamRows);
   const rosterSplit = partitionByTournament(combinedRows);
 
@@ -544,14 +732,13 @@ const analyzeTeamHistory = (context, team, currentTournMeta) => {
   const prevStatBlock = toPublicStatBlock(prevProfile, rosterSplit.prevTournNames);
   const deltas = computeDeltas(prevStatBlock, currStatBlock);
 
-  // Per-player previous vs current comparison for returning players
   const returningPlayers = [];
   rosterSet.forEach((ignKey) => {
     const pRows = context.rowsByIgn.get(ignKey) || [];
     if (pRows.length === 0) return;
 
     const pSplit = partitionByTournament(pRows);
-    if (pSplit.prevRows.length === 0) return; // Must have previous tournament records
+    if (pSplit.prevRows.length === 0) return;
 
     const prevPlayerTeams = new Set();
     pSplit.prevRows.forEach((r) => {
@@ -578,12 +765,16 @@ const analyzeTeamHistory = (context, team, currentTournMeta) => {
     });
   });
 
+  const otherTournamentsCount = allTournaments.filter((t) => !t.is_current).length;
+
   return {
     teamName,
     teamKey,
     rosterSet,
     effectiveProfile,
-    hasPreviousRecords: Boolean(prevStatBlock || returningPlayers.length > 0),
+    careerProfile,
+    allTournaments,
+    hasPreviousRecords: Boolean(prevStatBlock || returningPlayers.length > 0 || otherTournamentsCount > 0),
     previousTournaments: [...rosterSplit.prevTournNames],
     teamSummary: {
       team_name: teamName,
@@ -680,6 +871,172 @@ const buildNarrativeSummary = (sideA, sideB, h2h) => {
   return parts.join(' ');
 };
 
+const summarizeCareerBlock = (side) => {
+  const cp = side.careerProfile;
+  const matchWins = side.allTournaments.reduce((s, t) => s + (t.matches_won || 0), 0);
+  const matchPlayed = side.allTournaments.reduce((s, t) => s + (t.matches_played || 0), 0);
+  const wr = cp && cp.maps_played > 0
+    ? Math.round(cp.win_rate * 100)
+    : matchPlayed > 0
+    ? Math.round((matchWins / matchPlayed) * 100)
+    : null;
+
+  return {
+    tournaments_count: side.allTournaments.length,
+    maps_played: cp?.maps_played || 0,
+    maps_won: cp?.wins || 0,
+    matches_played: matchPlayed,
+    matches_won: matchWins,
+    overall_win_rate: wr,
+    kd: cp ? roundNum(cp.kd, 2) : null,
+    kpr: cp ? roundNum(cp.kpr, 2) : null,
+    fk_rate: cp ? roundNum(cp.fk_rate, 2) : null,
+    obj_rate: cp ? roundNum(cp.obj_rate, 2) : null,
+    first_kills: cp?.first_kills || 0,
+    objectives: cp?.objectives || 0,
+    assists: cp?.assists || 0,
+  };
+};
+
+/**
+ * Generates plain-English & data-backed reasons explaining why the Decision Tree
+ * assigned a higher win probability to the favored side across all tracked tournaments.
+ */
+const buildWinAdvantageAnalysis = (sideA, sideB, effA, effB, probA, probB, treePath, leafTotal) => {
+  const aFavored = probA >= probB;
+  const favSide = aFavored ? sideA : sideB;
+  const undSide = aFavored ? sideB : sideA;
+  const favEff = aFavored ? effA : effB;
+  const undEff = aFavored ? effB : effA;
+  const favProb = aFavored ? probA : probB;
+  const undProb = aFavored ? probB : probA;
+
+  const favCareer = summarizeCareerBlock(favSide);
+  const undCareer = summarizeCareerBlock(undSide);
+
+  const keyFactors = [];
+  const rootStep = Array.isArray(treePath) && treePath.length > 0 ? treePath[0] : null;
+
+  // 1. Primary Decision Tree Split Driver
+  if (rootStep) {
+    let favMetric = '';
+    let undMetric = '';
+    if (rootStep.feature === 'kpr_diff') {
+      favMetric = `${roundNum(favEff.kpr, 2)} K/Rd`;
+      undMetric = `${roundNum(undEff.kpr, 2)} K/Rd`;
+    } else if (rootStep.feature === 'kd_diff') {
+      favMetric = `${roundNum(favEff.kd, 2)} K/D`;
+      undMetric = `${roundNum(undEff.kd, 2)} K/D`;
+    } else if (rootStep.feature === 'fk_diff') {
+      favMetric = `${roundNum(favEff.fk_rate, 2)} FK/Rd`;
+      undMetric = `${roundNum(undEff.fk_rate, 2)} FK/Rd`;
+    } else if (rootStep.feature === 'obj_diff') {
+      favMetric = `${roundNum(favEff.obj_rate, 2)} Obj/Rd`;
+      undMetric = `${roundNum(undEff.obj_rate, 2)} Obj/Rd`;
+    } else if (rootStep.feature === 'assist_diff') {
+      favMetric = `${roundNum(favEff.assist_rate, 2)} Ast/Rd`;
+      undMetric = `${roundNum(undEff.assist_rate, 2)} Ast/Rd`;
+    } else {
+      favMetric = `${roundNum(favEff.survival, 2)}`;
+      undMetric = `${roundNum(undEff.survival, 2)}`;
+    }
+    keyFactors.push({
+      factor: `${rootStep.label.replace(' Diff', '')} (Tree Split)`,
+      favored_value: favMetric,
+      underdog_value: undMetric,
+      detail: `Primary CART split node routed ${favSide.teamName} ahead across ${leafTotal} similar historical map outcome${leafTotal === 1 ? '' : 's'}.`,
+    });
+  }
+
+  // 2. Overall Win Rate Across All Tracked Tournaments
+  if (favCareer.overall_win_rate !== null || undCareer.overall_win_rate !== null) {
+    const fWr = favCareer.overall_win_rate !== null ? `${favCareer.overall_win_rate}% (${favCareer.maps_won}W-${Math.max(0, favCareer.maps_played - favCareer.maps_won)}L)` : 'Unrecorded';
+    const uWr = undCareer.overall_win_rate !== null ? `${undCareer.overall_win_rate}% (${undCareer.maps_won}W-${Math.max(0, undCareer.maps_played - undCareer.maps_won)}L)` : 'Unrecorded';
+    keyFactors.push({
+      factor: 'All-Tournament Win Rate',
+      favored_value: fWr,
+      underdog_value: uWr,
+      detail: favCareer.overall_win_rate !== null && undCareer.overall_win_rate !== null && favCareer.overall_win_rate > undCareer.overall_win_rate
+        ? `${favSide.teamName} won ${favCareer.overall_win_rate}% of tracked maps vs ${undSide.teamName}'s ${undCareer.overall_win_rate}%.`
+        : `Overall win record compared across ${Math.max(1, favCareer.tournaments_count)} tournament(s) for ${favSide.teamName} and ${Math.max(1, undCareer.tournaments_count)} for ${undSide.teamName}.`,
+    });
+  }
+
+  // 3. K/D Ratio Comparison
+  if (favEff.kd !== undEff.kd) {
+    keyFactors.push({
+      factor: 'Team K/D Efficiency',
+      favored_value: `${roundNum(favEff.kd, 2)} K/D`,
+      underdog_value: `${roundNum(undEff.kd, 2)} K/D`,
+      detail: favEff.kd > undEff.kd
+        ? `${favSide.teamName} sustains positive duel trades (+${roundNum(favEff.kd - undEff.kd, 2)} K/D edge).`
+        : `${undSide.teamName} trails in overall blended K/D efficiency vs the matchup profile.`,
+    });
+  }
+
+  // 4. First Kills & Objective Execution
+  if ((favCareer.first_kills || 0) > 0 || (undCareer.first_kills || 0) > 0) {
+    keyFactors.push({
+      factor: 'Opening Duels (First Kills)',
+      favored_value: `${favCareer.first_kills} FK (${roundNum(favEff.fk_rate, 2)}/rd)`,
+      underdog_value: `${undCareer.first_kills} FK (${roundNum(undEff.fk_rate, 2)}/rd)`,
+      detail: favCareer.first_kills >= undCareer.first_kills
+        ? `${favSide.teamName} secures more opening picks to create early round advantages.`
+        : `${undSide.teamName} had ${undCareer.first_kills} opening picks across recorded maps.`,
+    });
+  } else if ((favCareer.objectives || 0) > 0 || (undCareer.objectives || 0) > 0) {
+    keyFactors.push({
+      factor: 'Objectives & Teamplay',
+      favored_value: `${favCareer.objectives} Obj / ${favCareer.assists} Ast`,
+      underdog_value: `${undCareer.objectives} Obj / ${undCareer.assists} Ast`,
+      detail: `Plants, defuses, and assists contributing to round conversions.`,
+    });
+  }
+
+  // 5. Additional Multi-Tournament Context if either team tracked across > 1 tournament
+  if (favSide.allTournaments.length > 1 || undSide.allTournaments.length > 1) {
+    keyFactors.push({
+      factor: 'Multi-Tournament Track Record',
+      favored_value: `${favSide.allTournaments.length} Tourney(s)`,
+      underdog_value: `${undSide.allTournaments.length} Tourney(s)`,
+      detail: `${favSide.teamName} brings data across ${favSide.allTournaments.map((t) => t.tournament_name).slice(0, 3).join(', ')}.`,
+    });
+  }
+
+  const summaryBits = [];
+  if (favCareer.overall_win_rate !== null && undCareer.overall_win_rate !== null && favCareer.overall_win_rate > undCareer.overall_win_rate) {
+    summaryBits.push(
+      `${favSide.teamName} holds a higher win probability (${favProb}% vs ${undProb}%) backed by a ${favCareer.overall_win_rate}% map win rate (${favCareer.maps_won}W-${Math.max(0, favCareer.maps_played - favCareer.maps_won)}L across ${favCareer.tournaments_count} tournament${favCareer.tournaments_count === 1 ? '' : 's'}) compared to ${undSide.teamName}'s ${undCareer.overall_win_rate}%`
+    );
+  } else {
+    summaryBits.push(
+      `${favSide.teamName} holds a higher win probability (${favProb}% vs ${undProb}%) across ${favCareer.tournaments_count} tracked tournament${favCareer.tournaments_count === 1 ? '' : 's'}`
+    );
+  }
+
+  if (favEff.kpr > undEff.kpr || favEff.kd > undEff.kd) {
+    const statNotes = [];
+    if (favEff.kpr > undEff.kpr) statNotes.push(`${roundNum(favEff.kpr, 2)} vs ${roundNum(undEff.kpr, 2)} team kills/round`);
+    if (favEff.kd > undEff.kd) statNotes.push(`${roundNum(favEff.kd, 2)} vs ${roundNum(undEff.kd, 2)} K/D`);
+    if (favCareer.first_kills > undCareer.first_kills) statNotes.push(`${favCareer.first_kills} vs ${undCareer.first_kills} first kills`);
+    summaryBits.push(`led by stronger combat metrics (${statNotes.join(', ')})`);
+  }
+
+  return {
+    favored_team_id: favSide.teamName === sideA.teamName ? 'team_a' : 'team_b',
+    favored_team_name: favSide.teamName,
+    favored_probability: favProb,
+    underdog_team_name: undSide.teamName,
+    underdog_probability: undProb,
+    why_higher_summary: `${summaryBits.join(', ')}.`,
+    key_factors: keyFactors.slice(0, 4),
+    team_a_tournaments: sideA.allTournaments,
+    team_b_tournaments: sideB.allTournaments,
+    team_a_career: summarizeCareerBlock(sideA),
+    team_b_career: summarizeCareerBlock(sideB),
+  };
+};
+
 const generatePredictionFromContext = (context, teamA, teamB, tournamentName = '') => {
   if (!context || !teamA || !teamB) return null;
 
@@ -741,6 +1098,17 @@ const generatePredictionFromContext = (context, teamA, teamB, tournamentName = '
     ? buildNarrativeSummary(sideA, sideB, headToHead)
     : '';
 
+  const winAdvantageAnalysis = buildWinAdvantageAnalysis(
+    sideA,
+    sideB,
+    effA,
+    effB,
+    probA,
+    probB,
+    resAB.path,
+    resAB.total
+  );
+
   const reasoning = `Decision Tree (CART): ${ruleText}. Leaf favors ${predicted_winner_name} across ${context.trainingSamples} historical matchup vectors (${context.trainingAccuracy}% tree fit)${missingNote}.${analysisSummary ? ` ${analysisSummary}` : ''}`;
 
   return {
@@ -760,6 +1128,7 @@ const generatePredictionFromContext = (context, teamA, teamB, tournamentName = '
       training_samples: context.trainingSamples,
       training_accuracy: context.trainingAccuracy,
     },
+    win_advantage_analysis: winAdvantageAnalysis,
     historical_analysis: {
       has_previous_records: hasPreviousRecords,
       rematch_detected: headToHead.prior_encounters > 0,

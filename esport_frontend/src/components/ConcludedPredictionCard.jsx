@@ -11,6 +11,7 @@ import {
   Clock,
 } from 'lucide-react';
 import CrossTournamentAnalysis from './CrossTournamentAnalysis.jsx';
+import WinAdvantageBreakdown from './WinAdvantageBreakdown.jsx';
 
 /**
  * Read-only HUD card displaying pre-match AI predictions, community votes,
@@ -305,6 +306,16 @@ const ConcludedPredictionCard = ({ match, userPrediction = null, compact = false
           <Cpu size={13} className="text-slate-600 shrink-0" />
           Pre-match AI prediction data unavailable for this matchup.
         </div>
+      )}
+
+      {/* Why Favored Team Has Higher Win % + All-Tournament Tracking */}
+      {aiPred?.win_advantage_analysis && (
+        <WinAdvantageBreakdown
+          analysis={aiPred.win_advantage_analysis}
+          teamAName={teamAName}
+          teamBName={teamBName}
+          compact={compact}
+        />
       )}
 
       {/* Cross-Tournament Returning Players & Rematch History */}

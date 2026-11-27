@@ -21,6 +21,7 @@ import {
 import { apiFetch, getUserAccount } from '../../utils/api';
 import ConcludedPredictionCard from '../../components/ConcludedPredictionCard.jsx';
 import CrossTournamentAnalysis from '../../components/CrossTournamentAnalysis.jsx';
+import WinAdvantageBreakdown from '../../components/WinAdvantageBreakdown.jsx';
 
 const DEFAULT_VALORANT_MATCHES = [
   {
@@ -913,6 +914,17 @@ const Predictions = ({ globalGame, globalTournament }) => {
                     </div>
 
                   </div>
+
+                  {/* ── Win % Drivers & All-Tournament Tracking ── */}
+                  {match.system_prediction?.win_advantage_analysis && (
+                    <div className="px-6 pb-4">
+                      <WinAdvantageBreakdown
+                        analysis={match.system_prediction.win_advantage_analysis}
+                        teamAName={teamA.team_name}
+                        teamBName={teamB.team_name}
+                      />
+                    </div>
+                  )}
 
                   {/* ── Cross-Tournament Player & Rematch History ── */}
                   {match.system_prediction?.historical_analysis &&
