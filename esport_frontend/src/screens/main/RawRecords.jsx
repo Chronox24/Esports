@@ -115,6 +115,14 @@ const RawRecords = ({ globalTournament }) => {
     // Column sorting
     if (sortField) {
       list = [...list].sort((a, b) => {
+        if (sortField === 'kd' || sortField === 'kda') {
+          const ratiosA = computeMatchRatios(a);
+          const ratiosB = computeMatchRatios(b);
+          const numA = sortField === 'kda' ? ratiosA.kda : ratiosA.kd;
+          const numB = sortField === 'kda' ? ratiosB.kda : ratiosB.kd;
+          return sortOrder === 'asc' ? numA - numB : numB - numA;
+        }
+
         let valA = a[sortField];
         let valB = b[sortField];
 
@@ -204,6 +212,7 @@ const RawRecords = ({ globalTournament }) => {
       'Deaths',
       'Assists',
       'K/D Ratio',
+      'K/DA Ratio',
       'Headshots',
       'Plants',
       'Defuses',
@@ -213,9 +222,7 @@ const RawRecords = ({ globalTournament }) => {
     ];
 
     const rows = dataToExport.map(r => {
-      const kills = Number(r.kills) || 0;
-      const deaths = Number(r.deaths) || 0;
-      const kd = deaths > 0 ? (kills / deaths).toFixed(2) : kills > 0 ? kills.toFixed(2) : '0.00';
+      const { kills, deaths, kdFormatted, kdaFormatted } = computeMatchRatios(r);
       const isWin = String(r.win).toLowerCase() === 'true' || r.win === 1 || r.win === 'WIN';
 
       return [
@@ -233,7 +240,8 @@ const RawRecords = ({ globalTournament }) => {
         kills,
         deaths,
         r.assists ?? 0,
-        kd,
+        kdFormatted,
+        kdaFormatted,
         r.headshots ?? 0,
         r.plants ?? 0,
         r.defuse ?? r.defuses ?? 0,
@@ -259,6 +267,26 @@ const RawRecords = ({ globalTournament }) => {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
+
+  /**
+   * Computes numeric and 2-decimal formatted per-match K/D and K/DA ratios for a raw record row.
+   */
+  function computeMatchRatios(row) {
+    const kills = Number(row?.kills) || 0;
+    const deaths = Number(row?.deaths) || 0;
+    const assists = Number(row?.assists) || 0;
+    const kd = deaths > 0 ? kills / deaths : kills > 0 ? kills : 0;
+    const kda = deaths > 0 ? (kills + assists) / deaths : (kills + assists) > 0 ? (kills + assists) : 0;
+    return {
+      kills,
+      deaths,
+      assists,
+      kd,
+      kda,
+      kdFormatted: kd.toFixed(2),
+      kdaFormatted: kda.toFixed(2),
+    };
+  }
 
   return (
     <div className="flex-1 bg-bg-base text-theme-text-base overflow-y-auto flex flex-col h-full relative font-sans custom-scrollbar">
@@ -518,7 +546,8 @@ const RawRecords = ({ globalTournament }) => {
                 <th onClick={() => handleSort('kills')} className="cursor-pointer hover:text-white transition-colors text-center">Kills</th>
                 <th onClick={() => handleSort('deaths')} className="cursor-pointer hover:text-white transition-colors text-center">Deaths</th>
                 <th onClick={() => handleSort('assists')} className="cursor-pointer hover:text-white transition-colors text-center">Assists</th>
-                <th className="text-center">K/D</th>
+                <th onClick={() => handleSort('kd')} className="cursor-pointer hover:text-white transition-colors text-center">K/D</th>
+                <th onClick={() => handleSort('kda')} className="cursor-pointer hover:text-white transition-colors text-center">K/DA</th>
                 {(!isValFilter) && (
                   <th onClick={() => handleSort('headshots')} className="cursor-pointer hover:text-white transition-colors text-center">Headshots</th>
                 )}
@@ -541,7 +570,7 @@ const RawRecords = ({ globalTournament }) => {
             <tbody className="divide-y divide-slate-800/40 text-xs">
               {loading && records.length === 0 ? (
                 <tr>
-                  <td colSpan="18" className="px-6 py-16 text-center text-slate-400">
+                  <td colSpan="19" className="px-6 py-16 text-center text-slate-400">
                     <div className="flex flex-col items-center justify-center gap-3">
                       <div className="w-6 h-6 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
                       <span className="font-semibold text-sm">Loading all match records...</span>
@@ -550,7 +579,7 @@ const RawRecords = ({ globalTournament }) => {
                 </tr>
               ) : filteredRecords.length === 0 ? (
                 <tr>
-                  <td colSpan="18" className="px-6 py-16 text-center text-slate-400">
+                  <td colSpan="19" className="px-6 py-16 text-center text-slate-400">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <svg className="w-8 h-8 text-slate-600 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -565,10 +594,7 @@ const RawRecords = ({ globalTournament }) => {
               ) : (
                 paginatedRecords.map((row, idx) => {
                   const isVal = (row.game || '').toLowerCase() === 'valorant';
-                  const kills = Number(row.kills) || 0;
-                  const deaths = Number(row.deaths) || 0;
-                  const assists = Number(row.assists) || 0;
-                  const kdRatio = deaths > 0 ? (kills / deaths).toFixed(2) : kills > 0 ? kills.toFixed(2) : '0.00';
+                  const { kills, deaths, assists, kda, kdFormatted: kdRatio, kdaFormatted: kdaRatio } = computeMatchRatios(row);
 
                   return (
                     <tr key={row.id || `${row.ign}-${row.set_num}-${idx}`} className="hover:bg-slate-800/40 transition-colors group">
@@ -651,6 +677,12 @@ const RawRecords = ({ globalTournament }) => {
                       <td className="px-3 py-3 text-sm border-r border-slate-800/40 text-center font-mono font-black">
                         <span className={Number(kdRatio) >= 1.5 ? 'text-emerald-400' : Number(kdRatio) >= 1.0 ? 'text-cyan-400' : 'text-slate-300'}>
                           {kdRatio}
+                        </span>
+                      </td>
+                      {/* Calculated K/DA */}
+                      <td className="px-3 py-3 text-sm border-r border-slate-800/40 text-center font-mono font-black">
+                        <span className={kda >= 2.0 ? 'text-emerald-400' : kda >= 1.2 ? 'text-purple-400' : 'text-slate-300'}>
+                          {kdaRatio}
                         </span>
                       </td>
 
