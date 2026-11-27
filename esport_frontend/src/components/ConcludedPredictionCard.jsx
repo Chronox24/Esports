@@ -272,10 +272,6 @@ const ConcludedPredictionCard = ({ match, userPrediction = null, compact = false
             </div>
           )}
 
-          {aiPred.reasoning && (
-            <p className="text-[11px] text-slate-400 leading-relaxed">{aiPred.reasoning}</p>
-          )}
-
           {Array.isArray(aiPred.decision_path) && aiPred.decision_path.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5 pt-1">
               {aiPred.decision_path.map((step, idx) => {

@@ -817,11 +817,6 @@ const Predictions = ({ globalGame, globalTournament }) => {
                               </strong>
                             </span>
                           </div>
-                          {match.system_prediction.reasoning && (
-                            <p className="text-[11px] text-slate-400 font-normal leading-relaxed line-clamp-2 italic">
-                              "{match.system_prediction.reasoning}"
-                            </p>
-                          )}
                           {Array.isArray(match.system_prediction.decision_path) && match.system_prediction.decision_path.length > 0 && (
                             <div className="flex flex-wrap items-center justify-center gap-1 pt-0.5">
                               {match.system_prediction.decision_path.map((step, idx) => (
