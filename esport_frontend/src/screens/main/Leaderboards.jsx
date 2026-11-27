@@ -503,7 +503,7 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
       if (found) return found;
     }
     if (team1Roster.length > 0) {
-      return [...team1Roster].sort((a, b) => (Number(b.avgAcs) || 0) - (Number(a.avgAcs) || 0))[0];
+      return [...team1Roster].sort((a, b) => (b.kdaNum || 0) - (a.kdaNum || 0) || (Number(b.avgAcs) || 0) - (Number(a.avgAcs) || 0))[0];
     }
     return { ign: '—', kda: '0.00', avgKills: '0.00', avgAssists: '0.00', avgAcs: 0, agent: '—' };
   }, [keyPlayer1, team1Roster]);
@@ -515,7 +515,7 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
       if (found) return found;
     }
     if (team2Roster.length > 0) {
-      return [...team2Roster].sort((a, b) => (Number(b.avgAcs) || 0) - (Number(a.avgAcs) || 0))[0];
+      return [...team2Roster].sort((a, b) => (b.kdaNum || 0) - (a.kdaNum || 0) || (Number(b.avgAcs) || 0) - (Number(a.avgAcs) || 0))[0];
     }
     return { ign: '—', kda: '0.00', avgKills: '0.00', avgAssists: '0.00', avgAcs: 0, agent: '—' };
   }, [keyPlayer2, team2Roster]);
@@ -694,14 +694,22 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
 
     let availablePlayers = [];
     if (matchRecs.length > 0) {
-      const pSet = new Set();
-      matchRecs.forEach(r => { if (r.ign) pSet.add(r.ign); });
-      availablePlayers = Array.from(pSet);
+      const recsByIgn = {};
+      matchRecs.forEach(r => {
+        if (!r.ign) return;
+        if (!recsByIgn[r.ign]) recsByIgn[r.ign] = [];
+        recsByIgn[r.ign].push(r);
+      });
+      availablePlayers = Object.entries(recsByIgn)
+        .sort(([, recsA], [, recsB]) => calculateAverageMapKda(recsB) - calculateAverageMapKda(recsA))
+        .map(([ign]) => ign);
     }
     if (availablePlayers.length === 0) {
       const t1P = team1Roster.map(p => p.ign).filter(Boolean);
       const t2P = team2Roster.map(p => p.ign).filter(Boolean);
-      availablePlayers = Array.from(new Set([...t1P, ...t2P]));
+      const merged = Array.from(new Set([...t1P, ...t2P]));
+      const kdaLookup = Object.fromEntries(playerStats.map(p => [p.ign, p.kdaNum || 0]));
+      availablePlayers = merged.sort((a, b) => (kdaLookup[b] || 0) - (kdaLookup[a] || 0));
     }
 
     const currentMvp = (availablePlayers.includes(selectedMvpPlayer) ? selectedMvpPlayer : availablePlayers[0]) || '';

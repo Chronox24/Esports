@@ -80,7 +80,8 @@ const RankBadge = ({ rank, size = "md" }) => {
 
 /* ──────────── Inline Stat Bar ──────────── */
 const StatBar = ({ value, max, color, label }) => {
-  const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
+  const numVal = parseFloat(value) || 0;
+  const pct = max > 0 ? Math.min((numVal / max) * 100, 100) : 0;
   return (
     <div className="flex items-center gap-2 w-full">
       <span className="text-[9px] text-theme-text-muted font-bold uppercase tracking-wider w-8 text-right">{label}</span>
@@ -96,7 +97,7 @@ const StatBar = ({ value, max, color, label }) => {
 };
 
 /* ──────────── Top 3 Podium ──────────── */
-const PodiumCard = ({ player, accent, maxKills, maxAp }) => {
+const PodiumCard = ({ player, accent, maxKills, maxKda }) => {
   if (!player) return null;
   const isFirst = player.rank === 1;
   return (
@@ -114,7 +115,14 @@ const PodiumCard = ({ player, accent, maxKills, maxAp }) => {
       <div className="flex items-start gap-4">
         <RankBadge rank={player.rank} size="lg" />
         <div className="flex-1 min-w-0">
-          <h4 className="text-sm font-black text-theme-text-base truncate tracking-wide">{player.name}</h4>
+          <div className="flex items-center gap-2">
+            <h4 className="text-sm font-black text-theme-text-base truncate tracking-wide">{player.name}</h4>
+            {isFirst && (
+              <span className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 shrink-0">
+                MVP
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-3 mt-2">
             <span className="text-[10px] font-bold text-theme-text-muted uppercase tracking-widest">K/D</span>
             <span className="text-sm font-black" style={{ color: accent }}>{player.kd}</span>
@@ -123,7 +131,7 @@ const PodiumCard = ({ player, accent, maxKills, maxAp }) => {
           </div>
           <div className="mt-3 flex flex-col gap-1.5">
             <StatBar value={player.kills} max={maxKills} color={accent} label="K" />
-            <StatBar value={player.ap} max={maxAp} color="#10b981" label="AP" />
+            <StatBar value={player.kda} max={maxKda} color="#10b981" label="K/DA" />
           </div>
         </div>
       </div>
@@ -212,7 +220,7 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
   const activeGame = (globalGame || "VALORANT").toUpperCase();
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("daily");
-  const [sortCol, setSortCol] = useState("kills");
+  const [sortCol, setSortCol] = useState("kda");
   const [sortDir, setSortDir] = useState("desc");
   const [selectedWeek, setSelectedWeek] = useState(null); // null = latest
   const [selectedDay, setSelectedDay] = useState(null);   // null = latest
@@ -260,18 +268,20 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
       playerStats[ign].records.push(r);
     });
     return Object.values(playerStats)
-      .sort((a, b) => b.kills - a.kills)
-      .map((p, idx) => {
+      .map((p) => {
         const kd = p.deaths ? (p.kills / p.deaths).toFixed(2) : p.kills.toFixed(2);
-        const kda = calculateAverageMapKda(p.records).toFixed(2);
+        const kdaNum = calculateAverageMapKda(p.records);
+        const kda = kdaNum.toFixed(2);
         const kr = p.rounds ? (p.kills / p.rounds).toFixed(2) : "0.00";
         const sr = p.rounds ? (Math.max(0, p.rounds - p.deaths) / p.rounds).toFixed(2) : "0.00";
         const hk = p.kills ? (p.headshots / p.kills).toFixed(2) : "0.00";
         const ap = activeGame === "VALORANT"
           ? (p.matchCount > 0 ? Math.round(p.acs / p.matchCount) : 0)
           : Math.round((p.kills / (p.rounds || 1)) * 100);
-        return { rank: idx + 1, name: p.ign, team: p.team, kills: p.kills, death: p.deaths, round: p.rounds, assists: p.assists, acs: p.acs, matchCount: p.matchCount, kd, kda, kr, sr, hk, ap };
-      });
+        return { name: p.ign, team: p.team, kills: p.kills, death: p.deaths, round: p.rounds, assists: p.assists, acs: p.acs, matchCount: p.matchCount, kd, kdaNum, kda, kr, sr, hk, ap };
+      })
+      .sort((a, b) => b.kdaNum - a.kdaNum)
+      .map((p, idx) => ({ rank: idx + 1, ...p }));
   };
 
   // ── Derive available weeks and days for the selector ──
@@ -385,8 +395,8 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
   const sortedPlayers = useMemo(() => {
     // 1. Sort all players based on sortCol & sortDir and assign overall ranks
     const allSorted = [...currentPlayers].sort((a, b) => {
-      const aVal = parseFloat(a[sortCol]) || 0;
-      const bVal = parseFloat(b[sortCol]) || 0;
+      const aVal = sortCol === "kda" ? (a.kdaNum ?? (parseFloat(a.kda) || 0)) : (parseFloat(a[sortCol]) || 0);
+      const bVal = sortCol === "kda" ? (b.kdaNum ?? (parseFloat(b.kda) || 0)) : (parseFloat(b[sortCol]) || 0);
       return sortDir === "desc" ? bVal - aVal : aVal - bVal;
     }).map((p, i) => ({ ...p, rank: i + 1 }));
 
@@ -402,9 +412,15 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
     });
   }, [currentPlayers, search, sortCol, sortDir]);
 
-  const maxKills = sortedPlayers.length > 0 ? Math.max(...sortedPlayers.map(p => p.kills)) : 1;
-  const maxAp = sortedPlayers.length > 0 ? Math.max(...sortedPlayers.map(p => p.ap)) : 1;
-  const top3 = sortedPlayers.slice(0, 3);
+  const maxKills = currentPlayers.length > 0 ? Math.max(...currentPlayers.map(p => p.kills)) : 1;
+  const maxKda = currentPlayers.length > 0 ? Math.max(...currentPlayers.map(p => p.kdaNum ?? (parseFloat(p.kda) || 0))) : 1;
+  // MVP Podium always ranks top 3 strictly by highest K/DA
+  const top3 = useMemo(() => {
+    return [...currentPlayers]
+      .sort((a, b) => (b.kdaNum ?? (parseFloat(b.kda) || 0)) - (a.kdaNum ?? (parseFloat(a.kda) || 0)))
+      .slice(0, 3)
+      .map((p, idx) => ({ ...p, rank: idx + 1 }));
+  }, [currentPlayers]);
 
   const handleSort = (col) => {
     if (sortCol === col) setSortDir(d => d === "desc" ? "asc" : "desc");
@@ -631,7 +647,7 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
         {top3.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 anim-fade anim-delay-2" style={{ marginBottom: "24px" }}>
             {top3.map((p) => (
-              <PodiumCard key={p.rank} player={p} accent={accent} maxKills={maxKills} maxAp={maxAp} />
+              <PodiumCard key={p.rank} player={p} accent={accent} maxKills={maxKills} maxKda={maxKda} />
             ))}
           </div>
         )}
