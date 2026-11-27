@@ -376,11 +376,10 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
     { key: "death", label: "Deaths" },
     { key: "round", label: "Rounds" },
     { key: "kd", label: "K/D", accent: true },
-    { key: "kda", label: "KDA", accent: true },
     { key: "kr", label: "K/R", accent: true },
     { key: "sr", label: "S/R", accent: true },
     { key: "hk", label: "H/K", accent: true },
-    { key: "ap", label: activeGame === "VALORANT" ? "ACS" : "PRS", special: true },
+    { key: "kda", label: "KDA", special: true },
   ];
 
   const sortedPlayers = useMemo(() => {
@@ -799,9 +798,6 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
                         {p.kd}
                       </td>
                       <td className="text-center font-black" style={{ padding: "14px 8px", color: accent }}>
-                        {p.kda}
-                      </td>
-                      <td className="text-center font-black" style={{ padding: "14px 8px", color: accent }}>
                         {p.kr}
                       </td>
                       <td className="text-center font-black" style={{ padding: "14px 8px", color: accent }}>
@@ -820,7 +816,7 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
                             border: "1px solid #10b98130",
                           }}
                         >
-                          {p.ap}
+                          {p.kda}
                         </span>
                       </td>
                     </tr>
