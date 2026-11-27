@@ -245,10 +245,10 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
   const aggregateMatchRecords = (records) => {
     const playerStats = {};
     records.forEach((r) => {
-      const ign = r.ign;
+      const ign = r.ign ? String(r.ign).trim() : null;
       if (!ign) return;
       if (!playerStats[ign]) {
-        playerStats[ign] = { ign, team: r.team_name || "", kills: 0, deaths: 0, rounds: 0, headshots: 0, assists: 0, acs: 0, matchCount: 0 };
+        playerStats[ign] = { ign, team: r.team_name || "", kills: 0, deaths: 0, rounds: 0, headshots: 0, assists: 0, acs: 0, matchCount: 0, records: [] };
       }
       playerStats[ign].kills += Number(r.kills) || 0;
       playerStats[ign].deaths += Number(r.deaths) || 0;
@@ -257,16 +257,20 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
       playerStats[ign].assists += Number(r.assists) || 0;
       playerStats[ign].acs += Number(r.acs) || 0;
       playerStats[ign].matchCount += 1;
+      playerStats[ign].records.push(r);
     });
     return Object.values(playerStats)
       .sort((a, b) => b.kills - a.kills)
       .map((p, idx) => {
         const kd = p.deaths ? (p.kills / p.deaths).toFixed(2) : p.kills.toFixed(2);
+        const kda = calculateAverageMapKda(p.records).toFixed(2);
         const kr = p.rounds ? (p.kills / p.rounds).toFixed(2) : "0.00";
-        const sr = p.rounds ? ((p.rounds - p.deaths) / p.rounds).toFixed(2) : "0.00";
+        const sr = p.rounds ? (Math.max(0, p.rounds - p.deaths) / p.rounds).toFixed(2) : "0.00";
         const hk = p.kills ? (p.headshots / p.kills).toFixed(2) : "0.00";
-        const ap = Math.round((p.kills / (p.rounds || 1)) * 100);
-        return { rank: idx + 1, name: p.ign, team: p.team, kills: p.kills, death: p.deaths, round: p.rounds, assists: p.assists, acs: p.acs, matchCount: p.matchCount, kd, kr, sr, hk, ap };
+        const ap = activeGame === "VALORANT"
+          ? (p.matchCount > 0 ? Math.round(p.acs / p.matchCount) : 0)
+          : Math.round((p.kills / (p.rounds || 1)) * 100);
+        return { rank: idx + 1, name: p.ign, team: p.team, kills: p.kills, death: p.deaths, round: p.rounds, assists: p.assists, acs: p.acs, matchCount: p.matchCount, kd, kda, kr, sr, hk, ap };
       });
   };
 
@@ -313,7 +317,10 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
     if (!matchRecords || matchRecords.length === 0) return { displayDailyPlayers: [], displayWeeklyPlayers: [] };
     const gameRecords = matchRecords.filter((r) => !r.game || (r.game || "").toUpperCase() === activeGame);
     if (gameRecords.length === 0) return { displayDailyPlayers: [], displayWeeklyPlayers: [] };
-    if (!effectiveWeek) return { displayDailyPlayers: [], displayWeeklyPlayers: [] };
+    if (!effectiveWeek) {
+      const aggregated = aggregateMatchRecords(gameRecords);
+      return { displayDailyPlayers: aggregated, displayWeeklyPlayers: aggregated };
+    }
     const weeklyRecords = gameRecords.filter((r) => String(r.week) === effectiveWeek);
     const dailyRecords = weeklyRecords.filter((r) => effectiveDay == null || String(r.day) === effectiveDay);
     return {
@@ -369,10 +376,11 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
     { key: "death", label: "Deaths" },
     { key: "round", label: "Rounds" },
     { key: "kd", label: "K/D", accent: true },
+    { key: "kda", label: "KDA", accent: true },
     { key: "kr", label: "K/R", accent: true },
     { key: "sr", label: "S/R", accent: true },
     { key: "hk", label: "H/K", accent: true },
-    { key: "ap", label: "ACS", special: true },
+    { key: "ap", label: activeGame === "VALORANT" ? "ACS" : "PRS", special: true },
   ];
 
   const sortedPlayers = useMemo(() => {
@@ -789,6 +797,9 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
                       </td>
                       <td className="text-center font-black" style={{ padding: "14px 8px", color: accent }}>
                         {p.kd}
+                      </td>
+                      <td className="text-center font-black" style={{ padding: "14px 8px", color: accent }}>
+                        {p.kda}
                       </td>
                       <td className="text-center font-black" style={{ padding: "14px 8px", color: accent }}>
                         {p.kr}

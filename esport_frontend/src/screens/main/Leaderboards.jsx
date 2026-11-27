@@ -262,8 +262,11 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
       teamStats[team].kills += Number(record.kills) || 0;
       teamStats[team].deaths += Number(record.deaths) || 0;
 
-      const matchKey = `${record.week || 'W'}-${record.day || 'D'}-${record.match || 'M'}-${record.created_at || 'T'}`;
-      const setKey = `${matchKey}-${record.set_num || '1'}-${team}`;
+      const hasMatchIds = record.week != null || record.day != null || record.match != null;
+      const matchKey = hasMatchIds
+        ? `${record.week || 'W'}-${record.day || 'D'}-${record.match || 'M'}`
+        : `T-${record.created_at || record.id || '0'}`;
+      const setKey = `${matchKey}-${record.set_num || '1'}-${record.map || ''}-${team}`;
 
       if (!setsSeen.has(setKey)) {
         setsSeen.add(setKey);
@@ -645,7 +648,7 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
         totalAssists += Number(r.assists) || 0;
         totalAcs += Number(r.acs) || 0;
 
-        const setKey = `${r.week}-${r.day}-${r.match}-${r.set_num}`;
+        const setKey = `${r.week || 'W'}-${r.day || 'D'}-${r.match || 'M'}-${r.set_num || '1'}-${r.map || ''}`;
         if (!setsSeen.has(setKey)) {
           setsSeen.add(setKey);
           if (String(r.win).toLowerCase() === 'true' || r.win === 1) setsWon++;
@@ -654,7 +657,7 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
 
       const timesPlayed = setsSeen.size;
       const winRate = timesPlayed > 0 ? Math.round((setsWon / timesPlayed) * 100) + '%' : '0%';
-      const kda = totalDeaths > 0 ? ((totalKills + totalAssists) / totalDeaths).toFixed(2) : (totalKills + totalAssists).toFixed(2);
+      const kda = calculateAverageMapKda(recs).toFixed(2);
       const avgAcs = recs.length > 0 ? Math.round(totalAcs / recs.length) : 0;
       const roundWinRate = timesPlayed > 0 ? Math.round((setsWon / timesPlayed) * 60) + '%' : '0%';
 

@@ -1200,13 +1200,13 @@ const Analytics = ({ globalGame, globalTournament }) => {
   const computePlayerRadarStats = (pRecords, isVal) => {
     let totK = 0, totD = 0, totA = 0, totHs = 0, totRnd = 0, totAcs = 0, totEcon = 0, totP = 0, totDef = 0, totAces = 0, totFk = 0, wins = 0;
     pRecords.forEach((r) => {
-      const k = Math.min(100, Math.max(0, Number(r.kills) || 0));
-      const d = Math.min(100, Math.max(0, Number(r.deaths) || 0));
-      const a = Math.min(100, Math.max(0, Number(r.assists) || 0));
-      const hs = Math.min(100, Math.max(0, Number(r.headshots) || 0));
-      const rnd = Math.min(100, Math.max(1, Number(r.rounds) || 16));
-      const acs = Math.min(600, Math.max(0, Number(r.acs) || 0));
-      const econ = Math.min(200, Math.max(0, Number(r.econ) || 0));
+      const k = Math.max(0, Number(r.kills) || 0);
+      const d = Math.max(0, Number(r.deaths) || 0);
+      const a = Math.max(0, Number(r.assists) || 0);
+      const hs = Math.max(0, Number(r.headshots) || 0);
+      const rnd = Math.max(1, Number(r.rounds) || 16);
+      const acs = Math.max(0, Number(r.acs) || 0);
+      const econ = Math.max(0, Number(r.econ) || 0);
       const p = Math.min(20, Math.max(0, Number(r.plants) || 0));
       const def = Math.min(20, Math.max(0, Number(r.defuse ?? r.defuses) || 0));
       const aces = Math.min(10, Math.max(0, Number(r.aces) || 0));
