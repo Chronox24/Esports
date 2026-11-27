@@ -11,8 +11,8 @@ const buildMapBucketKey = (r) => {
   const m = normalizeStr(r.match).toLowerCase();
   const s = normalizeStr(r.set_num).toLowerCase();
   const mp = normalizeStr(r.map).toLowerCase();
-  // Fall back to timestamp/id only if match identifiers are empty so distinct unassigned matches remain separate
-  const fallback = !m && !s && !mp ? (normalizeStr(r.created_at) || normalizeStr(r.id)) : '';
+  // When match and set_num are missing, keep separate matches distinct by batch timestamp or row id
+  const fallback = !m && !s ? (normalizeStr(r.created_at) || normalizeStr(r.id)) : '';
   return [t, g, m, s, mp, fallback].join('|');
 };
 

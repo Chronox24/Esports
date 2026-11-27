@@ -43,12 +43,16 @@ const summarizeRowsIntoProfile = (rows, fallbackMaps = 1) => {
   // Group by map/match first so map rounds aren't counted once per player row
   const perMap = new Map();
   for (const r of rows) {
+    const mNum = (r.match || '').trim().toLowerCase();
+    const sNum = (r.set_num || '').trim().toLowerCase();
+    const fallback = !mNum && !sNum ? String(r.created_at || r.id || '') : '';
     const mapKey = [
       (r.tournament_name || '').trim().toLowerCase(),
       (r.game || '').trim().toLowerCase(),
-      (r.match || '').trim().toLowerCase(),
-      (r.set_num || '').trim().toLowerCase(),
+      mNum,
+      sNum,
       (r.map || '').trim().toLowerCase(),
+      fallback,
     ].join('|');
 
     if (!perMap.has(mapKey)) {
