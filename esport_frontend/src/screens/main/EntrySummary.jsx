@@ -49,8 +49,7 @@ const EntrySummary = ({ globalGame, globalTournament }) => {
     const kd = d > 0 ? (k / d).toFixed(2) : k.toFixed(2);
     const kr = (k / totalRoundsSafe).toFixed(2);
     const hk = k > 0 ? (h / k).toFixed(2) : '0.00';
-    const survived = Math.max(0, totalRounds - d);
-    const sr = (survived / totalRoundsSafe).toFixed(2);
+    const sr = totalRounds > 0 ? Math.max(0, 1 - d / totalRounds).toFixed(2) : '0.00';
     const plusMinus = k - d;
     const sets = cfGroups.filter(g => !g.isTotal);
     let totalPRS = 0;
@@ -62,7 +61,7 @@ const EntrySummary = ({ globalGame, globalTournament }) => {
       ign: p.ign || 'Unknown', 
       k, d, a, h, 
       kd, kr, hk, sr, 
-      plusMinus: plusMinus > 0 ? `+${plusMinus}` : plusMinus, 
+      plusMinus, 
       prs: avgPrs 
     };
   };

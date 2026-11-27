@@ -34,10 +34,10 @@ const PlayerStatsTab = ({ globalGame, globalTournament }) => {
       const rounds = stat.total_rounds_played || 0;
       const kd = deaths > 0 ? (kills / deaths).toFixed(2) : kills.toFixed(2);
       const kr = rounds > 0 ? (kills / rounds).toFixed(2) : '0.00';
-      const sr = rounds > 0 ? ((rounds - deaths) / rounds).toFixed(2) : '0.00';
+      const sr = rounds > 0 ? Math.max(0, 1 - deaths / rounds).toFixed(2) : '0.00';
       const plusMinus = kills - deaths;
       let hk = '0.00';
-      if (activeGame === 'CROSSFIRE' && stat.total_headshots && kills > 0) {
+      if (stat.total_headshots && kills > 0) {
         hk = (stat.total_headshots / kills).toFixed(2);
       }
       return {

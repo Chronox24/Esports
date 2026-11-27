@@ -400,7 +400,7 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
       const avgAcsNum = s.matchesCount > 0 ? s.totalAcs / s.matchesCount : (s.rounds > 0 ? s.totalAcs / s.rounds : 0);
 
       const kr = avgKillsNum.toFixed(2);
-      const sr = s.rounds > 0 ? ((Math.max(0, s.rounds - s.deaths)) / s.rounds).toFixed(2) : '0.00';
+      const sr = s.rounds > 0 ? Math.max(0, 1 - s.deaths / s.rounds).toFixed(2) : '0.00';
       const hk = s.kills > 0 ? (s.headshots / s.kills).toFixed(2) : '0.00';
       const ap = s.kills * 150 + s.assists * 50;
 

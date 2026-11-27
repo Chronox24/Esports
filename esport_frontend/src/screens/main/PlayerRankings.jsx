@@ -273,7 +273,7 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
         const kdaNum = calculateAverageMapKda(p.records);
         const kda = kdaNum.toFixed(2);
         const kr = p.rounds ? (p.kills / p.rounds).toFixed(2) : "0.00";
-        const sr = p.rounds ? (Math.max(0, p.rounds - p.deaths) / p.rounds).toFixed(2) : "0.00";
+        const sr = p.rounds ? Math.max(0, 1 - p.deaths / p.rounds).toFixed(2) : "0.00";
         const hk = p.kills ? (p.headshots / p.kills).toFixed(2) : "0.00";
         const ap = activeGame === "VALORANT"
           ? (p.matchCount > 0 ? Math.round(p.acs / p.matchCount) : 0)

@@ -354,8 +354,8 @@ const LeaderboardOverviewModal = ({ isOpen, onClose, data, statsList, player, ac
                 <div className="hud-chamfer bg-bg-300 border border-slate-800 h-full" style={{ padding: '20px' }}>                  
                   <h3 className="font-tactical text-[11px] font-extrabold tracking-[0.18em] text-cyan-400 uppercase mb-4">Advanced Metrics</h3>                  
                   <div className="space-y-3">                    
-                    <div className="flex justify-between items-center border-b border-slate-800/60 pb-2"><span className="text-sm font-bold text-theme-text-muted">Kill per Round</span><span className="font-tactical text-lg font-extrabold text-theme-text-base">{(Number(player.kd || 1) * 0.7).toFixed(2)}</span></div>                    
-                    <div className="flex justify-between items-center border-b border-slate-800/60 pb-2"><span className="text-sm font-bold text-theme-text-muted">Survive Rate</span><span className="font-tactical text-lg font-extrabold text-theme-text-base">62%</span></div>                    
+                    <div className="flex justify-between items-center border-b border-slate-800/60 pb-2"><span className="text-sm font-bold text-theme-text-muted">Kill per Round</span><span className="font-tactical text-lg font-extrabold text-theme-text-base">{player.kr ?? (Number(player.kd || 1) * 0.7).toFixed(2)}</span></div>                    
+                    <div className="flex justify-between items-center border-b border-slate-800/60 pb-2"><span className="text-sm font-bold text-theme-text-muted">Survive Rate</span><span className="font-tactical text-lg font-extrabold text-theme-text-base">{player.srPct ?? '0%'}</span></div>                    
                     <div className="flex justify-between items-center"><span className="text-sm font-bold text-theme-text-muted">Role Assignment</span><span className="font-tactical text-sm font-extrabold uppercase text-cyan-300">{player.role}</span></div>                  
                   </div>                
                 </div>              
@@ -584,22 +584,30 @@ const Dashboard = ({ globalGame, globalTournament }) => {
         const formattedStats = statsData
           .sort((a, b) => b.final_rating - a.final_rating)
           .map((s, i) => {
-            const kd = s.total_deaths === 0 ? s.total_kills : (s.total_kills / s.total_deaths).toFixed(2);
+            const kills = Number(s.total_kills) || 0;
+            const deaths = Number(s.total_deaths) || 0;
+            const rounds = Number(s.total_rounds_played) || 0;
+            const kd = deaths === 0 ? kills.toFixed(2) : (kills / deaths).toFixed(2);
+            const kr = rounds > 0 ? (kills / rounds).toFixed(2) : '0.00';
+            const srRatio = rounds > 0 ? Math.max(0, 1 - deaths / rounds) : 0;
+            const srPct = `${Math.round(srRatio * 100)}%`;
             let wl = '-';
             let dmg = '-';
             if (activeGame === 'valorant') {
               wl = `${s.matches_played || 0} Mat`;
               dmg = `${Math.round(s.total_acs || 0)} ACS`;
             } else {
-              wl = `${s.total_rounds_played || 0} Rnd`;
+              wl = `${rounds} Rnd`;
               dmg = `${s.total_headshots || 0} HS`;
             }
             return {
               rank: i + 1,
               name: s.ign,
-              kd: kd,
-              wl: wl,
-              dmg: dmg,
+              kd,
+              kr,
+              srPct,
+              wl,
+              dmg,
               role: 'Flex'
             };
           });
