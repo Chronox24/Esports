@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { apiFetch } from "../../utils/api";
+import { calculateAverageMapKda } from "../../utils/crossTournamentAnalysis";
 
 /* ──────────────────── SVG Icons ──────────────────── */
 const SearchIcon = () => (
@@ -334,25 +335,26 @@ const PlayerRankings = ({ globalGame, globalTournament }) => {
     if (vRecords.length === 0) return emptyResult;
     const stats = {};
     vRecords.forEach(r => {
-      const ign = r.ign;
+      const ign = r.ign ? String(r.ign).trim() : null;
       if (!ign) return;
-      if (!stats[ign]) stats[ign] = { ign, team: r.team_name || "—", kills: 0, deaths: 0, assists: 0, acs: 0, matchCount: 0 };
+      if (!stats[ign]) stats[ign] = { ign, team: r.team_name || "—", kills: 0, deaths: 0, assists: 0, acs: 0, matchCount: 0, records: [] };
       stats[ign].kills += Number(r.kills) || 0;
       stats[ign].deaths += Number(r.deaths) || 0;
       stats[ign].assists += Number(r.assists) || 0;
       stats[ign].acs += Number(r.acs) || 0;
       stats[ign].matchCount += 1;
+      stats[ign].records.push(r);
     });
     const players = Object.values(stats).map(p => {
-      const kda = p.deaths === 0 ? p.kills + p.assists : (p.kills + p.assists) / p.deaths;
+      const kdaNum = calculateAverageMapKda(p.records);
       const avgAcs = p.matchCount === 0 ? 0 : p.acs / p.matchCount;
-      return { ...p, kda: kda.toFixed(2), avgAcs: Math.round(avgAcs) };
+      return { ...p, records: undefined, kdaNum, kda: kdaNum.toFixed(2), avgAcs: Math.round(avgAcs) };
     });
     return {
       topKills: [...players].sort((a, b) => b.kills - a.kills).map((p, i) => ({ ...p, rank: i + 1 })),
       leastDeaths: [...players].sort((a, b) => a.deaths - b.deaths).map((p, i) => ({ ...p, rank: i + 1 })),
       topAssists: [...players].sort((a, b) => b.assists - a.assists).map((p, i) => ({ ...p, rank: i + 1 })),
-      topKda: [...players].sort((a, b) => Number(b.kda) - Number(a.kda)).map((p, i) => ({ ...p, rank: i + 1 })),
+      topKda: [...players].sort((a, b) => b.kdaNum - a.kdaNum).map((p, i) => ({ ...p, rank: i + 1 })),
       topAcs: [...players].sort((a, b) => b.avgAcs - a.avgAcs).map((p, i) => ({ ...p, rank: i + 1 })),
     };
   }, [matchRecords, activeGame]);

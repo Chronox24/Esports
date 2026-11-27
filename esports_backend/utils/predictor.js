@@ -83,6 +83,7 @@ const summarizeRowsIntoProfile = (rows, fallbackMaps = 1) => {
   let totalAcs = 0;
   let totalAcsCount = 0;
   let mapWins = 0;
+  let mapKdaSum = 0;
 
   perMap.forEach((m) => {
     totalKills += m.kills;
@@ -95,14 +96,15 @@ const summarizeRowsIntoProfile = (rows, fallbackMaps = 1) => {
     totalAcsCount += m.acsCount;
     totalRounds += m.rounds > 0 ? m.rounds : 1;
     if (m.win) mapWins += 1;
+    mapKdaSum += m.deaths > 0 ? (m.kills + m.assists) / m.deaths : m.kills + m.assists;
   });
 
   const safeRounds = Math.max(1, totalRounds);
   const kd = totalDeaths > 0 ? totalKills / totalDeaths : totalKills > 0 ? Math.min(totalKills, 10) : 0;
-  const kda = totalDeaths > 0 ? (totalKills + totalAssists) / totalDeaths : totalKills + totalAssists;
+  const mapsCount = Math.max(1, perMap.size || fallbackMaps);
+  const kda = mapKdaSum / mapsCount;
   const kpr = totalKills / safeRounds;
   const dpr = totalDeaths / safeRounds;
-  const mapsCount = Math.max(1, perMap.size || fallbackMaps);
 
   return {
     kd,

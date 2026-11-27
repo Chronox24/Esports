@@ -5,6 +5,45 @@ const roundNum = (val, decimals = 2) => {
 
 const normalizeStr = (val) => (val ? String(val).trim() : '');
 
+const buildMapBucketKey = (r) => {
+  const t = normalizeStr(r.tournament_name).toLowerCase();
+  const g = normalizeStr(r.game).toLowerCase();
+  const m = normalizeStr(r.match).toLowerCase();
+  const s = normalizeStr(r.set_num).toLowerCase();
+  const mp = normalizeStr(r.map).toLowerCase();
+  // Fall back to timestamp/id only if match identifiers are empty so distinct unassigned matches remain separate
+  const fallback = !m && !s && !mp ? (normalizeStr(r.created_at) || normalizeStr(r.id)) : '';
+  return [t, g, m, s, mp, fallback].join('|');
+};
+
+/**
+ * Computes tournament/player KDA as the arithmetic mean of per-map KDAs:
+ * mean_m((kills_m + assists_m) / max(1, deaths_m)), aligning with official match sheets.
+ */
+export const calculateAverageMapKda = (rows = []) => {
+  if (!Array.isArray(rows) || rows.length === 0) return 0;
+
+  const perMap = new Map();
+  for (const r of rows) {
+    const key = buildMapBucketKey(r);
+    if (!perMap.has(key)) {
+      perMap.set(key, { kills: 0, deaths: 0, assists: 0 });
+    }
+    const bucket = perMap.get(key);
+    bucket.kills += Number(r.kills) || 0;
+    bucket.deaths += Number(r.deaths) || 0;
+    bucket.assists += Number(r.assists) || 0;
+  }
+
+  let kdaSum = 0;
+  perMap.forEach((m) => {
+    const mapKda = m.deaths > 0 ? (m.kills + m.assists) / m.deaths : m.kills + m.assists;
+    kdaSum += mapKda;
+  });
+
+  return perMap.size > 0 ? kdaSum / perMap.size : 0;
+};
+
 export const summarizePlayerRecords = (rows = []) => {
   if (!Array.isArray(rows) || rows.length === 0) return null;
 
@@ -18,14 +57,7 @@ export const summarizePlayerRecords = (rows = []) => {
     const teamName = normalizeStr(r.team_name);
     if (teamName) teams.add(teamName);
 
-    const mapKey = [
-      tName.toLowerCase(),
-      normalizeStr(r.game).toLowerCase(),
-      normalizeStr(r.match).toLowerCase(),
-      normalizeStr(r.set_num).toLowerCase(),
-      normalizeStr(r.map).toLowerCase(),
-      normalizeStr(r.created_at),
-    ].join('|');
+    const mapKey = buildMapBucketKey(r);
 
     if (!perMap.has(mapKey)) {
       perMap.set(mapKey, {
@@ -52,25 +84,25 @@ export const summarizePlayerRecords = (rows = []) => {
 
   let kills = 0;
   let deaths = 0;
-  let assists = 0;
   let rounds = 0;
   let acsSum = 0;
   let acsCount = 0;
   let wins = 0;
+  let kdaSum = 0;
 
   perMap.forEach((m) => {
     kills += m.kills;
     deaths += m.deaths;
-    assists += m.assists;
     acsSum += m.acsSum;
     acsCount += m.acsCount;
     rounds += m.rounds > 0 ? m.rounds : 1;
     if (m.win) wins += 1;
+    kdaSum += m.deaths > 0 ? (m.kills + m.assists) / m.deaths : m.kills + m.assists;
   });
 
   const maps = Math.max(1, perMap.size);
   const kd = deaths > 0 ? kills / deaths : kills > 0 ? Math.min(kills, 10) : 0;
-  const kda = deaths > 0 ? (kills + assists) / deaths : kills + assists;
+  const kda = kdaSum / maps;
 
   return {
     tournaments: [...tournaments],

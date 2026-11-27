@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { apiFetch } from "../../utils/api";
 import { getAgentImagePath, getAgentRoleStyle } from "../../utils/agentHelper";
+import { calculateAverageMapKda } from "../../utils/crossTournamentAnalysis";
 const SearchIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -1227,7 +1228,7 @@ const Analytics = ({ globalGame, globalTournament }) => {
     const winRate = safeDiv(wins, n);
     const hsPct = totK > 0 ? (totHs / totK) * 100 : 0;
 
-    const kda = (totK + totA) / Math.max(1, totD);
+    const kda = calculateAverageMapKda(pRecords);
     const defusePerMatch = safeDiv(totDef, n);
     const plantPerMatch = safeDiv(totP, n);
     const tradeRate = safeDiv(totA + totFk, safeRnd);

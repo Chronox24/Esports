@@ -5,6 +5,7 @@ import CrossTournamentAnalysis from '../../components/CrossTournamentAnalysis.js
 import {
   buildLeaderboardHistoricalAnalysis,
   buildPlayerCrossTournamentComparison,
+  calculateAverageMapKda,
 } from '../../utils/crossTournamentAnalysis';
 
 // Modal for team details
@@ -360,7 +361,7 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
     const statsMap = {};
 
     gameRecords.forEach(r => {
-      const ign = r.ign;
+      const ign = r.ign ? String(r.ign).trim() : null;
       if (!ign) return;
       if (!statsMap[ign]) {
         statsMap[ign] = {
@@ -373,7 +374,8 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
           rounds: 0,
           totalAcs: 0,
           matchesCount: 0,
-          agent: r.agent || r.group_label || ''
+          agent: r.agent || r.group_label || '',
+          records: []
         };
       }
       statsMap[ign].kills += Number(r.kills) || 0;
@@ -383,11 +385,12 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
       statsMap[ign].rounds += Number(r.rounds) || 0;
       statsMap[ign].totalAcs += Number(r.acs) || 0;
       statsMap[ign].matchesCount += 1;
+      statsMap[ign].records.push(r);
       if (r.agent || r.group_label) statsMap[ign].agent = r.agent || r.group_label;
     });
 
     const list = Object.values(statsMap).map(s => {
-      const kdaNum = s.deaths > 0 ? (s.kills + s.assists) / s.deaths : (s.kills + s.assists);
+      const kdaNum = calculateAverageMapKda(s.records);
       const kdNum = s.deaths > 0 ? s.kills / s.deaths : s.kills;
       const avgKillsNum = s.rounds > 0 ? s.kills / s.rounds : (s.matchesCount > 0 ? s.kills / s.matchesCount : 0);
       const avgAssistsNum = s.rounds > 0 ? s.assists / s.rounds : (s.matchesCount > 0 ? s.assists / s.matchesCount : 0);
@@ -400,6 +403,7 @@ const Leaderboards = ({ globalGame, globalTournament }) => {
 
       return {
         ...s,
+        records: undefined,
         name: s.ign,
         player: s.ign,
         kdaNum,
